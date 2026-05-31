@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="migration.bat" />
+  </Folder>
+  <Project Path="ECS.API/ECS.API.csproj" />
+  <Project Path="ECS.Application/ECS.Application.csproj" />
+  <Project Path="ECS.Domain/ECS.Domain.csproj" />
+  <Project Path="ECS.Infrastructure/ECS.Infrastructure.csproj" />
+  <Project Path="ECS.Test/ECS.Test.csproj" />
+</Solution>

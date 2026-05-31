@@ -1,6 +1,6 @@
   ## Jira Ticket
-  - Ticket: [MDS-000] {jira-ticket-name from branch: feature/v{version}/MDS-{ticket-id}}
-  - Link:   https://fpt-team-rifkkyud.atlassian.net/browse/MDS-000
+  - Ticket: [ECS-000] {jira-ticket-name from branch: feature/v{version}/ECS-{ticket-id}}
+  - Link:   https://fpt-team-rifkkyud.atlassian.net/browse/ECS-000
  
   ## Description
   * [Write a clear summary of what this PR does and why it is needed]
