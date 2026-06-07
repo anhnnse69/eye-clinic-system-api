@@ -8,7 +8,7 @@ namespace ECS.API.Controllers.AuthController
     /// Handles authentication-related endpoints.
     /// </summary>
     [ApiController]
-    [Route("api/auth")]
+    [Route("api/v1/auth")]
     public class LoginController : ControllerBase
     {
         private readonly ILoginService _loginService;

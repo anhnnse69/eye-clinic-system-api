@@ -6,6 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // ── Services ─────────────────────────────────────────────────
 builder.Services
+    .AddCustomCors()
     .AddApiControllers()
     .AddApiDocumentation()
     .AddApplication()
@@ -20,6 +21,7 @@ app.UseGlobalExceptionHandler();
 if (app.Environment.IsDevelopment())
     app.UseApiDocumentation();
 
+app.UseCustomCors();
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
