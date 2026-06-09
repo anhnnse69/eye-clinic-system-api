@@ -1,4 +1,5 @@
 ﻿using ECS.Application.Services.AuthServices.LoginServices;
+using ECS.Application.Services.AuthServices.RegisterServices;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 
@@ -14,6 +15,7 @@ public static class DependencyInjection
             cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
 
         services.AddScoped<ILoginService, LoginService>();
+        services.AddScoped<IRegisterService, RegisterService>();
 
         // ── FluentValidation ──────────────────────────────────
         // Registers all AbstractValidator<T> in this assembly.
