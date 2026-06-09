@@ -31,42 +31,46 @@ namespace ECS.Application.Services.AuthServices.RegisterServices
         /// <inheritdoc/>
         public async Task<ApiResponse<bool>> Process(RegisterRequest request)
         {
-            var (isDataValid, errorCode) = await ValidateRequest(request);
-            if (!isDataValid)
-                return ApiResponse<bool>.Fail(errorCode!);
-            var user = BuildUser(request);
-            await _userRepository.CreateAsync(user);
-            await _userRepository.SaveChangesAsync();
+            var errorCode = await GetValidationError(request);
+            var isFailed = errorCode != null;
 
-            return ApiResponse<bool>.Success(
-                GeneralCode.APP_MESSAGE_2000.ToString(), true);
+            return isFailed
+                ? ApiResponse<bool>.Fail(errorCode!)
+                : await CreateUser(request);
         }
 
         /// <summary>
-        /// Validates the registration request.
-        /// Checks password match, email uniqueness, and phone uniqueness.
+        /// Returns the first validation error code found, or null if the request is valid.
         /// </summary>
-        /// <param name="request">The registration data to validate.</param>
-        /// <returns>A tuple indicating validity and an error code if invalid.</returns>
-        private async Task<(bool isValid, string? errorCode)> ValidateRequest(
-            RegisterRequest request)
+        private async Task<string?> GetValidationError(RegisterRequest request)
         {
-            if (request.Password != request.ConfirmPassword)
-                return (false, GeneralCode.APP_MESSAGE_4019.ToString());
+            var passwordMismatch = request.Password != request.ConfirmPassword;
+            if (passwordMismatch) return GeneralCode.APP_MESSAGE_4019.ToString();
+
             var emailExists = await _userQueryRepository
                 .FindByCondition(x =>
                     x.Email != null &&
                     x.Email.ToLower() == request.Email.ToLower())
                 .AnyAsync();
-            if (emailExists)
-                return (false, GeneralCode.APP_MESSAGE_4017.ToString());
+            if (emailExists) return GeneralCode.APP_MESSAGE_4017.ToString();
+
             var phoneExists = await _userQueryRepository
                 .FindByCondition(x => x.Phone == request.Phone)
                 .AnyAsync();
-            if (phoneExists)
-                return (false, GeneralCode.APP_MESSAGE_4018.ToString());
+            if (phoneExists) return GeneralCode.APP_MESSAGE_4018.ToString();
 
-            return (true, null);
+            return null;
+        }
+
+        /// <summary>
+        /// Persists the new user and returns a success response.
+        /// </summary>
+        private async Task<ApiResponse<bool>> CreateUser(RegisterRequest request)
+        {
+            var user = BuildUser(request);
+            await _userRepository.CreateAsync(user);
+            await _userRepository.SaveChangesAsync();
+            return ApiResponse<bool>.Success(GeneralCode.APP_MESSAGE_2000.ToString(), true);
         }
 
         /// <summary>
