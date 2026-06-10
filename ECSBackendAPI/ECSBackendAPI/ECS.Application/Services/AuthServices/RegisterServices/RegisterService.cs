@@ -32,11 +32,29 @@ namespace ECS.Application.Services.AuthServices.RegisterServices
         public async Task<ApiResponse<bool>> Process(RegisterRequest request)
         {
             var errorCode = await GetValidationError(request);
-            var isFailed = errorCode != null;
+            return await CreateResponse(errorCode, request);
+        }
 
-            return isFailed
-                ? ApiResponse<bool>.Fail(errorCode!)
-                : await CreateUser(request);
+        /// <summary>
+        /// Builds the registration response based on validation results.
+        /// Returns a failure response if a business rule is violated;
+        /// otherwise creates the user and returns a success response.
+        /// </summary>
+        /// <param name="errorCode">
+        /// Validation error code if a business rule is violated; otherwise null.
+        /// </param>
+        /// <param name="request">The registration request.</param>
+        /// <returns>
+        /// An <see cref="ApiResponse{Boolean}"/> indicating the registration result.
+        /// </returns>
+        private async Task<ApiResponse<bool>> CreateResponse(
+            string? errorCode,
+            RegisterRequest request)
+        {
+            if (errorCode != null)
+                return ApiResponse<bool>.Fail(errorCode);
+
+            return await CreateUser(request);
         }
 
         /// <summary>
@@ -44,21 +62,19 @@ namespace ECS.Application.Services.AuthServices.RegisterServices
         /// </summary>
         private async Task<string?> GetValidationError(RegisterRequest request)
         {
-            var passwordMismatch = request.Password != request.ConfirmPassword;
-            if (passwordMismatch) return GeneralCode.APP_MESSAGE_4019.ToString();
-
+            var normalizedEmail = request.Email.Trim().ToLower();
             var emailExists = await _userQueryRepository
                 .FindByCondition(x =>
                     x.Email != null &&
-                    x.Email.ToLower() == request.Email.ToLower())
+                    x.Email.ToLower() == normalizedEmail)
                 .AnyAsync();
-            if (emailExists) return GeneralCode.APP_MESSAGE_4017.ToString();
-
+            if (emailExists)
+                return GeneralCode.APP_MESSAGE_4017.ToString();
             var phoneExists = await _userQueryRepository
-                .FindByCondition(x => x.Phone == request.Phone)
+                .FindByCondition(x => x.Phone == request.Phone.Trim())
                 .AnyAsync();
-            if (phoneExists) return GeneralCode.APP_MESSAGE_4018.ToString();
-
+            if (phoneExists)
+                return GeneralCode.APP_MESSAGE_4018.ToString();
             return null;
         }
 
