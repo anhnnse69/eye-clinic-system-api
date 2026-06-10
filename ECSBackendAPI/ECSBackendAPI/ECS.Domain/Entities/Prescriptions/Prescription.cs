@@ -4,6 +4,9 @@ using ECS.Domain.Entities.MedicalRecords;
 
 namespace ECS.Domain.Entities.Prescriptions
 {
+    /// <summary>
+    /// Medical prescription.
+    /// </summary>
     public class Prescription : EntityBase<Guid>
     {
         public Guid RecordId { get; set; }

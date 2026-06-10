@@ -3,6 +3,9 @@ using ECS.Domain.Entities.General;
 
 namespace ECS.Domain.Entities.Clinics
 {
+    /// <summary>
+    /// Clinic registration request from new clinics.
+    /// </summary>
     public class ClinicRegistrationRequest : EntityBase<Guid>
     {
         public string ClinicName { get; set; } = null!;

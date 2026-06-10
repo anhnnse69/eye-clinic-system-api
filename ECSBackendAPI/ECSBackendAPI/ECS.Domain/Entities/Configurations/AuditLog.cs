@@ -3,6 +3,9 @@ using ECS.Domain.Entities.General;
 
 namespace ECS.Domain.Entities.Configurations
 {
+    /// <summary>
+    /// System audit log.
+    /// </summary>
     public class AuditLog : EntityBase<Guid>
     {
         public Guid? UserId { get; set; }

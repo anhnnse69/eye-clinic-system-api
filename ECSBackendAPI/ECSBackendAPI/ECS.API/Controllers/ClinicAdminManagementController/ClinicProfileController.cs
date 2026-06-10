@@ -38,12 +38,10 @@ namespace ECS.API.Controllers.ClinicAdminManagementController
         {
             // Execute the retrieval process with an empty request object
             var result = await _viewClinicService.Process(new ViewClinicRequest());
-
             if (result.Data is null)
             {
                 return BadRequest(result);
             }
-
             return Ok(result);
         }
     }

@@ -27,7 +27,6 @@ namespace ECS.API.Controllers.SystemAdminController
         {
             var adminIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             Guid.TryParse(adminIdClaim, out Guid adminId);
-
             var result = await _rejectService.Process(id, request, adminId);
             return Ok(result);
         }

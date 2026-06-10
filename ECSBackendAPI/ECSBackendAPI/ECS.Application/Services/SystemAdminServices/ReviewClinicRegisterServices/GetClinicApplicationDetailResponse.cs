@@ -13,9 +13,4 @@
         public string? ReviewNote { get; set; }
         public string RequestedAt { get; set; } = null!;
     }
-
-    public class RejectClinicApplicationRequest
-    {
-        public string ReviewNote { get; set; } = null!;
-    }
 }

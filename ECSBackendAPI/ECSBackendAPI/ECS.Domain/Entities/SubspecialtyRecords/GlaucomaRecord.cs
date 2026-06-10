@@ -3,69 +3,43 @@ using ECS.Domain.Entities.MedicalRecords;
 
 namespace ECS.Domain.Entities.SubspecialtyRecords
 {
+    /// <summary>
+    /// Glaucoma record - MS24.
+    /// </summary>
     public class GlaucomaRecord : EntityBase<Guid>
     {
         public Guid RecordId { get; set; }
 
-        public string? SymptomEyePain { get; set; }
-        public string? SymptomBlurredVision { get; set; }
-        public bool SymptomVisualFieldConstriction { get; set; } = false;
-        public bool SymptomHalos { get; set; } = false;
-        public bool SymptomPhotophobia { get; set; } = false;
-        public bool SymptomTearing { get; set; } = false;
-        public bool SymptomRedEye { get; set; } = false;
-        public bool SymptomHeadache { get; set; } = false;
-        public bool SymptomNausea { get; set; } = false;
-        public bool SymptomVomiting { get; set; } = false;
-        public string? SymptomOtherNote { get; set; }
+        // Symptoms (JSONB)
+        public string? Symptoms { get; set; } // eye_pain, blurred_vision, visual_field_constriction, halos, photophobia, tearing, red_eye, headache, nausea, vomiting
 
-        public bool HistoryMyopia { get; set; } = false;
-        public bool HistoryHyperopia { get; set; } = false;
-        public bool HistoryTrauma { get; set; } = false;
-        public bool HistoryUveitis { get; set; } = false;
-        public bool HistoryAnteriorSegmentInflammation { get; set; } = false;
-        public bool HistoryCrvo { get; set; } = false;
-        public string? HistoryPriorEyeSurgery { get; set; }
-        public string? HistoryOtherEyeDisease { get; set; }
+        // History (JSONB)
+        public string? HistoryEye { get; set; } // myopia, hyperopia, trauma, uveitis, anterior_segment_inflammation, prior_surgery
+        public string? HistorySteroid { get; set; } // use, drug_name, duration, route
+        public string? HistorySystemic { get; set; } // cardiovascular, hypertension, diabetes, carotid_fistula
+        public string? FamilyGlaucoma { get; set; } // grandparents, parents, siblings, other_relatives
 
-        public bool HistorySteroidUse { get; set; } = false;
-        public string? SteroidDrugName { get; set; }
-        public string? SteroidDuration { get; set; }
-        public string? SteroidRoute { get; set; }
-        public bool? SteroidSelfMedicated { get; set; }
-
-        public bool SystemicCardiovascular { get; set; } = false;
-        public bool SystemicHypertension { get; set; } = false;
-        public bool SystemicDiabetes { get; set; } = false;
-        public bool SystemicCarotidSinusFistula { get; set; } = false;
-        public string? SystemicOtherNote { get; set; }
-
-        public bool FamilyGlaucomaGrandparents { get; set; } = false;
-        public bool FamilyGlaucomaParents { get; set; } = false;
-        public bool FamilyGlaucomaSiblings { get; set; } = false;
-        public bool FamilyGlaucomaOtherRelatives { get; set; } = false;
-
+        // Classification
         public string? GlaucomaType { get; set; }
         public decimal? IopTargetOd { get; set; }
         public decimal? IopTargetOs { get; set; }
         public string? StageOd { get; set; }
         public string? StageOs { get; set; }
-        public string? CupDiscDescription { get; set; }
-        public string? NerveRimOd { get; set; }
-        public string? NerveRimOs { get; set; }
-        public string? BlebOdStatus { get; set; }
-        public string? BlebOdLocation { get; set; }
-        public string? BlebOsStatus { get; set; }
-        public string? BlebOsLocation { get; set; }
-        public decimal? AcDepthOdSmithMm { get; set; }
-        public string? AcDepthOdHerick { get; set; }
-        public decimal? AcDepthOsSmithMm { get; set; }
-        public string? AcDepthOsHerick { get; set; }
+
+        // Gonioscopy
         public string? GonioscopyOd { get; set; }
         public string? GonioscopyOs { get; set; }
 
+        // Bleb
+        public string? BlebOdStatus { get; set; }
+        public string? BlebOsStatus { get; set; }
+
+        // Optic disc
+        public string? OpticDiscDescription { get; set; }
+        public string? NerveRimOd { get; set; }
+        public string? NerveRimOs { get; set; }
+
         public virtual MedicalRecord MedicalRecord { get; set; } = null!;
-        public virtual ICollection<GlaucomaSurgeryHistory>? SurgeryHistories { get; set; }
-        public virtual ICollection<GlaucomaDrugHistory>? DrugHistories { get; set; }
+        public virtual ICollection<GlaucomaHistory>? Histories { get; set; }
     }
 }

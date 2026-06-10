@@ -4,6 +4,9 @@ using ECS.Domain.Enums;
 
 namespace ECS.Domain.Entities.Clinics
 {
+    /// <summary>
+    /// Staff assignment to a clinic.
+    /// </summary>
     public class StaffClinic : EntityBase<Guid>
     {
         public Guid UserId { get; set; }

@@ -2,6 +2,9 @@
 
 namespace ECS.Domain.Entities.Prescriptions
 {
+    /// <summary>
+    /// Individual item in a prescription.
+    /// </summary>
     public class PrescriptionItem : EntityBase<Guid>
     {
         public Guid PrescriptionId { get; set; }

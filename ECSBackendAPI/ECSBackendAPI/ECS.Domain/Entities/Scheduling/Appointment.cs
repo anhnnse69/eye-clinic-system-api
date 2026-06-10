@@ -8,6 +8,9 @@ using ECS.Domain.Enums;
 
 namespace ECS.Domain.Entities.Scheduling
 {
+    /// <summary>
+    /// Patient appointment.
+    /// </summary>
     public class Appointment : EntityBase<Guid>
     {
         public Guid PatientId { get; set; }

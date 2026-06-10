@@ -2,6 +2,9 @@
 
 namespace ECS.Domain.Entities.Clinics
 {
+    /// <summary>
+    /// Medicine catalog item within a clinic.
+    /// </summary>
     public class MedicineCatalog : EntityBase<Guid>
     {
         public Guid ClinicId { get; set; }

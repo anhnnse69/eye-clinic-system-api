@@ -3,6 +3,9 @@ using ECS.Domain.Entities.General;
 
 namespace ECS.Domain.Entities.Notifications
 {
+    /// <summary>
+    /// User notification.
+    /// </summary>
     public class Notification : EntityBase<Guid>
     {
         public Guid UserId { get; set; }

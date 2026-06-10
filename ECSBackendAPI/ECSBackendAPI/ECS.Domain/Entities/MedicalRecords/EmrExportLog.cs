@@ -3,6 +3,9 @@ using ECS.Domain.Entities.General;
 
 namespace ECS.Domain.Entities.MedicalRecords
 {
+    /// <summary>
+    /// EMR export log.
+    /// </summary>
     public class EmrExportLog : EntityBase<Guid>
     {
         public Guid MedicalRecordId { get; set; }
