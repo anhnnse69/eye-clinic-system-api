@@ -1,5 +1,6 @@
 ﻿using ECS.Application.Services.AuthServices.LoginServices;
 using ECS.Application.Services.AuthServices.RegisterServices;
+using ECS.Application.Services.ClinicAdminManagementServices.ClinicProfileServices;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 
@@ -16,7 +17,8 @@ public static class DependencyInjection
 
         services.AddScoped<ILoginService, LoginService>();
         services.AddScoped<IRegisterService, RegisterService>();
-
+        services.AddScoped<IViewClinicService,ViewClinicService>();
+        
         // ── FluentValidation ──────────────────────────────────
         // Registers all AbstractValidator<T> in this assembly.
         // services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
