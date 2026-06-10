@@ -14,7 +14,7 @@ builder.Services
     .AddApiDocumentation()
     .AddApplication()
     .AddInfrastructure(builder.Configuration);
-
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
