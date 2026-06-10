@@ -3,13 +3,13 @@
     public class MetaResponse
     {
         // page
-        public int Page { get; }
+        public int Page { get; init; }
 
         // size
-        public int Size { get; }
+        public int Size { get; init; }
 
         // total
-        public int Total { get; }
+        public int Total { get; init; }
 
         // total_pages
         public int TotalPages => (int)Math.Ceiling((double)Total / Size);

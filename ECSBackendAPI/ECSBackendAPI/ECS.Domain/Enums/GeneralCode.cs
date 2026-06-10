@@ -44,6 +44,8 @@
         APP_MESSAGE_4025, // Input contains potentially dangerous SQL/NoSQL injection patterns
         APP_MESSAGE_4027, // Medical record already exists for this appointment
         APP_MESSAGE_4028, // Medical record not found
+        APP_MESSAGE_4029, // Clinic application request not found
+        APP_MESSAGE_4030, // Invalid clinic application status for this action
 
         // Server error codes (5xxx series)
         APP_MESSAGE_5000, // General internal server error (unexpected exception)
