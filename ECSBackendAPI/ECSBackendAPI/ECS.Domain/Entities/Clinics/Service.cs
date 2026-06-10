@@ -3,6 +3,9 @@ using ECS.Domain.Entities.Scheduling;
 
 namespace ECS.Domain.Entities.Clinics
 {
+    /// <summary>
+    /// Service offered by a clinic.
+    /// </summary>
     public class Service : EntityBase<Guid>
     {
         public Guid ClinicId { get; set; }

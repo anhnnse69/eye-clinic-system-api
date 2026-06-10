@@ -54,7 +54,6 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
 
-            entity.Property(e => e.UserId);
             entity.Property(e => e.FullName).IsRequired().HasMaxLength(200);
             entity.Property(e => e.Gender).HasConversion<string>().HasMaxLength(10);
             entity.Property(e => e.Dob).HasColumnType("date");
@@ -334,7 +333,7 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
             entity.HasIndex(e => e.AppointmentId).IsUnique();
 
-            entity.Property(e => e.RecordType).HasMaxLength(50);
+            entity.Property(e => e.RecordType).HasConversion<string>().HasMaxLength(50);
             entity.Property(e => e.ChiefComplaint).HasColumnType("nvarchar(max)");
             entity.Property(e => e.IllnessDayNumber);
             entity.Property(e => e.MedicalHistory).HasColumnType("nvarchar(max)");
@@ -346,14 +345,7 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.Property(e => e.VitalBloodPressure).HasMaxLength(20);
             entity.Property(e => e.VitalRespiratoryRate);
             entity.Property(e => e.VitalWeightKg).HasPrecision(6, 2);
-            entity.Property(e => e.SystemicEndocrineNormal).HasDefaultValue(true);
-            entity.Property(e => e.SystemicNeuroNormal).HasDefaultValue(true);
-            entity.Property(e => e.SystemicCardioNormal).HasDefaultValue(true);
-            entity.Property(e => e.SystemicRespiratoryNormal).HasDefaultValue(true);
-            entity.Property(e => e.SystemicDigestiveNormal).HasDefaultValue(true);
-            entity.Property(e => e.SystemicMusculoNormal).HasDefaultValue(true);
-            entity.Property(e => e.SystemicUrogenitalNormal).HasDefaultValue(true);
-            entity.Property(e => e.Summary).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.SystemicExam).HasColumnType("nvarchar(max)"); // JSONB
             entity.Property(e => e.DiagnosisMain).HasColumnType("nvarchar(max)");
             entity.Property(e => e.DiagnosisComorbid).HasColumnType("nvarchar(max)");
             entity.Property(e => e.DiagnosisDifferential).HasColumnType("nvarchar(max)");
@@ -367,6 +359,29 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.HasOne(e => e.Appointment).WithOne(a => a.MedicalRecord).HasForeignKey<MedicalRecord>(e => e.AppointmentId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(e => e.Patient).WithMany(p => p.MedicalRecords).HasForeignKey(e => e.PatientId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(e => e.Doctor).WithMany(d => d.MedicalRecords).HasForeignKey(e => e.DoctorId).OnDelete(DeleteBehavior.Restrict);
+        }
+    }
+
+    public class MedicalRecordExtrasConfiguration : IEntityTypeConfiguration<MedicalRecordExtras>
+    {
+        public void Configure(EntityTypeBuilder<MedicalRecordExtras> entity)
+        {
+            entity.ToTable("medical_record_extras");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.HasIndex(e => e.RecordId).IsUnique();
+
+            entity.Property(e => e.TraumaSummary).HasColumnType("nvarchar(max)"); // JSONB
+            entity.Property(e => e.GlaucomaSummary).HasColumnType("nvarchar(max)"); // JSONB
+            entity.Property(e => e.PediatricSummary).HasColumnType("nvarchar(max)"); // JSONB
+            entity.Property(e => e.LabOrders).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.ImagingOrders).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.DischargeSummary).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.TreatmentProcess).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime2");
+
+            entity.HasOne(e => e.MedicalRecord).WithOne(m => m.Extras).HasForeignKey<MedicalRecordExtras>(e => e.RecordId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.UpdatedByUser).WithMany().HasForeignKey(e => e.UpdatedBy).OnDelete(DeleteBehavior.SetNull);
         }
     }
 
@@ -405,120 +420,167 @@ namespace ECS.Infrastructure.Persistence.Configurations
     }
 
     // ==============================
-    // 6. EYE EXAMINATIONS (chỉ ánh xạ các cột đặc biệt, còn lại EF tự map)
+    // 6. EYE EXAMINATIONS (8 tables)
     // ==============================
-    public class EyeExaminationConfiguration : IEntityTypeConfiguration<EyeExamination>
+    public class EyeExamBasicConfiguration : IEntityTypeConfiguration<EyeExamBasic>
     {
-        public void Configure(EntityTypeBuilder<EyeExamination> entity)
+        public void Configure(EntityTypeBuilder<EyeExamBasic> entity)
         {
-            entity.ToTable("eye_examination");
+            entity.ToTable("eye_exam_basic");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            // Các cột số thập phân
-            entity.Property(e => e.VaOdUncorrected).HasPrecision(5, 2);
-            entity.Property(e => e.VaOsUncorrected).HasPrecision(5, 2);
-            entity.Property(e => e.VaOdCorrected).HasPrecision(5, 2);
-            entity.Property(e => e.VaOsCorrected).HasPrecision(5, 2);
-            entity.Property(e => e.VaOdNear).HasPrecision(5, 2);
-            entity.Property(e => e.VaOsNear).HasPrecision(5, 2);
-            entity.Property(e => e.VaOdPinhole).HasPrecision(5, 2);
-            entity.Property(e => e.VaOsPinhole).HasPrecision(5, 2);
-            entity.Property(e => e.IopOdMmhg).HasPrecision(5, 2);
-            entity.Property(e => e.IopOsMmhg).HasPrecision(5, 2);
-            entity.Property(e => e.EyeballOdProptosisMm).HasPrecision(5, 2);
-            entity.Property(e => e.EyeballOsProptosisMm).HasPrecision(5, 2);
+            entity.Property(e => e.Side).HasConversion<string>().HasMaxLength(10);
+
+            entity.Property(e => e.VaUncorrected).HasPrecision(5, 2);
+            entity.Property(e => e.VaCorrected).HasPrecision(5, 2);
+            entity.Property(e => e.VaNear).HasPrecision(5, 2);
+            entity.Property(e => e.VaPinhole).HasPrecision(5, 2);
+            entity.Property(e => e.IopMmhg).HasPrecision(5, 2);
             entity.Property(e => e.IopMethod).HasMaxLength(50);
-            entity.Property(e => e.ExtraocularMovementNormal).HasDefaultValue(true);
+            entity.Property(e => e.RefractionSph).HasPrecision(6, 2);
+            entity.Property(e => e.RefractionCyl).HasPrecision(6, 2);
+            entity.Property(e => e.Pd).HasPrecision(5, 1);
+            entity.Property(e => e.ProptosisMm).HasPrecision(5, 2);
+            entity.Property(e => e.PreAtropine).HasDefaultValue(false);
+            entity.Property(e => e.PostAtropine).HasDefaultValue(false);
+            entity.Property(e => e.EomNormal).HasDefaultValue(true);
             entity.Property(e => e.Nystagmus).HasDefaultValue(false);
-            entity.Property(e => e.OrbitOdNormal).HasDefaultValue(true);
-            entity.Property(e => e.OrbitOsNormal).HasDefaultValue(true);
-            entity.Property(e => e.PreAtropine).HasDefaultValue(false);
-            entity.Property(e => e.PostAtropine).HasDefaultValue(false);
+            entity.Property(e => e.OrbitNormal).HasDefaultValue(true);
 
-            entity.HasOne(e => e.MedicalRecord).WithOne(m => m.EyeExamination).HasForeignKey<EyeExamination>(e => e.RecordId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.MedicalRecord).WithMany(m => m.EyeExamBasics).HasForeignKey(e => e.RecordId).OnDelete(DeleteBehavior.Cascade);
         }
     }
 
-    public class RefractionRecordConfiguration : IEntityTypeConfiguration<RefractionRecord>
+    public class EyeEyelidConjunctivaConfiguration : IEntityTypeConfiguration<EyeEyelidConjunctiva>
     {
-        public void Configure(EntityTypeBuilder<RefractionRecord> entity)
+        public void Configure(EntityTypeBuilder<EyeEyelidConjunctiva> entity)
         {
-            entity.ToTable("refraction_record");
+            entity.ToTable("eye_eyelid_conjunctiva");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.SphOd).HasPrecision(6, 2);
-            entity.Property(e => e.CylOd).HasPrecision(6, 2);
-            entity.Property(e => e.AddOd).HasPrecision(6, 2);
-            entity.Property(e => e.SphOs).HasPrecision(6, 2);
-            entity.Property(e => e.CylOs).HasPrecision(6, 2);
-            entity.Property(e => e.AddOs).HasPrecision(6, 2);
-            entity.Property(e => e.PdBinocular).HasPrecision(5, 1);
-            entity.Property(e => e.PdOd).HasPrecision(5, 1);
-            entity.Property(e => e.PdOs).HasPrecision(5, 1);
-            entity.Property(e => e.Method).HasMaxLength(50);
-            entity.Property(e => e.LensType).HasMaxLength(50);
-            entity.Property(e => e.Notes).HasColumnType("nvarchar(max)");
-            entity.Property(e => e.PreAtropine).HasDefaultValue(false);
-            entity.Property(e => e.PostAtropine).HasDefaultValue(false);
+            entity.Property(e => e.Side).HasConversion<string>().HasMaxLength(10);
 
-            entity.HasOne(e => e.Examination).WithMany(e => e.RefractionRecords).HasForeignKey(e => e.ExamId).OnDelete(DeleteBehavior.Cascade);
+            entity.Property(e => e.EyelidOther).HasColumnType("nvarchar(max)"); // JSONB
+            entity.Property(e => e.ConjunctivaOther).HasColumnType("nvarchar(max)"); // JSONB
+            entity.Property(e => e.ConjunctivaCongestionType).HasMaxLength(50);
+            entity.Property(e => e.ConjunctivaDischarge).HasMaxLength(100);
+
+            entity.HasOne(e => e.MedicalRecord).WithMany(m => m.EyeEyelidConjunctivae).HasForeignKey(e => e.RecordId).OnDelete(DeleteBehavior.Cascade);
         }
     }
 
-    public class LacrimalSystemConfiguration : IEntityTypeConfiguration<LacrimalSystem>
+    public class EyeCorneaConfiguration : IEntityTypeConfiguration<EyeCornea>
     {
-        public void Configure(EntityTypeBuilder<LacrimalSystem> entity)
+        public void Configure(EntityTypeBuilder<EyeCornea> entity)
         {
-            entity.ToTable("lacrimal_system");
+            entity.ToTable("eye_cornea");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.Side).HasMaxLength(10);
-            entity.Property(e => e.IrrigationFree).HasDefaultValue(true);
-            entity.Property(e => e.IrrigationRegurgitationSame).HasDefaultValue(false);
-            entity.Property(e => e.IrrigationRegurgitationOpposite).HasDefaultValue(false);
-            entity.HasOne(e => e.Examination).WithMany(e => e.LacrimalSystems).HasForeignKey(e => e.ExamId).OnDelete(DeleteBehavior.Cascade);
-        }
-    }
+            entity.Property(e => e.Side).HasConversion<string>().HasMaxLength(10);
 
-    // Lưu ý: AnteriorSegment và PosteriorSegment có rất nhiều trường, nhưng EF Core tự động map nếu tên property trùng tên cột.
-    // Để đảm bảo, ta chỉ cần cấu hình khóa và quan hệ.
-    public class AnteriorSegmentConfiguration : IEntityTypeConfiguration<AnteriorSegment>
-    {
-        public void Configure(EntityTypeBuilder<AnteriorSegment> entity)
-        {
-            entity.ToTable("anterior_segment");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.Side).HasMaxLength(10);
-
-            entity.Property(e => e.EyelidNormal).HasDefaultValue(true);
-            entity.Property(e => e.ConjunctivaNormal).HasDefaultValue(true);
-            entity.Property(e => e.CorneaPerforation).HasDefaultValue(false);
-
-            entity.Property(e => e.AcBloodMm).HasPrecision(5, 2);
-            entity.Property(e => e.AcDepthMm).HasPrecision(5, 2);
-            entity.Property(e => e.AcPusMm).HasPrecision(5, 2);
-            entity.Property(e => e.CorneaDiameterMm).HasPrecision(5, 2);
-            entity.Property(e => e.IrisDiameterMm).HasPrecision(5, 2);
+            entity.Property(e => e.DiameterMm).HasPrecision(5, 2);
             entity.Property(e => e.PerforationDiameterMm).HasPrecision(5, 2);
-            entity.Property(e => e.PupilDiameterMm).HasPrecision(5, 2);
+            entity.Property(e => e.CorneaExtras).HasColumnType("nvarchar(max)"); // JSONB
 
-            entity.HasOne(e => e.Examination).WithMany(e => e.AnteriorSegments).HasForeignKey(e => e.ExamId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.MedicalRecord).WithMany(m => m.EyeCorneas).HasForeignKey(e => e.RecordId).OnDelete(DeleteBehavior.Cascade);
         }
     }
 
-    public class PosteriorSegmentConfiguration : IEntityTypeConfiguration<PosteriorSegment>
+    public class EyeAcIrisConfiguration : IEntityTypeConfiguration<EyeAcIris>
     {
-        public void Configure(EntityTypeBuilder<PosteriorSegment> entity)
+        public void Configure(EntityTypeBuilder<EyeAcIris> entity)
         {
-            entity.ToTable("posterior_segment");
+            entity.ToTable("eye_ac_iris");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.Side).HasMaxLength(10);
+            entity.Property(e => e.Side).HasConversion<string>().HasMaxLength(10);
+
+            entity.Property(e => e.AcDepthMm).HasPrecision(5, 2);
+            entity.Property(e => e.AcDepthHerick).HasMaxLength(20);
+            entity.Property(e => e.AcPusMm).HasPrecision(5, 2);
+            entity.Property(e => e.PupilDiameterMm).HasPrecision(5, 2);
+            entity.Property(e => e.AcIrisExtras).HasColumnType("nvarchar(max)"); // JSONB
+
+            entity.HasOne(e => e.MedicalRecord).WithMany(m => m.EyeAcIrises).HasForeignKey(e => e.RecordId).OnDelete(DeleteBehavior.Cascade);
+        }
+    }
+
+    public class EyeLensVitreousConfiguration : IEntityTypeConfiguration<EyeLensVitreous>
+    {
+        public void Configure(EntityTypeBuilder<EyeLensVitreous> entity)
+        {
+            entity.ToTable("eye_lens_vitreous");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.Side).HasConversion<string>().HasMaxLength(10);
+
+            entity.Property(e => e.LensVitreousExtras).HasColumnType("nvarchar(max)"); // JSONB
+
+            entity.HasOne(e => e.MedicalRecord).WithMany(m => m.EyeLensVitreouses).HasForeignKey(e => e.RecordId).OnDelete(DeleteBehavior.Cascade);
+        }
+    }
+
+    public class EyeScleraConfiguration : IEntityTypeConfiguration<EyeSclera>
+    {
+        public void Configure(EntityTypeBuilder<EyeSclera> entity)
+        {
+            entity.ToTable("eye_sclera");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.Side).HasConversion<string>().HasMaxLength(10);
+
+            entity.Property(e => e.ScleraNormal).HasDefaultValue(true);
+            entity.Property(e => e.ScleraExtras).HasColumnType("nvarchar(max)"); // JSONB
+
+            entity.HasOne(e => e.MedicalRecord).WithMany(m => m.EyeScleras).HasForeignKey(e => e.RecordId).OnDelete(DeleteBehavior.Cascade);
+        }
+    }
+
+    public class EyeFundusDiscMaculaConfiguration : IEntityTypeConfiguration<EyeFundusDiscMacula>
+    {
+        public void Configure(EntityTypeBuilder<EyeFundusDiscMacula> entity)
+        {
+            entity.ToTable("eye_fundus_disc_macula");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.Side).HasConversion<string>().HasMaxLength(10);
+
             entity.Property(e => e.OpticDiscNormal).HasDefaultValue(true);
             entity.Property(e => e.MaculaNormal).HasDefaultValue(true);
+            entity.Property(e => e.DiscMaculaExtras).HasColumnType("nvarchar(max)"); // JSONB
+
+            entity.HasOne(e => e.MedicalRecord).WithMany(m => m.EyeFundusDiscMaculas).HasForeignKey(e => e.RecordId).OnDelete(DeleteBehavior.Cascade);
+        }
+    }
+
+    public class EyeFundusRetinaVesselConfiguration : IEntityTypeConfiguration<EyeFundusRetinaVessel>
+    {
+        public void Configure(EntityTypeBuilder<EyeFundusRetinaVessel> entity)
+        {
+            entity.ToTable("eye_fundus_retina_vessel");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.Side).HasConversion<string>().HasMaxLength(10);
+
             entity.Property(e => e.VesselNormal).HasDefaultValue(true);
-            entity.HasOne(e => e.Examination).WithMany(e => e.PosteriorSegments).HasForeignKey(e => e.ExamId).OnDelete(DeleteBehavior.Cascade);
+            entity.Property(e => e.RetinaVesselExtras).HasColumnType("nvarchar(max)"); // JSONB
+
+            entity.HasOne(e => e.MedicalRecord).WithMany(m => m.EyeFundusRetinaVessels).HasForeignKey(e => e.RecordId).OnDelete(DeleteBehavior.Cascade);
+        }
+    }
+
+    public class LacrimalRecordConfiguration : IEntityTypeConfiguration<LacrimalRecord>
+    {
+        public void Configure(EntityTypeBuilder<LacrimalRecord> entity)
+        {
+            entity.ToTable("lacrimal_record");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.Side).HasConversion<string>().HasMaxLength(10);
+
+            entity.Property(e => e.IrrigationFree).HasDefaultValue(true);
+
+            entity.HasOne(e => e.MedicalRecord).WithMany(m => m.LacrimalRecords).HasForeignKey(e => e.RecordId).OnDelete(DeleteBehavior.Cascade);
         }
     }
 
@@ -536,8 +598,8 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.Property(e => e.ScanPattern).HasMaxLength(100);
             entity.Property(e => e.RnflAverageOd).HasPrecision(6, 2);
             entity.Property(e => e.RnflAverageOs).HasPrecision(6, 2);
-            entity.Property(e => e.CentralMacularThicknessOd).HasPrecision(6, 2);
-            entity.Property(e => e.CentralMacularThicknessOs).HasPrecision(6, 2);
+            entity.Property(e => e.CmtOd).HasPrecision(6, 2);
+            entity.Property(e => e.CmtOs).HasPrecision(6, 2);
             entity.Property(e => e.CupDiscRatioOd).HasPrecision(4, 2);
             entity.Property(e => e.CupDiscRatioOs).HasPrecision(4, 2);
             entity.Property(e => e.Conclusion).HasColumnType("nvarchar(max)");
@@ -556,9 +618,9 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.ToTable("visual_field_test");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.Side).HasConversion<string>().HasMaxLength(10);
             entity.Property(e => e.Machine).HasMaxLength(100);
             entity.Property(e => e.Strategy).HasMaxLength(100);
-            entity.Property(e => e.Side).HasMaxLength(10);
             entity.Property(e => e.MdValue).HasPrecision(6, 2);
             entity.Property(e => e.PsdValue).HasPrecision(6, 2);
             entity.Property(e => e.VfiPercent).HasPrecision(5, 2);
@@ -579,14 +641,13 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.ToTable("ultrasound_eye");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.Side).HasConversion<string>().HasMaxLength(10);
             entity.Property(e => e.UltrasoundType).HasMaxLength(50);
-            entity.Property(e => e.Side).HasMaxLength(10);
             entity.Property(e => e.AxialLengthMm).HasPrecision(6, 2);
-            entity.Property(e => e.AnteriorChamberDepthMm).HasPrecision(5, 2);
+            entity.Property(e => e.AcDepthMm).HasPrecision(5, 2);
             entity.Property(e => e.LensThicknessMm).HasPrecision(5, 2);
             entity.Property(e => e.VitreousLengthMm).HasPrecision(6, 2);
             entity.Property(e => e.LensStatus).HasMaxLength(100);
-            entity.Property(e => e.VitreousStatus).HasMaxLength(100);
             entity.Property(e => e.RetinaStatus).HasMaxLength(100);
             entity.Property(e => e.Conclusion).HasColumnType("nvarchar(max)");
             entity.Property(e => e.ImageUrl).HasColumnType("nvarchar(max)");
@@ -611,8 +672,11 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.Property(e => e.InjuryTime).HasColumnType("datetime2");
             entity.Property(e => e.PriorTreatment).HasColumnType("nvarchar(max)");
             entity.Property(e => e.PostTreatmentCourse).HasColumnType("nvarchar(max)");
-            entity.Property(e => e.Conclusion).HasColumnType("nvarchar(max)");
-            // Các boolean default false
+            entity.Property(e => e.OdInjuries).HasColumnType("nvarchar(max)"); // JSONB
+            entity.Property(e => e.OsInjuries).HasColumnType("nvarchar(max)"); // JSONB
+            entity.Property(e => e.InjuryDetails).HasColumnType("nvarchar(max)"); // JSONB
+            entity.Property(e => e.TraumaConclusion).HasColumnType("nvarchar(max)");
+
             entity.HasOne(e => e.MedicalRecord).WithOne(m => m.TraumaRecord).HasForeignKey<TraumaRecord>(e => e.RecordId).OnDelete(DeleteBehavior.Cascade);
         }
     }
@@ -624,49 +688,44 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.ToTable("glaucoma_record");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
+
+            // JSONB fields
+            entity.Property(e => e.Symptoms).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.HistoryEye).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.HistorySteroid).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.HistorySystemic).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.FamilyGlaucoma).HasColumnType("nvarchar(max)");
+
             entity.Property(e => e.GlaucomaType).HasMaxLength(50);
             entity.Property(e => e.IopTargetOd).HasPrecision(5, 2);
             entity.Property(e => e.IopTargetOs).HasPrecision(5, 2);
             entity.Property(e => e.StageOd).HasMaxLength(50);
             entity.Property(e => e.StageOs).HasMaxLength(50);
-
-            entity.Property(e => e.AcDepthOdSmithMm).HasPrecision(5, 2);
-            entity.Property(e => e.AcDepthOsSmithMm).HasPrecision(5, 2);
+            entity.Property(e => e.OpticDiscDescription).HasColumnType("nvarchar(max)");
 
             entity.HasOne(e => e.MedicalRecord).WithOne(m => m.GlaucomaRecord).HasForeignKey<GlaucomaRecord>(e => e.RecordId).OnDelete(DeleteBehavior.Cascade);
         }
     }
 
-    public class GlaucomaSurgeryHistoryConfiguration : IEntityTypeConfiguration<GlaucomaSurgeryHistory>
+    public class GlaucomaHistoryConfiguration : IEntityTypeConfiguration<GlaucomaHistory>
     {
-        public void Configure(EntityTypeBuilder<GlaucomaSurgeryHistory> entity)
+        public void Configure(EntityTypeBuilder<GlaucomaHistory> entity)
         {
-            entity.ToTable("glaucoma_surgery_history");
+            entity.ToTable("glaucoma_history");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.Side).HasMaxLength(10);
-            entity.Property(e => e.ProcedureType).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.HistoryType).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.Side).HasConversion<string>().HasMaxLength(10);
+            entity.Property(e => e.ProcedureType).HasMaxLength(100);
             entity.Property(e => e.ProcedureDate).HasColumnType("date");
             entity.Property(e => e.FacilityLevel).HasMaxLength(100);
-            entity.HasOne(e => e.GlaucomaRecord).WithMany(g => g.SurgeryHistories).HasForeignKey(e => e.GlaucomaRecordId).OnDelete(DeleteBehavior.Cascade);
-        }
-    }
-
-    public class GlaucomaDrugHistoryConfiguration : IEntityTypeConfiguration<GlaucomaDrugHistory>
-    {
-        public void Configure(EntityTypeBuilder<GlaucomaDrugHistory> entity)
-        {
-            entity.ToTable("glaucoma_drug_history");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.Side).HasMaxLength(10);
-            entity.Property(e => e.DrugName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.DrugName).HasMaxLength(200);
             entity.Property(e => e.Dosage).HasMaxLength(100);
             entity.Property(e => e.Duration).HasMaxLength(100);
             entity.Property(e => e.Route).HasMaxLength(50);
-            entity.Property(e => e.DrugCount).HasMaxLength(20);
             entity.Property(e => e.ChangeReason).HasColumnType("nvarchar(max)");
-            entity.HasOne(e => e.GlaucomaRecord).WithMany(g => g.DrugHistories).HasForeignKey(e => e.GlaucomaRecordId).OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.GlaucomaRecord).WithMany(g => g.Histories).HasForeignKey(e => e.GlaucomaRecordId).OnDelete(DeleteBehavior.Cascade);
         }
     }
 
@@ -678,26 +737,19 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
 
-            entity.Property(e => e.HirschbergOdPost).HasPrecision(5, 2);
-            entity.Property(e => e.HirschbergOdPre).HasPrecision(5, 2);
-            entity.Property(e => e.HirschbergOsPost).HasPrecision(5, 2);
-            entity.Property(e => e.HirschbergOsPre).HasPrecision(5, 2);
-            entity.Property(e => e.NearPointConvergenceCm).HasPrecision(5, 2);
-            entity.Property(e => e.PrismDistanceOd).HasPrecision(5, 2);
-            entity.Property(e => e.PrismDistanceOs).HasPrecision(5, 2);
-            entity.Property(e => e.PrismDownOd).HasPrecision(5, 2);
-            entity.Property(e => e.PrismDownOs).HasPrecision(5, 2);
-            entity.Property(e => e.PrismNearOd).HasPrecision(5, 2);
-            entity.Property(e => e.PrismNearOs).HasPrecision(5, 2);
-            entity.Property(e => e.PrismUpOd).HasPrecision(5, 2);
-            entity.Property(e => e.PrismUpOs).HasPrecision(5, 2);
-            entity.Property(e => e.SynoptophoreObjective).HasPrecision(5, 2);
-            entity.Property(e => e.SynoptophoreSubjective).HasPrecision(5, 2);
+            // JSONB fields
+            entity.Property(e => e.StrabismusType).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.RefractionPreAtropine).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.RefractionPostAtropine).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.PrismMeasurements).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.BinocularStatus).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.MarcusGunn).HasColumnType("nvarchar(max)");
 
-            entity.HasOne(e => e.MedicalRecord)
-                  .WithOne(m => m.StrabismusPtosisRecord)
-                  .HasForeignKey<StrabismusPtosisRecord>(e => e.RecordId)
-                  .OnDelete(DeleteBehavior.Cascade);
+            entity.Property(e => e.Nystagmus).HasDefaultValue(false);
+            entity.Property(e => e.Congenital).HasDefaultValue(false);
+            entity.Property(e => e.Acquired).HasDefaultValue(false);
+
+            entity.HasOne(e => e.MedicalRecord).WithOne(m => m.StrabismusPtosisRecord).HasForeignKey<StrabismusPtosisRecord>(e => e.RecordId).OnDelete(DeleteBehavior.Cascade);
         }
     }
 
@@ -709,14 +761,11 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
 
-            entity.Property(e => e.AcDepthOdMm).HasPrecision(5, 2);
-            entity.Property(e => e.AcDepthOsMm).HasPrecision(5, 2);
-            entity.Property(e => e.CorneaDiameterOdMm).HasPrecision(5, 2);
-            entity.Property(e => e.CorneaDiameterOsMm).HasPrecision(5, 2);
-            entity.Property(e => e.PupilDiameterOdMm).HasPrecision(5, 2);
-            entity.Property(e => e.PupilDiameterOsMm).HasPrecision(5, 2);
+            entity.Property(e => e.ChiefSymptoms).HasColumnType("nvarchar(max)"); // JSONB
+            entity.Property(e => e.IntellectualDevelopmentNormal).HasDefaultValue(true);
+            entity.Property(e => e.PregnancyIllness).HasDefaultValue(false);
 
-            entity.HasOne(e => e.MedicalRecord).WithOne(m => m.PediatricEyeRecord).HasForeignKey<PediatricEyeRecord>(e => e.RecordId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.MedicalRecord).WithOne(m => m.PediatricRecord).HasForeignKey<PediatricEyeRecord>(e => e.RecordId).OnDelete(DeleteBehavior.Cascade);
         }
     }
 
@@ -749,6 +798,7 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.Property(e => e.Dosage).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Frequency).HasMaxLength(100);
             entity.Property(e => e.Instruction).HasColumnType("nvarchar(max)");
+
             entity.HasOne(e => e.Prescription).WithMany(p => p.Items).HasForeignKey(e => e.PrescriptionId).OnDelete(DeleteBehavior.Cascade);
         }
     }
@@ -767,8 +817,6 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.Property(e => e.CylOs).HasPrecision(6, 2);
             entity.Property(e => e.AddOs).HasPrecision(6, 2);
             entity.Property(e => e.Pd).HasPrecision(5, 1);
-            entity.Property(e => e.PdOd).HasPrecision(5, 1);
-            entity.Property(e => e.PdOs).HasPrecision(5, 1);
             entity.Property(e => e.LensType).HasMaxLength(50);
             entity.Property(e => e.Notes).HasColumnType("nvarchar(max)");
             entity.Property(e => e.CreatedAt).HasColumnType("datetime2").HasDefaultValueSql("GETUTCDATE()");

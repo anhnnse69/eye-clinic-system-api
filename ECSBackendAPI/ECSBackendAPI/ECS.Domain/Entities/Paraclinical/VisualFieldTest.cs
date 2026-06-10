@@ -1,14 +1,18 @@
 ﻿using ECS.Domain.Entities.General;
 using ECS.Domain.Entities.MedicalRecords;
+using ECS.Domain.Enums;
 
 namespace ECS.Domain.Entities.Paraclinical
 {
+    /// <summary>
+    /// Visual field test result.
+    /// </summary>
     public class VisualFieldTest : EntityBase<Guid>
     {
         public Guid RecordId { get; set; }
+        public EyeSide Side { get; set; }
         public string? Machine { get; set; }
         public string? Strategy { get; set; }
-        public string Side { get; set; } = null!;
         public decimal? MdValue { get; set; }
         public decimal? PsdValue { get; set; }
         public decimal? VfiPercent { get; set; }
@@ -20,5 +24,4 @@ namespace ECS.Domain.Entities.Paraclinical
 
         public virtual MedicalRecord MedicalRecord { get; set; } = null!;
     }
-
 }

@@ -53,7 +53,6 @@ namespace ECS.Application.Services.AuthServices.RegisterServices
         {
             if (errorCode != null)
                 return ApiResponse<bool>.Fail(errorCode);
-
             return await CreateUser(request);
         }
 

@@ -3,6 +3,9 @@ using ECS.Domain.Entities.General;
 
 namespace ECS.Domain.Entities.MedicalRecords
 {
+    /// <summary>
+    /// Permission to access a medical record.
+    /// </summary>
     public class DocumentAccessPermission : EntityBase<Guid>
     {
         public Guid MedicalRecordId { get; set; }

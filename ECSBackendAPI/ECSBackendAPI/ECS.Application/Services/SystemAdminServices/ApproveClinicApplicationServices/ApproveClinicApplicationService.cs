@@ -38,16 +38,12 @@ namespace ECS.Application.Services.SystemAdminServices.ApproveClinicApplicationS
         {
             // Fetch and validate the active application request record
             var application = await FetchAndValidateApplication(id);
-
             // Update application parameters into approved state
             UpdateToApprovedState(application, adminId);
-
             // Provision a new minimal structural clinic space mapped from request parameters
             await ProvisionNewClinic(application);
-
             // Execute atomicity unit of work persistence operations
             await SaveAllChanges();
-
             // Return standardized API envelope response
             return CreateApiResponse(true);
         }
@@ -64,12 +60,10 @@ namespace ECS.Application.Services.SystemAdminServices.ApproveClinicApplicationS
             {
                 throw new KeyNotFoundException(GeneralCode.APP_MESSAGE_4029.ToString());
             }
-
             if (application.Status != "PENDING")
             {
                 throw new InvalidOperationException(GeneralCode.APP_MESSAGE_4030.ToString());
             }
-
             return application;
         }
 
@@ -82,7 +76,6 @@ namespace ECS.Application.Services.SystemAdminServices.ApproveClinicApplicationS
             application.ReviewedBy = adminId;
             application.ReviewedAt = DateTime.UtcNow;
             application.ReviewNote = null;
-
             _requestRepository.UpdateAsync(application);
         }
 
@@ -106,7 +99,6 @@ namespace ECS.Application.Services.SystemAdminServices.ApproveClinicApplicationS
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
-
             await _clinicRepository.CreateAsync(newClinic);
         }
 

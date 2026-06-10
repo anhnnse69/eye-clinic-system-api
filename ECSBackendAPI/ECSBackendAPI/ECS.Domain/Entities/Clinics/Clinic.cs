@@ -4,6 +4,9 @@ using ECS.Domain.Entities.Scheduling;
 
 namespace ECS.Domain.Entities.Clinics
 {
+    /// <summary>
+    /// A registered clinic.
+    /// </summary>
     public class Clinic : EntityBase<Guid>
     {
         public string Name { get; set; } = null!;

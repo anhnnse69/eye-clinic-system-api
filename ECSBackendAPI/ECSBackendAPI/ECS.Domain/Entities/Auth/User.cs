@@ -9,6 +9,9 @@ using ECS.Domain.Enums;
 
 namespace ECS.Domain.Entities.Auth
 {
+    /// <summary>
+    /// Represents a system user (patient, doctor, clinic admin, etc.)
+    /// </summary>
     public class User : EntityBase<Guid>
     {
         public string Phone { get; set; } = null!;

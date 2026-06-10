@@ -7,6 +7,9 @@ using ECS.Domain.Enums;
 
 namespace ECS.Domain.Entities.Patient
 {
+    /// <summary>
+    /// Patient medical profile, can be linked to a User or stand-alone.
+    /// </summary>
     public class PatientProfile : EntityBase<Guid>
     {
         public Guid? UserId { get; set; }

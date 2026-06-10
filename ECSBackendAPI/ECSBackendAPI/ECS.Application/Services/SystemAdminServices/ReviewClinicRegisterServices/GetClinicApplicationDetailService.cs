@@ -31,10 +31,8 @@ namespace ECS.Application.Services.SystemAdminServices.ReviewClinicRegisterServi
         {
             // Fetch application entity from storage or throw exception response if not found
             var application = await FetchApplicationOrThrow(id);
-
             // Map database entity onto UI responsive structure
             var responseData = MapToResponseDto(application);
-
             // Return standardized API envelope response
             return CreateApiResponse(responseData);
         }
@@ -45,14 +43,12 @@ namespace ECS.Application.Services.SystemAdminServices.ReviewClinicRegisterServi
         private async Task<ClinicRegistrationRequest> FetchApplicationOrThrow(Guid id)
         {
             var application = await _queryRepo.GetByIdAsync(id);
-
             if (application == null)
             {
-                // Thôi thúc một exception tùy biến chứa mã lỗi hoặc xử lý bẫy lỗi phù hợp theo kiến trúc dự án
-                // Ở đây giả định hệ thống dùng Exception để ngắt mạch, hoặc bạn có thể thay đổi cách throw tùy ý
+                // Throw a custom exception with the error code, or handle the error according to the project's architecture.
+                // This example assumes the system uses an exception to break the flow, but you can adjust the throw strategy if needed.
                 throw new KeyNotFoundException(GeneralCode.APP_MESSAGE_4029.ToString());
             }
-
             return application;
         }
 

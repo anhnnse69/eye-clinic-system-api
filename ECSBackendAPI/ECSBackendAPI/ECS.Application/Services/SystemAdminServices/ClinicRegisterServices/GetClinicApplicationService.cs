@@ -32,56 +32,48 @@ namespace ECS.Application.Services.SystemAdminServices.ClinicRegisterServices
         {
             // Build filter criteria based ONLY on SearchTerm (Status removed)
             var filterExpression = BuildFilterExpression(request);
-
             // Fetch sorted and paginated application query results from storage
             var pagedQuery = ExecutePagedQuery(filterExpression, request, out int totalRecords);
-
             // Map database entities onto UI responsive structures
             var formattedList = MapToResponseDto(pagedQuery);
-
             // Construct unified meta response wrapper
             var paginationMeta = BuildPaginationMeta(request, totalRecords);
-
             // Return standardized API envelope response
             return CreateApiResponse(formattedList, paginationMeta);
         }
 
+        /// <summary>
+        /// Builds the filter expression for clinic registration requests using optional status and search term criteria.
+        /// </summary>
         private Expression<Func<ClinicRegistrationRequest, bool>> BuildFilterExpression(GetClinicApplicationsRequest request)
         {
-            // 1. Tạo một query cơ bản mặc định luôn đúng
             Expression<Func<ClinicRegistrationRequest, bool>> filter = x => true;
-
-            // 2. Từng bước kết hợp điều kiện lọc theo Trạng thái (Status) nếu Front-end truyền lên
-            if (!string.IsNullOrEmpty(request.Status))
+            var status = request.Status;
+            var searchTerm = request.SearchTerm;
+            var hasStatus = !string.IsNullOrEmpty(status);
+            var hasSearchTerm = !string.IsNullOrEmpty(searchTerm);
+            if (hasStatus)
             {
-                var statusUpper = request.Status.ToUpper();
+                var statusUpper = status!.ToUpper();
                 filter = x => x.Status == statusUpper;
             }
-
-            // 3. Từng bước kết hợp điều kiện lọc theo Từ khóa tìm kiếm (SearchTerm)
-            if (!string.IsNullOrEmpty(request.SearchTerm))
+            if (hasSearchTerm)
             {
-                var search = request.SearchTerm.ToLower();
-
-                // Lưu lại filter hiện tại để kết hợp với điều kiện search mới qua toán tử AND (&&)
-                var currentFilter = filter;
-
-                if (!string.IsNullOrEmpty(request.Status))
+                var search = searchTerm!.ToLower();
+                if (hasStatus)
                 {
-                    // Nếu có cả Status và SearchTerm: lọc cả 2 điều kiện cùng lúc
-                    var statusUpper = request.Status.ToUpper();
+                    var statusUpper = status!.ToUpper();
                     filter = x => x.Status == statusUpper &&
                                   (x.ClinicName.ToLower().Contains(search) || x.Id.ToString().ToLower().Contains(search));
                 }
                 else
                 {
-                    // Nếu chỉ có SearchTerm: lọc theo search term
                     filter = x => x.ClinicName.ToLower().Contains(search) || x.Id.ToString().ToLower().Contains(search);
                 }
             }
-
             return filter;
         }
+
         /// <summary>
         /// Applies query projections, strict sorting rules, and custom offsets onto the active data dataset.
         /// </summary>

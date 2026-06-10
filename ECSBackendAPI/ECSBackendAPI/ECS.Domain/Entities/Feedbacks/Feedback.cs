@@ -5,6 +5,9 @@ using ECS.Domain.Entities.Scheduling;
 
 namespace ECS.Domain.Entities.Feedbacks
 {
+    /// <summary>
+    /// Patient feedback for appointment.
+    /// </summary>
     public class Feedback : EntityBase<Guid>
     {
         public Guid AppointmentId { get; set; }

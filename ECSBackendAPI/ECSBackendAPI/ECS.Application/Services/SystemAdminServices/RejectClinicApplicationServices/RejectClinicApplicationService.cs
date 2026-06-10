@@ -1,5 +1,4 @@
 ﻿using ECS.Application.Common.Response;
-using ECS.Application.Services.SystemAdminServices.ReviewClinicRegisterServices;
 using ECS.Domain.Entities.Clinics;
 using ECS.Domain.Enums;
 using ECS.Infrastructure.Persistence;
@@ -35,16 +34,12 @@ namespace ECS.Application.Services.SystemAdminServices.RejectClinicApplicationSe
         {
             // Validate incoming business requirements
             ValidateRequest(request);
-
             // Retrieve active persistence entity tracking changes
             var application = await FetchAndValidateApplication(id);
-
             // Apply mutation details onto the target record
             UpdateToRejectedState(application, request.ReviewNote, adminId);
-
             // Persist modified entity state to data storage
             await SaveChanges();
-
             // Return standardized API envelope response
             return CreateApiResponse(true);
         }
@@ -67,17 +62,14 @@ namespace ECS.Application.Services.SystemAdminServices.RejectClinicApplicationSe
         {
             var application = await _repository.FindByCondition(x => x.Id == id, trackChanges: true)
                                                .FirstOrDefaultAsync();
-
             if (application == null)
             {
                 throw new KeyNotFoundException(GeneralCode.APP_MESSAGE_4029.ToString());
             }
-
             if (application.Status != "PENDING")
             {
                 throw new InvalidOperationException(GeneralCode.APP_MESSAGE_4030.ToString());
             }
-
             return application;
         }
 
@@ -90,7 +82,6 @@ namespace ECS.Application.Services.SystemAdminServices.RejectClinicApplicationSe
             application.ReviewNote = reviewNote;
             application.ReviewedBy = adminId;
             application.ReviewedAt = DateTime.UtcNow;
-
             _repository.UpdateAsync(application);
         }
 

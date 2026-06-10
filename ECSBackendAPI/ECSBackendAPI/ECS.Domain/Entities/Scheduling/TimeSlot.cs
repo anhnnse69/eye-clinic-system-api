@@ -3,6 +3,9 @@ using ECS.Domain.Enums;
 
 namespace ECS.Domain.Entities.Scheduling
 {
+    /// <summary>
+    /// Time slot within a doctor's schedule.
+    /// </summary>
     public class TimeSlot : EntityBase<Guid>
     {
         public Guid ScheduleId { get; set; }

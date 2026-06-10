@@ -4,6 +4,9 @@ using ECS.Domain.Enums;
 
 namespace ECS.Domain.Entities.Scheduling
 {
+    /// <summary>
+    /// Real-time queue for an appointment.
+    /// </summary>
     public class Queue : EntityBase<Guid>
     {
         public Guid AppointmentId { get; set; }

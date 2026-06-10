@@ -3,88 +3,47 @@ using ECS.Domain.Entities.MedicalRecords;
 
 namespace ECS.Domain.Entities.SubspecialtyRecords
 {
+    /// <summary>
+    /// Strabismus & Ptosis record - MS25.
+    /// </summary>
     public class StrabismusPtosisRecord : EntityBase<Guid>
     {
         public Guid RecordId { get; set; }
 
+        // Chief complaint & cause
         public bool ChiefStrabismus { get; set; } = false;
         public bool ChiefPtosis { get; set; } = false;
-        public string? ChiefOther { get; set; }
-
         public bool Congenital { get; set; } = false;
         public bool Acquired { get; set; } = false;
         public string? AcquiredOnset { get; set; }
-        public string? PriorAmblyopiaTreatment { get; set; }
-        public string? PriorSurgeryMethod { get; set; }
-        public string? PriorSurgeryResult { get; set; }
 
-        public bool Esotropia { get; set; } = false;
-        public bool Exotropia { get; set; } = false;
-        public bool VerticalStrabismus { get; set; } = false;
+        // Prior treatment history
+        public string? PriorAmblyopiaTreatment { get; set; }
+        public string? PriorSurgery { get; set; }
+
+        // Symptoms (JSONB)
+        public string? StrabismusType { get; set; } // esotropia, exotropia, vertical
         public bool Nystagmus { get; set; } = false;
         public string? NystagmusType { get; set; }
-        public bool NullPointNystagmus { get; set; } = false;
 
-        public string? AutoRefractionPreAtropineOd { get; set; }
-        public string? AutoRefractionPreAtropineOs { get; set; }
-        public string? AutoRefractionPostAtropineOd { get; set; }
-        public string? AutoRefractionPostAtropineOs { get; set; }
-        public string? RetinoscopyPostAtropineOd { get; set; }
-        public string? RetinoscopyPostAtropineOs { get; set; }
+        // Refraction after atropine (JSONB)
+        public string? RefractionPreAtropine { get; set; }
+        public string? RefractionPostAtropine { get; set; }
 
-        public string? ExtraocularMotilityOd { get; set; }
-        public string? ExtraocularMotilityOs { get; set; }
-
-        public bool IntrinsicMotilityOdNormal { get; set; } = true;
-        public string? IntrinsicMotilityOdNote { get; set; }
-        public bool IntrinsicMotilityOsNormal { get; set; } = true;
-        public string? IntrinsicMotilityOsNote { get; set; }
-
-        public bool NearPointConvergenceNormal { get; set; } = true;
-        public decimal? NearPointConvergenceCm { get; set; }
-
+        // Cover test & prism measurements
         public string? CoverTestResult { get; set; }
-
-        public decimal? HirschbergOdPre { get; set; }
-        public decimal? HirschbergOdPost { get; set; }
-        public decimal? HirschbergOsPre { get; set; }
-        public decimal? HirschbergOsPost { get; set; }
-        public decimal? PrismNearOd { get; set; }
-        public decimal? PrismDistanceOd { get; set; }
-        public decimal? PrismUpOd { get; set; }
-        public decimal? PrismDownOd { get; set; }
-        public decimal? PrismNearOs { get; set; }
-        public decimal? PrismDistanceOs { get; set; }
-        public decimal? PrismUpOs { get; set; }
-        public decimal? PrismDownOs { get; set; }
+        public string? PrismMeasurements { get; set; } // {od: {near, distance, up, down}, os: {...}}
         public string? StrabismusSyndrome { get; set; }
-        public string? StrabismusNature { get; set; }
 
-        public decimal? SynoptophoreObjective { get; set; }
-        public decimal? SynoptophoreSubjective { get; set; }
+        // Binocular vision (JSONB)
+        public string? BinocularStatus { get; set; } // simultaneous_vision, fusion, stereopsis, diplopia, head_posture
 
-        public bool BinocularSimultaneousVision { get; set; } = false;
-        public bool BinocularFusion { get; set; } = false;
-        public bool BinocularStereopsis { get; set; } = false;
-        public string? FusionAmplitude { get; set; }
-        public bool RetinalCorrespondenceNormal { get; set; } = true;
-        public bool Diplopia { get; set; } = false;
-        public string? DiplopiaNote { get; set; }
-        public bool CompensatoryHeadPosture { get; set; } = false;
-        public string? CompensatoryHeadPostureNote { get; set; }
-
-        public bool Ptosis { get; set; } = false;
-        public string? PtosisDegreeOd { get; set; }
-        public string? PtosisDegreeOs { get; set; }
-        public bool EpicanthusOd { get; set; } = false;
-        public bool EpicanthusOs { get; set; } = false;
+        // Ptosis measurements
+        public string? PtosisOdDegree { get; set; }
+        public string? PtosisOsDegree { get; set; }
         public string? LevatorFunctionOd { get; set; }
         public string? LevatorFunctionOs { get; set; }
-        public bool MarcusGunnOd { get; set; } = false;
-        public bool MarcusGunnOs { get; set; } = false;
-        public bool BellPhenomenonOd { get; set; } = false;
-        public bool BellPhenomenonOs { get; set; } = false;
-
+        public string? MarcusGunn { get; set; } // JSONB
         public string? FixationOd { get; set; }
         public string? FixationOs { get; set; }
 

@@ -45,19 +45,14 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ClinicProfileSe
             // Initialize status tracking flags
             bool isUserValid = true;
             bool isClinicExist = true;
-
             // Extract User ID from current token context
             var userId = RetrieveUserId(ref isUserValid);
-
             // Fetch linked Clinic ID based on user relationship mapping
             var clinicId = await RetrieveClinicId(userId, isUserValid);
-
             // Fetch core clinic entity attributes
             var retrievedClinic = await RetrieveClinicData(clinicId);
-
             // Validate that the targeted clinic record exists and is active
             ValidateRetrievedData(retrievedClinic, ref isClinicExist);
-
             // Assemble API payload or generate contextual workflow error response
             return CreateResponse(retrievedClinic, isUserValid, isClinicExist);
         }
@@ -74,13 +69,11 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ClinicProfileSe
                 .User
                 .FindFirst(ClaimTypes.NameIdentifier)
                 ?.Value;
-
             if (!Guid.TryParse(userIdClaim, out var userId))
             {
                 isUserValid = false;
                 return Guid.Empty;
             }
-
             return userId;
         }
 
@@ -96,13 +89,11 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ClinicProfileSe
             {
                 return null;
             }
-
             var staffClinic = await _staffClinicRepository
                 .FindByCondition(x =>
                     x.UserId == userId &&
                     x.IsActive)
                 .FirstOrDefaultAsync();
-
             return staffClinic?.ClinicId;
         }
 
@@ -117,7 +108,6 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ClinicProfileSe
             {
                 return null;
             }
-
             return await _clinicRepository
                 .FindByCondition(x =>
                     x.Id == clinicId.Value &&
@@ -156,7 +146,6 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ClinicProfileSe
             {
                 return errorResponse;
             }
-
             return ApiResponse<ViewClinicResponse>.Success(
                 GeneralCode.APP_MESSAGE_2000.ToString(),
                 MapToResponse(retrievedClinic!));
@@ -176,14 +165,12 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ClinicProfileSe
                 return ApiResponse<ViewClinicResponse>.Fail(
                     GeneralCode.APP_MESSAGE_4001.ToString());
             }
-
             // Return 4020 if the clinic data instance does not exist
             if (!isClinicExist)
             {
                 return ApiResponse<ViewClinicResponse>.Fail(
                     GeneralCode.APP_MESSAGE_4020.ToString());
             }
-
             return null;
         }
 

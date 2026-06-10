@@ -1,9 +1,11 @@
 ﻿using ECS.Domain.Entities.Auth;
-using ECS.Domain.Entities.General;
 
 namespace ECS.Domain.Entities.Patient
 {
-    public class UserPatient : EntityBase<Guid>
+    /// <summary>
+    /// Many-to-many relationship between users and patient profiles (e.g., family members).
+    /// </summary>
+    public class UserPatient
     {
         public Guid UserId { get; set; }
         public Guid PatientId { get; set; }

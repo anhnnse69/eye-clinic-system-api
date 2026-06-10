@@ -43,15 +43,20 @@ namespace ECS.Infrastructure.Persistence
 
         // Medical Records
         public DbSet<MedicalRecord> MedicalRecords => Set<MedicalRecord>();
+        public DbSet<MedicalRecordExtras> MedicalRecordExtras => Set<MedicalRecordExtras>();
         public DbSet<DocumentAccessPermission> DocumentAccessPermissions => Set<DocumentAccessPermission>();
         public DbSet<EmrExportLog> EmrExportLogs => Set<EmrExportLog>();
 
-        // Eye Examinations
-        public DbSet<EyeExamination> EyeExaminations => Set<EyeExamination>();
-        public DbSet<RefractionRecord> RefractionRecords => Set<RefractionRecord>();
-        public DbSet<LacrimalSystem> LacrimalSystems => Set<LacrimalSystem>();
-        public DbSet<AnteriorSegment> AnteriorSegments => Set<AnteriorSegment>();
-        public DbSet<PosteriorSegment> PosteriorSegments => Set<PosteriorSegment>();
+        // Eye Examinations (8 tables)
+        public DbSet<EyeExamBasic> EyeExamBasics => Set<EyeExamBasic>();
+        public DbSet<EyeEyelidConjunctiva> EyeEyelidConjunctivae => Set<EyeEyelidConjunctiva>();
+        public DbSet<EyeCornea> EyeCorneas => Set<EyeCornea>();
+        public DbSet<EyeAcIris> EyeAcIrises => Set<EyeAcIris>();
+        public DbSet<EyeLensVitreous> EyeLensVitreouses => Set<EyeLensVitreous>();
+        public DbSet<EyeSclera> EyeScleras => Set<EyeSclera>();
+        public DbSet<EyeFundusDiscMacula> EyeFundusDiscMaculas => Set<EyeFundusDiscMacula>();
+        public DbSet<EyeFundusRetinaVessel> EyeFundusRetinaVessels => Set<EyeFundusRetinaVessel>();
+        public DbSet<LacrimalRecord> LacrimalRecords => Set<LacrimalRecord>();
 
         // Paraclinical
         public DbSet<OctResult> OctResults => Set<OctResult>();
@@ -61,8 +66,7 @@ namespace ECS.Infrastructure.Persistence
         // Subspecialty Records
         public DbSet<TraumaRecord> TraumaRecords => Set<TraumaRecord>();
         public DbSet<GlaucomaRecord> GlaucomaRecords => Set<GlaucomaRecord>();
-        public DbSet<GlaucomaSurgeryHistory> GlaucomaSurgeryHistories => Set<GlaucomaSurgeryHistory>();
-        public DbSet<GlaucomaDrugHistory> GlaucomaDrugHistories => Set<GlaucomaDrugHistory>();
+        public DbSet<GlaucomaHistory> GlaucomaHistories => Set<GlaucomaHistory>();
         public DbSet<StrabismusPtosisRecord> StrabismusPtosisRecords => Set<StrabismusPtosisRecord>();
         public DbSet<PediatricEyeRecord> PediatricEyeRecords => Set<PediatricEyeRecord>();
 

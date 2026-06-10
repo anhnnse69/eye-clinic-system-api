@@ -7,6 +7,9 @@ using ECS.Domain.Entities.Scheduling;
 
 namespace ECS.Domain.Entities.Clinics
 {
+    /// <summary>
+    /// Doctor's profile inside a clinic.
+    /// </summary>
     public class DoctorProfile : EntityBase<Guid>
     {
         public Guid UserId { get; set; }
