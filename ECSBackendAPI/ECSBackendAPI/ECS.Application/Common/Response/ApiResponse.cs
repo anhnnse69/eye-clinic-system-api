@@ -3,10 +3,10 @@
     public class ApiResponse<T>
     {
         // code_message
-        public string CodeMessage { get; }
+        public string CodeMessage { get; init; }
 
         // data
-        public T? Data { get; }
+        public T? Data { get; init; }
 
         // meta
         public MetaResponse? Meta { get; set; }
