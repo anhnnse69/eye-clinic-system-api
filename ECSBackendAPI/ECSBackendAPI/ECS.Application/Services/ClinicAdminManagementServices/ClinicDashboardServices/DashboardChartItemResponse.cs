@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace ECS.Application.Services.ClinicAdminManagementServices.ClinicDashboardServices
+﻿namespace ECS.Application.Services.ClinicAdminManagementServices.ClinicDashboardServices
 {
     /// <summary>
     /// Represents daily chart statistics displayed on the dashboard.

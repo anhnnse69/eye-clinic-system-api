@@ -31,11 +31,6 @@
         public decimal TotalRevenue { get; set; }
 
         /// <summary>
-        /// Total number of doctors in the clinic.
-        /// </summary>
-        public int TotalDoctors { get; set; }
-
-        /// <summary>
         /// Total number of active staff members.
         /// </summary>
         public int TotalStaffs { get; set; }

@@ -1,6 +1,5 @@
 ﻿using System.Security.Claims;
 using ECS.Application.Common.Response;
-using ECS.Application.Services.ClinicAdminManagementServices.ClinicDashboardServices;
 using ECS.Domain.Entities.Clinics;
 using ECS.Domain.Entities.Scheduling;
 using ECS.Domain.Enums;
@@ -9,7 +8,7 @@ using ECS.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
-namespace ECS.Application.Services.ClinicDashboardServices
+namespace ECS.Application.Services.ClinicAdminManagementServices.ClinicDashboardServices
 {
     /// <summary>
     /// Handles clinic dashboard metric calculation and statistical aggregation by verifying administrator context.

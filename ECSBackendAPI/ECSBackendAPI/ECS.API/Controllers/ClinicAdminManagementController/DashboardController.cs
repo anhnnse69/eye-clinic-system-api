@@ -1,6 +1,5 @@
 ﻿using ECS.Application.Common.Response;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicDashboardServices;
-using ECS.Application.Services.ClinicDashboardServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

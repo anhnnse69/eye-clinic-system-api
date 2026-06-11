@@ -1,5 +1,4 @@
 ﻿using ECS.Application.Common.Response;
-using ECS.Application.Services.ClinicDashboardServices;
 
 namespace ECS.Application.Services.ClinicAdminManagementServices.ClinicDashboardServices
 {
