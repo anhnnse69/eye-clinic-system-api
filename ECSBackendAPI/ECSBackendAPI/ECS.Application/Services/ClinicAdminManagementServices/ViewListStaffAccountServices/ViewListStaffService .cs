@@ -39,23 +39,16 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAc
         {
             // Step 1: Initialize sequential control status validation variables
             bool isUserValid = true;
-
             // Step 2: Extract identity information parameter metrics from the active security claim session context
             var userId = RetrieveUserId(out isUserValid);
-
             // Step 3: Search operational relational databases to identify the clinic bound tightly to the active account
             var clinicId = await RetrieveClinicId(userId, isUserValid);
-
             // Step 4: Pull physical storage staff collections mapping against the verified environment context
             var staffList = await RetrieveStaffData(clinicId);
-
             // Step 5: Evaluate processing status parameters to safely confirm tracking context existence
             bool isClinicExist = ValidateClinicExistence(clinicId);
-
             // Step 6: Package state evaluations dynamically to create descriptive payload data structures
-            var structuralOutcome = CreateResponse(staffList, isUserValid, isClinicExist);
-
-            return structuralOutcome;
+            return CreateResponse(staffList, isUserValid, isClinicExist);
         }
 
         /// <summary>
@@ -67,7 +60,6 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAc
         {
             isUserValid = true;
             var userIdClaim = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
             if (!Guid.TryParse(userIdClaim, out var userId))
             {
                 isUserValid = false;
@@ -88,12 +80,10 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAc
             {
                 return null;
             }
-
             // Wrapped clearly within EF Queryable Extensions to completely avert compiler method type inference ambiguities
             var staffClinic = await EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(
                 _staffClinicRepository.FindByCondition(x => x.UserId == userId && x.IsActive)
             );
-
             return staffClinic?.ClinicId;
         }
 
@@ -108,7 +98,6 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAc
             {
                 return new List<StaffClinic>();
             }
-
             return await EntityFrameworkQueryableExtensions.ToListAsync(
                 _staffClinicRepository.FindByCondition(x => x.ClinicId == clinicId.Value && x.IsActive)
                                       .Include(x => x.User)
@@ -138,12 +127,10 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAc
             bool isClinicExist)
         {
             var errorResponse = CreateErrorResponse(isUserValid, isClinicExist);
-
             if (errorResponse != null)
             {
                 return errorResponse;
             }
-
             return ApiResponse<List<StaffAccountResponse>>.Success(
                 GeneralCode.APP_MESSAGE_2000.ToString(),
                 MapToResponse(staffList));
@@ -163,14 +150,12 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAc
                 return ApiResponse<List<StaffAccountResponse>>.Fail(
                     GeneralCode.APP_MESSAGE_4001.ToString());
             }
-
             // Return 4020 if the linked operations clinic setup drops out of active entity streams
             if (!isClinicExist)
             {
                 return ApiResponse<List<StaffAccountResponse>>.Fail(
                     GeneralCode.APP_MESSAGE_4020.ToString());
             }
-
             return null;
         }
 
@@ -185,12 +170,10 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAc
             {
                 // Mapping physical core system user identifier mappings
                 UserId = item.UserId,
-
                 // Extracting demographic metadata strings securely bypassing null values
                 FullName = item.User?.FullName ?? string.Empty,
                 Email = item.User?.Email ?? string.Empty,
                 Phone = item.User?.Phone ?? string.Empty,
-
                 // Translating application systemic enum signatures into localized descriptive layout tokens
                 Role = item.Role switch
                 {
@@ -199,7 +182,6 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAc
                     StaffRole.CLINIC_ADMIN => "Quản lý phòng khám",
                     _ => item.Role.ToString()
                 },
-
                 // Mapping functional timeline recording configurations
                 IsActive = item.IsActive,
                 CreatedAt = item.CreatedAt
