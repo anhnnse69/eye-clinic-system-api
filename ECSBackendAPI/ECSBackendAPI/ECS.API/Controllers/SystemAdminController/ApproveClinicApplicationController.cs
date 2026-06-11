@@ -27,7 +27,6 @@ namespace ECS.API.Controllers.SystemAdminController
             // Lấy ID của System Admin đang đăng nhập từ Token
             var adminIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             Guid.TryParse(adminIdClaim, out Guid adminId);
-
             var result = await _approveService.Process(id, adminId);
             return Ok(result);
         }
