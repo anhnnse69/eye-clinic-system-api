@@ -7,6 +7,7 @@ using ECS.Application.Services.SystemAdminServices.ClinicManagementServices;
 using ECS.Application.Services.SystemAdminServices.ClinicRegisterServices;
 using ECS.Application.Services.SystemAdminServices.RejectClinicApplicationServices;
 using ECS.Application.Services.SystemAdminServices.ReviewClinicRegisterServices;
+using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 
@@ -33,8 +34,7 @@ public static class DependencyInjection
 
 
         // ── FluentValidation ──────────────────────────────────
-        // Registers all AbstractValidator<T> in this assembly.
-        // services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+        services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
         // ── AutoMapper ────────────────────────────────────────
         // services.AddAutoMapper(Assembly.GetExecutingAssembly());

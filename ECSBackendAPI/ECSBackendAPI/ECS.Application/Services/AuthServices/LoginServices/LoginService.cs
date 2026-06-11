@@ -5,6 +5,7 @@ using ECS.Infrastructure.ConfigService.JwtService;
 using ECS.Infrastructure.Helper.Utility;
 using ECS.Infrastructure.Persistence;
 using ECS.Infrastructure.Repositories.Interfaces;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 namespace ECS.Application.Services.AuthServices.LoginServices
@@ -16,18 +17,22 @@ namespace ECS.Application.Services.AuthServices.LoginServices
     {
         private readonly IRepositoryQueryBase<User, Guid, AppDbContext> _userRepository;
         private readonly IJwtTokenService _jwtTokenService;
+        private readonly IValidator<LoginRequest> _validator;
 
         /// <summary>
         /// Initializes a new instance of <see cref="LoginService"/> with required dependencies.
         /// </summary>
         /// <param name="userRepository">Repository for querying user data.</param>
         /// <param name="jwtTokenService">Service for generating JWT tokens.</param>
+        /// <param name="validator">Validator for login request data.</param>
         public LoginService(
             IRepositoryQueryBase<User, Guid, AppDbContext> userRepository,
-            IJwtTokenService jwtTokenService)
+            IJwtTokenService jwtTokenService,
+            IValidator<LoginRequest> validator)
         {
             _userRepository = userRepository;
             _jwtTokenService = jwtTokenService;
+            _validator = validator;
         }
 
         /// <summary>
@@ -37,15 +42,67 @@ namespace ECS.Application.Services.AuthServices.LoginServices
         /// <returns>An <see cref="ApiResponse{LoginResponse}"/> containing the token or an error code.</returns>
         public async Task<ApiResponse<LoginResponse>> Proccess(LoginRequest loginRequest)
         {
-            // Initialize validation flags
-            bool isRetrivedDataValid = true;
+            // Initialize status tracking flags
+            bool isValidationPassed = true;
             bool isPasswordCorrect = true;
-            // Retrieve user by normalized email
-            var retirvedUser = await RetrieveUserData(loginRequest.EmailAddress.ToLower());
-            // Validate retrieved user and password
-            ValidateRetrivedData(retirvedUser, ref isRetrivedDataValid, ref isPasswordCorrect, loginRequest);
-            // Build and return the appropriate response
-            return await CreateResponse(retirvedUser, isRetrivedDataValid, isPasswordCorrect);
+            string? validationErrorCode = null;
+            // Step 1: Validate request data format
+            ValidateRequest(loginRequest, ref isValidationPassed, ref validationErrorCode);
+            // Step 2: Retrieve user by normalized email
+            var retrievedUser = await RetrieveUserData(loginRequest.EmailAddress.ToLower());
+            // Step 3: Verify user existence and password match
+            ValidateCredentials(retrievedUser, loginRequest, ref isPasswordCorrect, isValidationPassed);
+            // Step 4: Assemble API payload or generate error response
+            return CreateResponse(retrievedUser, isValidationPassed, isPasswordCorrect, validationErrorCode);
+        }
+
+        /// <summary>
+        /// Validates the incoming request payload against defined business rules.
+        /// </summary>
+        /// <param name="loginRequest">The request payload to validate.</param>
+        /// <param name="isValidationPassed">Flag updated to <c>false</c> if validation fails.</param>
+        /// <param name="validationErrorCode">Stores the first validation error code encountered.</param>
+        private void ValidateRequest(
+            LoginRequest loginRequest,
+            ref bool isValidationPassed,
+            ref string? validationErrorCode)
+        {
+            var result = _validator.Validate(loginRequest);
+            if (!result.IsValid)
+            {
+                isValidationPassed = false;
+                validationErrorCode = result.Errors.First().ErrorCode;
+            }
+        }
+
+        /// <summary>
+        /// Validates the retrieved user data and verifies the provided password against the stored hash.
+        /// </summary>
+        /// <param name="retrievedUser">The user entity retrieved from the database, or <c>null</c> if not found.</param>
+        /// <param name="loginRequest">The original login request containing the raw password.</param>
+        /// <param name="isPasswordCorrect">Flag updated to <c>false</c> if password verification fails.</param>
+        /// <param name="isValidationPassed">Precondition flag indicating if request validation succeeded.</param>
+        private void ValidateCredentials(
+            User? retrievedUser,
+            LoginRequest loginRequest,
+            ref bool isPasswordCorrect,
+            bool isValidationPassed)
+        {
+            if (!isValidationPassed)
+            {
+                return;
+            }
+            if (retrievedUser == null)
+            {
+                isPasswordCorrect = false;
+                return;
+            }
+            var isVerified = PasswordHelper.VerifyPassword(
+                loginRequest.Password, retrievedUser.PasswordHash);
+            if (!isVerified)
+            {
+                isPasswordCorrect = false;
+            }
         }
 
         /// <summary>
@@ -55,70 +112,72 @@ namespace ECS.Application.Services.AuthServices.LoginServices
         /// <returns>The matching <see cref="User"/> if found and active; otherwise <c>null</c>.</returns>
         private async Task<User?> RetrieveUserData(string emailAddress)
         {
-            // Filter by email (case-insensitive) and active status
             return await _userRepository
-                .FindByCondition(x => x.Email != null &&
-                                      x.Email.ToLower() == emailAddress &&
-                                      x.IsActive)
+                .FindByCondition(x =>
+                    x.Email != null &&
+                    x.Email.ToLower() == emailAddress &&
+                    x.IsActive)
                 .FirstOrDefaultAsync();
         }
 
         /// <summary>
-        /// Generates a JWT token for the given authenticated user.
+        /// Generates an API response payload based on validation status flags.
+        /// </summary>
+        /// <param name="retrievedUser">The resolved user entity instance.</param>
+        /// <param name="isValidationPassed">Indicates whether request format validation succeeded.</param>
+        /// <param name="isPasswordCorrect">Indicates whether user credentials matched.</param>
+        /// <param name="validationErrorCode">The error code from validation failure, if any.</param>
+        /// <returns>A configured <see cref="ApiResponse{LoginResponse}"/>.</returns>
+        private ApiResponse<LoginResponse> CreateResponse(
+            User? retrievedUser,
+            bool isValidationPassed,
+            bool isPasswordCorrect,
+            string? validationErrorCode)
+        {
+            var errorResponse = CreateErrorResponse(
+                isValidationPassed, isPasswordCorrect, validationErrorCode);
+            if (errorResponse != null)
+            {
+                return errorResponse;
+            }
+            return CreateSuccessResponse(retrievedUser!);
+        }
+
+        /// <summary>
+        /// Creates an error response based on validation failure flags.
+        /// </summary>
+        /// <param name="isValidationPassed">Indicates whether request validation succeeded.</param>
+        /// <param name="isPasswordCorrect">Indicates whether credentials matched.</param>
+        /// <param name="validationErrorCode">The error code from validation failure.</param>
+        /// <returns>A failed <see cref="ApiResponse{LoginResponse}"/> variant if errors are found; otherwise <c>null</c>.</returns>
+        private ApiResponse<LoginResponse>? CreateErrorResponse(
+            bool isValidationPassed,
+            bool isPasswordCorrect,
+            string? validationErrorCode)
+        {
+            if (!isValidationPassed)
+            {
+                return ApiResponse<LoginResponse>.Fail(validationErrorCode!);
+            }
+            if (!isPasswordCorrect)
+            {
+                return ApiResponse<LoginResponse>.Fail(
+                    GeneralCode.APP_MESSAGE_4016.ToString());
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Creates a success response containing the JWT token.
         /// </summary>
         /// <param name="user">The authenticated user entity.</param>
-        /// <returns>A signed JWT token string.</returns>
-        private string CreateToken(User user)
+        /// <returns>A success <see cref="ApiResponse{LoginResponse}"/> with the token payload.</returns>
+        private ApiResponse<LoginResponse> CreateSuccessResponse(User user)
         {
-            // Delegate token generation to the JWT service
-            return _jwtTokenService.GenerateToken(user);
-        }
-
-        /// <summary>
-        /// Builds the API response based on the validation results.
-        /// Returns a failure response if credentials are invalid, or a success response with the JWT token.
-        /// </summary>
-        /// <param name="retirvedUser">The user retrieved from the database.</param>
-        /// <param name="isRetrieveDataValid">Indicates whether a user record was found.</param>
-        /// <param name="isPasswordCorrect">Indicates whether the provided password matches the stored hash.</param>
-        /// <returns>An <see cref="ApiResponse{LoginResponse}"/> with a token on success or an error code on failure.</returns>
-        private async Task<ApiResponse<LoginResponse>> CreateResponse(
-            User? retirvedUser, bool isRetrieveDataValid, bool isPasswordCorrect)
-        {
-            // Return 4016 if user not found or password mismatch
-            if (!isPasswordCorrect || !isRetrieveDataValid)
-                return ApiResponse<LoginResponse>.Fail(GeneralCode.APP_MESSAGE_4016.ToString());
-            // Generate token and return success response
-            var token = CreateToken(retirvedUser!);
+            var token = _jwtTokenService.GenerateToken(user);
             return ApiResponse<LoginResponse>.Success(
                 GeneralCode.APP_MESSAGE_2000.ToString(),
-                new LoginResponse(token)
-            );
-        }
-
-        /// <summary>
-        /// Validates the retrieved user data and verifies the provided password against the stored hash.
-        /// Sets the corresponding flags to <c>false</c> if validation fails.
-        /// </summary>
-        /// <param name="retirvedData">The user entity retrieved from the database, or <c>null</c> if not found.</param>
-        /// <param name="isRetrievedData">Flag indicating whether the user record exists.</param>
-        /// <param name="isPasswordCorrect">Flag indicating whether the password is correct.</param>
-        /// <param name="loginRequest">The original login request containing the raw password.</param>
-        private void ValidateRetrivedData(
-            User? retirvedData,
-            ref bool isRetrievedData,
-            ref bool isPasswordCorrect,
-            LoginRequest loginRequest)
-        {
-            // Mark as invalid if no user record was found
-            if (retirvedData == null)
-            {
-                isRetrievedData = false;
-                return;
-            }
-            // Verify the provided password against the stored hash
-            if (!PasswordHelper.VerifyPassword(loginRequest.Password, retirvedData.PasswordHash))
-                isPasswordCorrect = false;
+                new LoginResponse(token));
         }
     }
 }

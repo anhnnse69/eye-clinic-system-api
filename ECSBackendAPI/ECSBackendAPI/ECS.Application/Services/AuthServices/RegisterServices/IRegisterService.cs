@@ -12,6 +12,6 @@ namespace ECS.Application.Services.AuthServices.RegisterServices
         /// </summary>
         /// <param name="request">The registration data submitted by the user.</param>
         /// <returns>A response indicating whether the registration was successful.</returns>
-        Task<ApiResponse<bool>> Process(RegisterRequest request);
+        Task<ApiResponse<object>> Process(RegisterRequest request);
     }
 }
