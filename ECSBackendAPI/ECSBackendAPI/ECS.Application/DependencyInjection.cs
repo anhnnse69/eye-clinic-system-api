@@ -1,12 +1,13 @@
-﻿using System.Reflection;
-using ECS.Application.Services.AuthServices.LoginServices;
+﻿using ECS.Application.Services.AuthServices.LoginServices;
 using ECS.Application.Services.AuthServices.RegisterServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicProfileServices;
 using ECS.Application.Services.SystemAdminServices.ApproveClinicApplicationServices;
+using ECS.Application.Services.SystemAdminServices.ClinicManagementServices;
 using ECS.Application.Services.SystemAdminServices.ClinicRegisterServices;
 using ECS.Application.Services.SystemAdminServices.RejectClinicApplicationServices;
 using ECS.Application.Services.SystemAdminServices.ReviewClinicRegisterServices;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 
 namespace ECS.Application;
 
@@ -26,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped<IApproveClinicApplicationService, ApproveClinicApplicationService>();
         services.AddScoped<IRejectClinicApplicationService, RejectClinicApplicationService>();
         services.AddScoped<IViewClinicService, ViewClinicService>();
+        services.AddScoped<IGetClinicsService, GetClinicsService>();
 
 
         // ── FluentValidation ──────────────────────────────────
