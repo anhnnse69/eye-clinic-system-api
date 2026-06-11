@@ -55,6 +55,14 @@
             => new ApiResponse<T>(codeMessage, default, null);
 
         /// <summary>
+        /// API response fail with null data (for error responses)
+        /// </summary>
+        /// <param name="codeMessage"></param>
+        /// <returns></returns>
+        public static ApiResponse<object> FailWithNull(string codeMessage)
+            => new ApiResponse<object>(codeMessage, null, null);
+
+        /// <summary>
         /// API response fail, with data
         /// </summary>
         /// <param name="codeMessage"></param>
