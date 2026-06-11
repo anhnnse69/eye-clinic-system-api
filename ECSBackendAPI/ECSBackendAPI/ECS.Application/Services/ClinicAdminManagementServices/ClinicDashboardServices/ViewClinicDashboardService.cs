@@ -53,8 +53,7 @@ namespace ECS.Application.Services.ClinicDashboardServices
         /// </summary>
         /// <param name="request">The view clinic dashboard request criteria.</param>
         /// <returns>An <see cref="ApiResponse{ViewClinicDashboardResponse}"/> containing aggregated metrics on success, or an error code.</returns>
-        public async Task<ApiResponse<ViewClinicDashboardResponse>> Process(
-            ViewClinicDashboardRequest request)
+        public async Task<ApiResponse<ViewClinicDashboardResponse>> Process()
         {
             // Initialize status tracking flags
             bool isUserValid = true;

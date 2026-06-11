@@ -46,8 +46,7 @@ namespace ECS.API.Controllers.ClinicAdminManagementController
         {
             // Execute dashboard retrieval workflow using current user context
             var result =
-                await _dashboardService.Process(
-                    new ViewClinicDashboardRequest());
+                await _dashboardService.Process();
 
             if (result.Data == null)
             {

@@ -17,7 +17,6 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ClinicDashboard
         /// <returns>
         /// A standardized API response containing clinic dashboard statistics.
         /// </returns>
-        Task<ApiResponse<ViewClinicDashboardResponse>>
-            Process(ViewClinicDashboardRequest request);
+        Task<ApiResponse<ViewClinicDashboardResponse>> Process();
     }
 }
