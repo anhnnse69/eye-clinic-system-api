@@ -162,9 +162,6 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ClinicDashboard
                 CompletedAppointments = todayAppointments.Count(
                     x => x.Status == AppointmentStatus.COMPLETED),
 
-                PendingAppointments = todayAppointments.Count(
-                    x => x.Status == AppointmentStatus.PENDING),
-
                 CancelledAppointments = todayAppointments.Count(
                     x => x.Status == AppointmentStatus.CANCELLED),
 
@@ -260,7 +257,6 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ClinicDashboard
             {
                 TotalAppointments = dashboard.TotalAppointments,
                 CompletedAppointments = dashboard.CompletedAppointments,
-                PendingAppointments = dashboard.PendingAppointments,
                 CancelledAppointments = dashboard.CancelledAppointments,
                 TotalRevenue = dashboard.TotalRevenue,
                 TotalStaffs = dashboard.TotalStaffs,

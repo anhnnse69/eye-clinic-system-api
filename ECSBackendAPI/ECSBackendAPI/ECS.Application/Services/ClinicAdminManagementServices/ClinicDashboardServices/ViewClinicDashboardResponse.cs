@@ -16,11 +16,6 @@
         public int CompletedAppointments { get; set; }
 
         /// <summary>
-        /// Number of pending appointments.
-        /// </summary>
-        public int PendingAppointments { get; set; }
-
-        /// <summary>
         /// Number of cancelled appointments.
         /// </summary>
         public int CancelledAppointments { get; set; }
