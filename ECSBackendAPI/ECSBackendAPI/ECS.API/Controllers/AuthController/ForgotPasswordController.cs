@@ -25,7 +25,7 @@ namespace ECS.API.Controllers.AuthController
         /// Sends OTP to user's email for password reset.
         /// </summary>
         /// <param name="request">Forgot password request containing email.</param>
-        /// <returns>An <see cref="IActionResult"/> containing the result.</returns>
+        /// <returns>An <see cref="IActionResult"/> containing reset token.</returns>
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
         {

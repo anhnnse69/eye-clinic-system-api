@@ -3,15 +3,15 @@ using ECS.Application.Common.Response;
 namespace ECS.Application.Services.AuthServices.ForgotPasswordServices
 {
     /// <summary>
-    /// Forgot password service interface.
+    /// Interface for forgot password service.
     /// </summary>
     public interface IForgotPasswordService
     {
         /// <summary>
-        /// Processes forgot password request by sending OTP to email.
+        /// Processes the forgot password request by sending OTP to user's email.
         /// </summary>
-        /// <param name="request">Forgot password request with email.</param>
-        /// <returns>API response indicating success or failure.</returns>
-        Task<ApiResponse<object>> Process(ForgotPasswordRequest request);
+        /// <param name="request">Forgot password request containing email.</param>
+        /// <returns>An <see cref="ApiResponse{ForgotPasswordResponse}"/> containing reset token.</returns>
+        Task<ApiResponse<ForgotPasswordResponse>> Process(ForgotPasswordRequest request);
     }
 }
