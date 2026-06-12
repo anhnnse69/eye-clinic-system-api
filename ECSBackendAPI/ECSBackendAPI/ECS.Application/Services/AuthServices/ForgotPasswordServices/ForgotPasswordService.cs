@@ -1,3 +1,4 @@
+using ECS.Application.Common.OTP;
 using ECS.Application.Common.Response;
 using ECS.Domain.Entities.Auth;
 using ECS.Domain.Enums;
@@ -19,12 +20,6 @@ namespace ECS.Application.Services.AuthServices.ForgotPasswordServices
         private readonly IValidator<ForgotPasswordRequest> _validator;
         private readonly IEmailService _emailService;
 
-        private static readonly Dictionary<string, OtpData> _otpCache = new();
-        private static readonly object _lock = new();
-
-        /// <summary>
-        /// Initializes a new instance of <see cref="ForgotPasswordService"/>.
-        /// </summary>
         public ForgotPasswordService(
             IRepositoryQueryBase<User, Guid, AppDbContext> userQueryRepository,
             IRepositoryBaseAsync<User, Guid, AppDbContext> userRepository,
@@ -39,29 +34,30 @@ namespace ECS.Application.Services.AuthServices.ForgotPasswordServices
 
         /// <summary>
         /// Processes the forgot password request by sending OTP to user's email.
+        /// Step 1: Validate input request
+        /// Step 2: Retrieve user by email
+        /// Step 3: Validate user existence
+        /// Step 4: Generate reset token and send OTP
+        /// Step 5: Create response
         /// </summary>
-        /// <param name="request">Forgot password request containing email.</param>
-        /// <returns>An <see cref="ApiResponse{Object}"/> indicating success or an error code.</returns>
-        public async Task<ApiResponse<object>> Process(ForgotPasswordRequest request)
+        public async Task<ApiResponse<ForgotPasswordResponse>> Process(ForgotPasswordRequest request)
         {
-            // Initialize status tracking flags
+            // Step 1: Validate input request
             bool isValidationPassed = true;
-            bool isUserFound = true;
             string? validationErrorCode = null;
-            // Step 1: Validate request data format
             ValidateRequest(request, ref isValidationPassed, ref validationErrorCode);
-            // Step 2: Retrieve user by normalized email
-            var retrievedUser = await RetrieveUserByEmail(request.Email.ToLower().Trim(), isValidationPassed);
-            // Step 3: Verify user existence
-            ValidateUserExistence(retrievedUser, isValidationPassed, ref isUserFound);
-            // Step 4: Send OTP to user's email
-            var isEmailSent = await SendOtpToEmail(retrievedUser, isValidationPassed, isUserFound);
-            // Step 5: Assemble API payload or generate error response
-            return CreateResponse(validationErrorCode, isValidationPassed, isUserFound, isEmailSent);
+            // Step 2: Retrieve user by email
+            var retrievedUser = await RetrieveUserByEmail(request.Email.ToLower().Trim());
+            // Step 3: Validate user existence
+            bool isUserFound = IsUserFound(retrievedUser);
+            // Step 4: Generate reset token and send OTP
+            var resetToken = await GenerateAndSendOtp(retrievedUser, isValidationPassed, isUserFound);
+            // Step 5: Create response
+            return CreateResponse(validationErrorCode, isValidationPassed, isUserFound, resetToken);
         }
 
         /// <summary>
-        /// Validates the incoming request payload.
+        /// Step 1: Validate input request using FluentValidation.
         /// </summary>
         private void ValidateRequest(
             ForgotPasswordRequest request,
@@ -74,14 +70,10 @@ namespace ECS.Application.Services.AuthServices.ForgotPasswordServices
         }
 
         /// <summary>
-        /// Retrieves user by normalized email address.
+        /// Step 2: Retrieve user by normalized email address from database.
         /// </summary>
-        private async Task<User?> RetrieveUserByEmail(string email, bool isValidationPassed)
+        private async Task<User?> RetrieveUserByEmail(string email)
         {
-            if (!isValidationPassed)
-            {
-                return null;
-            }
             return await _userQueryRepository
                 .FindByCondition(x =>
                     x.Email != null &&
@@ -91,44 +83,55 @@ namespace ECS.Application.Services.AuthServices.ForgotPasswordServices
         }
 
         /// <summary>
-        /// Validates user existence.
+        /// Step 3: Check if user exists in database.
         /// </summary>
-        private void ValidateUserExistence(
-            User? user,
-            bool isValidationPassed,
-            ref bool isUserFound)
+        private bool IsUserFound(User? user)
         {
-            isUserFound = true;
-            if (!isValidationPassed)
-            {
-                isUserFound = false;
-                return;
-            }
-            isUserFound = user != null;
+            return user != null;
         }
 
         /// <summary>
-        /// Sends OTP to user's email.
+        /// Step 4: Generate reset token and send OTP to user's email.
         /// </summary>
-        private async Task<bool> SendOtpToEmail(User? user, bool isValidationPassed, bool isUserFound)
+        private async Task<string?> GenerateAndSendOtp(User? user, bool isValidationPassed, bool isUserFound)
         {
-            if (!isValidationPassed || !isUserFound || user == null)
+            if (!CanGenerateOtp(isValidationPassed, isUserFound, user))
             {
-                return true;
+                return null;
             }
+
+            var resetToken = GenerateResetToken();
             var otp = GenerateOtp();
             var emailBody = _emailService.BuildPasswordResetEmailBody(otp);
             var subject = "ECS Medical - Password Reset OTP";
-            var isSent = await _emailService.SendEmailAsync(user.Email!, subject, emailBody);
+            var isSent = await _emailService.SendEmailAsync(user!.Email!, subject, emailBody);
+
             if (isSent)
             {
-                StoreOtp(user.Email!, otp);
+                OtpCacheManager.Store(resetToken, user.Email!, otp);
             }
-            return isSent;
+
+            return isSent ? resetToken : null;
         }
 
         /// <summary>
-        /// Generates a 6-digit OTP code.
+        /// Check if OTP can be generated based on validation status and user data.
+        /// </summary>
+        private bool CanGenerateOtp(bool isValidationPassed, bool isUserFound, User? user)
+        {
+            return isValidationPassed && isUserFound && user != null;
+        }
+
+        /// <summary>
+        /// Generate a unique reset token.
+        /// </summary>
+        private static string GenerateResetToken()
+        {
+            return Guid.NewGuid().ToString("N") + DateTime.UtcNow.Ticks.ToString("X");
+        }
+
+        /// <summary>
+        /// Generate a 6-digit OTP code.
         /// </summary>
         private static string GenerateOtp()
         {
@@ -137,70 +140,54 @@ namespace ECS.Application.Services.AuthServices.ForgotPasswordServices
         }
 
         /// <summary>
-        /// Stores OTP in memory cache with 5-minute expiration.
+        /// Step 5: Create API response based on validation flags.
         /// </summary>
-        private static void StoreOtp(string email, string otp)
-        {
-            lock (_lock)
-            {
-                _otpCache[email.ToLower()] = new OtpData(otp, DateTime.UtcNow.AddMinutes(5));
-            }
-        }
-
-        /// <summary>
-        /// Creates the API response based on validation flags.
-        /// </summary>
-        private ApiResponse<object> CreateResponse(
+        private ApiResponse<ForgotPasswordResponse> CreateResponse(
             string? validationErrorCode,
             bool isValidationPassed,
             bool isUserFound,
-            bool isEmailSent)
+            string? resetToken)
         {
             var errorResponse = CreateErrorResponse(
-                validationErrorCode, isValidationPassed, isUserFound, isEmailSent);
-            if (errorResponse != null)
-            {
-                return errorResponse;
-            }
-            return CreateSuccessResponse();
+                validationErrorCode,
+                isValidationPassed,
+                isUserFound,
+                resetToken);
+
+            return errorResponse ?? CreateSuccessResponse(resetToken!);
         }
 
         /// <summary>
-        /// Creates an error response based on validation flags.
+        /// Create error response based on validation flags.
         /// </summary>
-        private ApiResponse<object>? CreateErrorResponse(
+        private ApiResponse<ForgotPasswordResponse>? CreateErrorResponse(
             string? validationErrorCode,
             bool isValidationPassed,
             bool isUserFound,
-            bool isEmailSent)
+            string? resetToken)
         {
             if (!isValidationPassed)
             {
-                return ApiResponse<object>.FailWithNull(validationErrorCode!);
+                return ApiResponse<ForgotPasswordResponse>.FailWithNull(validationErrorCode!);
             }
             if (!isUserFound)
             {
-                return ApiResponse<object>.FailWithNull(
-                    GeneralCode.APP_MESSAGE_4020.ToString());
+                return ApiResponse<ForgotPasswordResponse>.FailWithNull(GeneralCode.APP_MESSAGE_4020.ToString());
             }
-            if (!isEmailSent)
+            if (resetToken == null)
             {
-                return ApiResponse<object>.FailWithNull(
-                    GeneralCode.APP_MESSAGE_5003.ToString());
+                return ApiResponse<ForgotPasswordResponse>.FailWithNull(GeneralCode.APP_MESSAGE_5003.ToString());
             }
             return null;
         }
 
         /// <summary>
-        /// Creates a success response.
+        /// Create success response with reset token.
         /// </summary>
-        private ApiResponse<object> CreateSuccessResponse()
+        private ApiResponse<ForgotPasswordResponse> CreateSuccessResponse(string resetToken)
         {
-            return ApiResponse<object>.Success(
-                GeneralCode.APP_MESSAGE_2000.ToString(),
-                true);
+            var response = new ForgotPasswordResponse { ResetToken = resetToken };
+            return ApiResponse<ForgotPasswordResponse>.Success(GeneralCode.APP_MESSAGE_2000.ToString(), response);
         }
-
-        private record OtpData(string Otp, DateTime ExpiresAt);
     }
 }

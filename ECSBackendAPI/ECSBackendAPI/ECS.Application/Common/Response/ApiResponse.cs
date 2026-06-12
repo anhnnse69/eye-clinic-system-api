@@ -59,8 +59,8 @@
         /// </summary>
         /// <param name="codeMessage"></param>
         /// <returns></returns>
-        public static ApiResponse<object> FailWithNull(string codeMessage)
-            => new ApiResponse<object>(codeMessage, null, null);
+        public static ApiResponse<T> FailWithNull(string codeMessage)
+            => new ApiResponse<T>(codeMessage, default, null);
 
         /// <summary>
         /// API response fail, with data

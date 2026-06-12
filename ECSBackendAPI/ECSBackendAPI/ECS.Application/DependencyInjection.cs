@@ -1,6 +1,7 @@
 ﻿using ECS.Application.Services.AuthServices.ForgotPasswordServices;
 using ECS.Application.Services.AuthServices.LoginServices;
 using ECS.Application.Services.AuthServices.RegisterServices;
+using ECS.Application.Services.AuthServices.ResetPasswordServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicAppointmentServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicDashboardServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicFeedbackServices;
@@ -27,13 +28,13 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         // ── MediatR ───────────────────────────────────────────
-        // Registers all IRequestHandler, INotificationHandler in this assembly.
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
 
         services.AddScoped<ILoginService, LoginService>();
         services.AddScoped<IRegisterService, RegisterService>();
         services.AddScoped<IForgotPasswordService, ForgotPasswordService>();
+        services.AddScoped<IResetPasswordService, ResetPasswordService>();
         services.AddScoped<IGetClinicApplicationService, GetClinicApplicationService>();
         services.AddScoped<IGetClinicApplicationDetailService, GetClinicApplicationDetailService>();
         services.AddScoped<IApproveClinicApplicationService, ApproveClinicApplicationService>();
@@ -49,8 +50,6 @@ public static class DependencyInjection
         services.AddScoped<IUpdateClinicService, UpdateClinicService>();
         services.AddScoped<IGetClinicDetailsService, GetClinicDetailsService>();
         services.AddScoped<IAdminSystemDeleteClinicService, AdminSystemDeleteClinicService>();
-
-
 
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
