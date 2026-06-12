@@ -1,4 +1,5 @@
-﻿using ECS.Infrastructure.ConfigService.JwtService;
+﻿using ECS.Infrastructure.ConfigService.EmailService;
+using ECS.Infrastructure.ConfigService.JwtService;
 using ECS.Infrastructure.Persistence;
 using ECS.Infrastructure.Repositories;
 using ECS.Infrastructure.Repositories.Interfaces;
@@ -31,6 +32,7 @@ public static class DependencyInjection
 
         // ── Services ──────────────────────────────────────────
         services.AddScoped<IJwtTokenService, JwtTokenService>();
+        services.AddScoped<IEmailService, EmailService>();
 
         return services;
     }
