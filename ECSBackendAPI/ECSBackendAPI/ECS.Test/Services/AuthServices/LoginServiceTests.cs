@@ -26,7 +26,8 @@ namespace ECS.Test.Services.AuthServices
         {
             _userRepoMock = new Mock<IRepositoryQueryBase<User, Guid, AppDbContext>>();
             _jwtServiceMock = new Mock<IJwtTokenService>();
-            _loginService = new LoginService(_userRepoMock.Object, _jwtServiceMock.Object);
+            var validator = new LoginRequestValidator();
+            _loginService = new LoginService(_userRepoMock.Object, _jwtServiceMock.Object, validator);
         }
 
         // ── Helper ────────────────────────────────────────────────────────────────

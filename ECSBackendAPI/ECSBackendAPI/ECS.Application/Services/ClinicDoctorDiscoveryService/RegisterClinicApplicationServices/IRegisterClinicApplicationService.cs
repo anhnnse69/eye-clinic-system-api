@@ -1,6 +1,6 @@
 ﻿using ECS.Application.Common.Response;
 
-namespace ECS.Application.Services.AuthServices.RegisterClinicApplicationServices
+namespace ECS.Application.Services.ClinicDoctorDiscoveryService.RegisterClinicApplicationServices
 {
     /// <summary>
     /// Defines the contract for clinic application registration service.

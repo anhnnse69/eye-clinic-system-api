@@ -46,6 +46,8 @@
         APP_MESSAGE_4028, // Medical record not found
         APP_MESSAGE_4029, // Clinic application request not found
         APP_MESSAGE_4030, // Invalid clinic application status for this action
+        APP_MESSAGE_4031, // Invalid OTP code
+        APP_MESSAGE_4032, // OTP code has expired
 
         // Server error codes (5xxx series)
         APP_MESSAGE_5000, // General internal server error (unexpected exception)

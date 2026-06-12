@@ -1,6 +1,6 @@
 namespace ECS.Domain.Enums
 {
-    public enum UserRole { PATIENT, DOCTOR, CLINIC_ADMIN, RECEPTIONIST, SYSTEM_ADMIN }
+    public enum UserRole { PATIENT, DOCTOR, CLINIC_ADMIN, RECEPTIONIST, ADMIN }
     public enum StaffRole { DOCTOR, RECEPTIONIST, CLINIC_ADMIN }
     public enum Gender { MALE, FEMALE, OTHER }
     public enum AppointmentStatus { PENDING, DEPOSIT_PAID, BOOKED, ARRIVED, IN_PROGRESS, COMPLETED, CANCELLED, NOSHOW }
