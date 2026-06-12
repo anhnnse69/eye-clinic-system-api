@@ -1,10 +1,15 @@
 ﻿using ECS.Application.Services.AuthServices.LoginServices;
 using ECS.Application.Services.AuthServices.RegisterServices;
+using ECS.Application.Services.ClinicAdminManagementServices.ClinicAppointmentServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicDashboardServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicFeedbackServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicProfileServices;
 using ECS.Application.Services.ClinicAdminManagementServices.EditClinicProfileServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAccountsServices;
+using ECS.Application.Services.ClinicDoctorDiscoveryService.RegisterClinicApplicationServices;
+using ECS.Application.Services.SystemAdminServices.AdminSystemDeleteClinicServices;
+using ECS.Application.Services.SystemAdminServices.AdminSystemGetClinicDetailsServices;
+using ECS.Application.Services.SystemAdminServices.AdminSystemUpdateClinicServices;
 using ECS.Application.Services.SystemAdminServices.ApproveClinicApplicationServices;
 using ECS.Application.Services.SystemAdminServices.ClinicManagementServices;
 using ECS.Application.Services.SystemAdminServices.ClinicRegisterServices;
@@ -37,6 +42,12 @@ public static class DependencyInjection
         services.AddScoped<IViewListStaffService, ViewListStaffService>();
         services.AddScoped<IGetClinicsService, GetClinicsService>();
         services.AddScoped<IGetClinicFeedbacksService, GetClinicFeedbacksService>();
+        services.AddScoped<IGetClinicAppointmentsService, GetClinicAppointmentsService>();
+        services.AddScoped<IRegisterClinicApplicationService, RegisterClinicApplicationService>();
+        services.AddScoped<IUpdateClinicService, UpdateClinicService>();
+        services.AddScoped<IGetClinicDetailsService, GetClinicDetailsService>();
+        services.AddScoped<IAdminSystemDeleteClinicService, AdminSystemDeleteClinicService>();
+
 
 
         // ── FluentValidation ──────────────────────────────────
