@@ -8,6 +8,7 @@ using ECS.Application.Services.ClinicAdminManagementServices.ClinicFeedbackServi
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicProfileServices;
 using ECS.Application.Services.ClinicAdminManagementServices.EditClinicProfileServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAccountsServices;
+using ECS.Application.Services.ClinicDoctorDiscoveryService.SearchClinicDoctorServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.RegisterClinicApplicationServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemDeleteClinicServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemGetClinicDetailsServices;
@@ -47,6 +48,7 @@ public static class DependencyInjection
         services.AddScoped<IGetClinicFeedbacksService, GetClinicFeedbacksService>();
         services.AddScoped<IGetClinicAppointmentsService, GetClinicAppointmentsService>();
         services.AddScoped<IRegisterClinicApplicationService, RegisterClinicApplicationService>();
+        services.AddScoped<ISearchClinicDoctorService, SearchClinicDoctorService>();
         services.AddScoped<IUpdateClinicService, UpdateClinicService>();
         services.AddScoped<IGetClinicDetailsService, GetClinicDetailsService>();
         services.AddScoped<IAdminSystemDeleteClinicService, AdminSystemDeleteClinicService>();
