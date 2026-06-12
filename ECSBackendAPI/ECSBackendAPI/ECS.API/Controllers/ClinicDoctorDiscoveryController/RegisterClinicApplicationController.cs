@@ -1,7 +1,7 @@
 ﻿using ECS.Application.Services.AuthServices.RegisterClinicApplicationServices;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ECS.API.Controllers.AuthController
+namespace ECS.API.Controllers.ClinicDoctorDiscoveryController
 {
     /// <summary>
     /// Controller responsible for clinic application registration.

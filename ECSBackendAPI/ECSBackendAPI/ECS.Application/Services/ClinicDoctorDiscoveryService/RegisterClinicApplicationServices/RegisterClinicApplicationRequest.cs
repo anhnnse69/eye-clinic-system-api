@@ -1,4 +1,4 @@
-﻿namespace ECS.Application.Services.AuthServices.RegisterClinicApplicationServices
+﻿namespace ECS.Application.Services.ClinicDoctorDiscoveryService.RegisterClinicApplicationServices
 {
     /// <summary>
     /// Request model for clinic application registration.

@@ -1,7 +1,7 @@
 ﻿using ECS.Domain.Enums;
 using FluentValidation;
 
-namespace ECS.Application.Services.AuthServices.RegisterClinicApplicationServices
+namespace ECS.Application.Services.ClinicDoctorDiscoveryService.RegisterClinicApplicationServices
 {
     public class RegisterClinicApplicationRequestValidator
         : AbstractValidator<RegisterClinicApplicationRequest>
