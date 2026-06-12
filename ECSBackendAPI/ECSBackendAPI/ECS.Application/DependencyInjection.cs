@@ -2,6 +2,7 @@
 using ECS.Application.Services.AuthServices.RegisterServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicDashboardServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicProfileServices;
+using ECS.Application.Services.ClinicAdminManagementServices.CreateStaffAccountServices;
 using ECS.Application.Services.ClinicAdminManagementServices.EditClinicProfileServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAccountsServices;
 using ECS.Application.Services.SystemAdminServices.ApproveClinicApplicationServices;
@@ -35,6 +36,7 @@ public static class DependencyInjection
         services.AddScoped<IViewClinicDashboardService, ViewClinicDashboardService>();
         services.AddScoped<IViewListStaffService, ViewListStaffService>();
         services.AddScoped<IGetClinicsService, GetClinicsService>();
+        services.AddScoped<ICreateStaffService, CreateStaffService>();
 
 
         // ── FluentValidation ──────────────────────────────────
