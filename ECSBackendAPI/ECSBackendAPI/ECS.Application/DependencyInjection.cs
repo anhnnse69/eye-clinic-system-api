@@ -4,6 +4,7 @@ using ECS.Application.Services.ClinicAdminManagementServices.ClinicDashboardServ
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicProfileServices;
 using ECS.Application.Services.ClinicAdminManagementServices.EditClinicProfileServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAccountsServices;
+using ECS.Application.Services.ClinicDoctorDiscoveryService.RegisterClinicApplicationServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemDeleteClinicServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemGetClinicDetailsServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemUpdateClinicServices;
@@ -38,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<IViewClinicDashboardService, ViewClinicDashboardService>();
         services.AddScoped<IViewListStaffService, ViewListStaffService>();
         services.AddScoped<IGetClinicsService, GetClinicsService>();
+        services.AddScoped<IRegisterClinicApplicationService, RegisterClinicApplicationService>();
         services.AddScoped<IUpdateClinicService, UpdateClinicService>();
         services.AddScoped<IGetClinicDetailsService, GetClinicDetailsService>();
         services.AddScoped<IAdminSystemDeleteClinicService, AdminSystemDeleteClinicService>();
