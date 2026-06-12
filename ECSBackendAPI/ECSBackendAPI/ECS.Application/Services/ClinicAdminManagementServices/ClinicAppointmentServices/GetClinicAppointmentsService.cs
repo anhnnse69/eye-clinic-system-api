@@ -53,36 +53,20 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ClinicAppointme
             // Step 3: Search operational relational databases to identify the clinic bound tightly to the active account
             var clinicId = await RetrieveClinicId(userId, isUserValid);
 
-            // Step 4: Evaluate processing status parameters to safely confirm tracking context existence
-            var errorResponse = CreateErrorResponse(
-                isUserValid,
-                clinicId.HasValue);
+            // Step 4: Synthesize a flexible criteria lambda matrix expression using dynamic criteria logic mapping
+            var filterExpression = BuildFilterExpression(clinicId ?? Guid.Empty, request);
 
-            if (errorResponse != null)
-            {
-                return errorResponse;
-            }
+            // Step 5: Query underlying target physical data storage blocks executing paged evaluation algorithms
+            var (appointments, totalRecords) = await ExecutePagedQuery(filterExpression, request);
 
-            // Step 5: Synthesize a flexible criteria lambda matrix expression using dynamic criteria logic mapping
-            var filterExpression = BuildFilterExpression(
-                clinicId!.Value,
-                request);
-
-            // Step 6: Query underlying target physical data storage blocks executing paged evaluation algorithms
-            var (appointments, totalRecords) = await ExecutePagedQuery(
-                filterExpression,
-                request);
-
-            // Step 7: Map internal domain state model attributes onto decoupled serialized response data schemas
+            // Step 6: Map internal domain state model attributes onto decoupled serialized response data schemas
             var result = MapToResponseDto(appointments);
 
-            // Step 8: Package contextual index layout tracker parameters to formulate pagination tracking wrappers
-            var meta = BuildPaginationMeta(
-                request,
-                totalRecords);
+            // Step 7: Package contextual index layout tracker parameters to formulate pagination tracking wrappers
+            var meta = BuildPaginationMeta(request, totalRecords);
 
-            // Step 9: Deliver structured standard application response capsules detailed for transport layers
-            return ApiResponse<List<GetClinicAppointmentResponse>>.Success( GeneralCode.APP_MESSAGE_2000.ToString(), result, meta);
+            // Step 8: Evaluate processing parameters and package state structures dynamically to handle execution outcomes
+            return CreateResponse(result, meta, isUserValid, clinicId.HasValue);
         }
 
         /// <summary>
@@ -149,14 +133,14 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ClinicAppointme
                 .ToLower();
 
             return x =>
+                // Filter targeted rows mapping directly against verified environment context
                 x.Doctor.ClinicId == clinicId
 
                 && (!request.Status.HasValue
                     || x.Status == request.Status.Value)
 
                 && (!request.AppointmentDate.HasValue
-                    || x.AppointmentDate.Date ==
-                       request.AppointmentDate.Value.Date)
+                    || x.AppointmentDate.Date == request.AppointmentDate.Value.Date)
 
                 && (string.IsNullOrEmpty(searchTerm)
                     || x.Patient.FullName.ToLower().Contains(searchTerm)
@@ -210,38 +194,30 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ClinicAppointme
             {
                 // Mapping physical core system database record keys onto string data representations
                 Id_appointment = app.Id.ToString(),
-
                 PatientName = app.Patient.FullName,
 
                 // Enforce safety fallbacks to block structural layout disruption from unexpected white space rows
-                PatientPhone =
-                    string.IsNullOrWhiteSpace(app.Patient.PhoneNumber)
-                        ? "N/A"
-                        : app.Patient.PhoneNumber,
-                DoctorName =
-                    app.Doctor.User.FullName,
-                ServiceName =
-                    app.Service?.ServiceName ?? "N/A",
+                PatientPhone = string.IsNullOrWhiteSpace(app.Patient.PhoneNumber)
+                    ? "N/A"
+                    : app.Patient.PhoneNumber,
+                DoctorName = app.Doctor.User.FullName,
+                ServiceName = app.Service?.ServiceName ?? "N/A",
+
                 // Formatting timestamp intervals into localized date presentation layout strings
-                AppointmentDate =
-                    app.AppointmentDate.ToString("dd/MM/yyyy"),
+                AppointmentDate = app.AppointmentDate.ToString("dd/MM/yyyy"),
+
                 // String parsing timeline bounds intervals to build legible customer schedule strings
-                TimeSlot =
-                    $"{app.Slot.StartTime:HH\\:mm} - {app.Slot.EndTime:HH\\:mm}",
-                Status =
-                    app.Status.ToString(),
-                DepositAmount =
-                    app.DepositAmount,
-                DepositPaid =
-                    app.DepositPaid,
-                BookingSource =
-                    app.BookingSource,
-                Symptoms =
-                    string.IsNullOrWhiteSpace(app.Symptoms)
-                        ? "N/A"
-                        : app.Symptoms,
-                CreatedAt =
-                    app.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                TimeSlot = $"{app.Slot.StartTime:HH\\:mm} - {app.Slot.EndTime:HH\\:mm}",
+                Status = app.Status.ToString(),
+                DepositAmount = app.DepositAmount,
+                DepositPaid = app.DepositPaid,
+                BookingSource = app.BookingSource,
+
+                Symptoms = string.IsNullOrWhiteSpace(app.Symptoms)
+                    ? "N/A"
+                    : app.Symptoms,
+
+                CreatedAt = app.CreatedAt.ToString("dd/MM/yyyy HH:mm")
             }).ToList();
         }
 
@@ -259,6 +235,32 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ClinicAppointme
                 request.PageNumber,
                 request.PageSize,
                 totalRecords);
+        }
+
+        /// <summary>
+        /// Analyzes state logic monitoring variables to determine outcome layout packaging choices.
+        /// </summary>
+        /// <param name="result">The structured data response payload list projected from database layers.</param>
+        /// <param name="meta">The pagination metadata structure layout configuration parameters.</param>
+        /// <param name="isUserValid">Indicates whether user token extraction verification matched expectations successfully.</param>
+        /// <param name="isClinicExist">Indicates data layer tracking context presence attributes.</param>
+        /// <returns>A standardized application payload container detailed for transport serialization layers.</returns>
+        private ApiResponse<List<GetClinicAppointmentResponse>> CreateResponse(
+            List<GetClinicAppointmentResponse> result,
+            MetaResponse meta,
+            bool isUserValid,
+            bool isClinicExist)
+        {
+            var errorResponse = CreateErrorResponse(isUserValid, isClinicExist);
+            if (errorResponse != null)
+            {
+                return errorResponse;
+            }
+
+            return ApiResponse<List<GetClinicAppointmentResponse>>.Success(
+                GeneralCode.APP_MESSAGE_2000.ToString(),
+                result,
+                meta);
         }
 
         /// <summary>
