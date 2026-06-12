@@ -6,7 +6,7 @@ using ECS.Infrastructure.Repositories.Interfaces;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
-namespace ECS.Application.Services.AuthServices.RegisterClinicApplicationServices
+namespace ECS.Application.Services.ClinicDoctorDiscoveryService.RegisterClinicApplicationServices
 {
     /// <summary>
     /// Handles clinic application registration process.

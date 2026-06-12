@@ -1,4 +1,4 @@
-﻿using ECS.Application.Services.AuthServices.RegisterClinicApplicationServices;
+﻿using ECS.Application.Services.ClinicDoctorDiscoveryService.RegisterClinicApplicationServices;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ECS.API.Controllers.ClinicDoctorDiscoveryController
