@@ -1,6 +1,6 @@
 ﻿using ECS.Application.Common.Response;
 
-namespace ECS.Application.Services.SearchClinicDoctorServices
+namespace ECS.Application.Services.ClinicDoctorDiscoveryService.SearchClinicDoctorServices
 {
     /// <summary>
     /// Defines the contract for the search service.

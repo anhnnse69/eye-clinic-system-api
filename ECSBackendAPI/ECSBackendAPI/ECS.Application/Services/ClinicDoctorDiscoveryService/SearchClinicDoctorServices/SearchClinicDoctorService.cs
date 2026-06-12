@@ -5,7 +5,7 @@ using ECS.Infrastructure.Persistence;
 using ECS.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace ECS.Application.Services.SearchClinicDoctorServices
+namespace ECS.Application.Services.ClinicDoctorDiscoveryService.SearchClinicDoctorServices
 {
     /// <summary>
     /// Handles searching clinics and doctors by keyword.
@@ -82,7 +82,7 @@ namespace ECS.Application.Services.SearchClinicDoctorServices
                     LogoUrl = c.LogoUrl,
                     Description = c.Description,
                     RatingAvg = c.RatingAvg,
-                    ReviewCount = c.ReviewCount
+                    ReviewCount = c.ReviewCount ?? 0
                 })
                 .ToListAsync();
         }
@@ -116,7 +116,7 @@ namespace ECS.Application.Services.SearchClinicDoctorServices
                     ExperienceYears = d.ExperienceYears,
                     Bio = d.Bio,
                     RatingAvg = d.RatingAvg,
-                    ReviewCount = d.ReviewCount
+                    ReviewCount = d.ReviewCount ?? 0
                 })
                 .ToListAsync();
         }

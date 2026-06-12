@@ -1,4 +1,4 @@
-﻿namespace ECS.Application.Services.SearchClinicDoctorServices
+﻿namespace ECS.Application.Services.ClinicDoctorDiscoveryService.SearchClinicDoctorServices
 {
     /// <summary>
     /// Request model for searching clinics and doctors.
