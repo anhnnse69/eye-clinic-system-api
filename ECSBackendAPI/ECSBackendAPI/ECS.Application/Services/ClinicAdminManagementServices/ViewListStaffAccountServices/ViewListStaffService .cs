@@ -8,10 +8,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAccountsServices
-{
-    /// <summary>
-    /// Handles clinic staff list retrieval operations by verifying administrator context.
-    /// </summary>
+{/// <summary>
+ /// Handles clinic staff list retrieval operations by verifying administrator context with multi-state visibility.
+ /// </summary>
     public class ViewListStaffService : IViewListStaffService
     {
         private readonly IRepositoryQueryBase<StaffClinic, Guid, AppDbContext> _staffClinicRepository;
@@ -39,16 +38,27 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAc
         {
             // Step 1: Initialize sequential control status validation variables
             bool isUserValid = true;
+
             // Step 2: Extract identity information parameter metrics from the active security claim session context
             var userId = RetrieveUserId(out isUserValid);
+
             // Step 3: Search operational relational databases to identify the clinic bound tightly to the active account
             var clinicId = await RetrieveClinicId(userId, isUserValid);
-            // Step 4: Pull physical storage staff collections mapping against the verified environment context
-            var staffList = await RetrieveStaffData(clinicId);
-            // Step 5: Evaluate processing status parameters to safely confirm tracking context existence
+
+            // Step 4: Evaluate processing status parameters to safely confirm tracking context existence
             bool isClinicExist = ValidateClinicExistence(clinicId);
-            // Step 6: Package state evaluations dynamically to create descriptive payload data structures
-            return CreateResponse(staffList, isUserValid, isClinicExist);
+
+            // Step 5: Construct the internal filter query matching search matrices and multi-state active variables
+            var query = BuildStaffQuery(clinicId, isClinicExist, request);
+
+            // Step 6: Count the total filtered metrics database allocations for system metadata preparation
+            int totalCount = await ComputeTotalCount(query, isClinicExist);
+
+            // Step 7: Pull segmented spatial physics storage collections using skip limit pagination matrices
+            var staffList = await FetchPagedStaffData(query, request, isClinicExist);
+
+            // Step 8: Package state evaluations dynamically to create descriptive payload data structures using provided MetaResponse
+            return CreateResponse(staffList, totalCount, request, isUserValid, isClinicExist);
         }
 
         /// <summary>
@@ -80,28 +90,10 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAc
             {
                 return null;
             }
-            // Wrapped clearly within EF Queryable Extensions to completely avert compiler method type inference ambiguities
             var staffClinic = await EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(
                 _staffClinicRepository.FindByCondition(x => x.UserId == userId && x.IsActive)
             );
             return staffClinic?.ClinicId;
-        }
-
-        /// <summary>
-        /// Asynchronously tracks underlying domain allocation rows using custom eager data inclusion strategies.
-        /// </summary>
-        /// <param name="clinicId">The contextual domain identifier configuration mapping the filter logic matrix.</param>
-        /// <returns>A safe transactional data item array list tracking matching profile associations.</returns>
-        private async Task<List<StaffClinic>> RetrieveStaffData(Guid? clinicId)
-        {
-            if (!clinicId.HasValue)
-            {
-                return new List<StaffClinic>();
-            }
-            return await EntityFrameworkQueryableExtensions.ToListAsync(
-                _staffClinicRepository.FindByCondition(x => x.ClinicId == clinicId.Value && x.IsActive)
-                                      .Include(x => x.User)
-            );
         }
 
         /// <summary>
@@ -115,14 +107,89 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAc
         }
 
         /// <summary>
+        /// Builds an unexecuted operational tracking stream query filtering specific states and name/email/phone terms.
+        /// </summary>
+        /// <param name="clinicId">The evaluated contextual location identity identifier data state.</param>
+        /// <param name="isClinicExist">Safety tracking indicator verifying location context presence attributes.</param>
+        /// <param name="request">The incoming request metadata configurations structure metrics payload.</param>
+        /// <returns>A configured analytical transactional query composition structure block.</returns>
+        private IQueryable<StaffClinic> BuildStaffQuery(Guid? clinicId, bool isClinicExist, ViewListStaffRequest request)
+        {
+            if (!isClinicExist)
+            {
+                return Enumerable.Empty<StaffClinic>().AsQueryable();
+            }
+
+            // Note: The condition x.IsActive is removed from baseline filter to completely fetch both active and inactive staff records
+            var query = _staffClinicRepository.FindByCondition(x => x.ClinicId == clinicId!.Value, trackChanges: false, x => x.User!);
+
+            // Conditional active state visibility modifier filtering mapping configurations
+            if (request.IsActive.HasValue)
+            {
+                query = query.Where(x => x.IsActive == request.IsActive.Value);
+            }
+
+            // Text matching matrix evaluation traversing FullName, Email, and Phone segments securely
+            if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+            {
+                var cleanSearch = request.SearchTerm.Trim().ToLower();
+                query = query.Where(x => x.User!.FullName.ToLower().Contains(cleanSearch) ||
+                                         x.User!.Email.ToLower().Contains(cleanSearch) ||
+                                         x.User!.Phone.Contains(cleanSearch));
+            }
+
+            return query;
+        }
+
+        /// <summary>
+        /// Computes transactional record size count tracking metrics utilizing compilation architectures.
+        /// </summary>
+        /// <param name="query">The operational database query sequence block structure.</param>
+        /// <param name="isClinicExist">Operational verification gate controller flag.</param>
+        /// <returns>The computed total records calculation value tracking matches.</returns>
+        private async Task<int> ComputeTotalCount(IQueryable<StaffClinic> query, bool isClinicExist)
+        {
+            if (!isClinicExist)
+            {
+                return 0;
+            }
+            return await EntityFrameworkQueryableExtensions.CountAsync(query);
+        }
+
+        /// <summary>
+        /// Extracts structural segments deploying skip take indexing loops to fetch database data chunks.
+        /// </summary>
+        /// <param name="query">The configured structural operational query stream matrix.</param>
+        /// <param name="request">The boundary sizing coordinates request model parameter.</param>
+        /// <param name="isClinicExist">Safety indicator validation monitor gate.</param>
+        /// <returns>A persistent repository object collection list array capsule.</returns>
+        private async Task<List<StaffClinic>> FetchPagedStaffData(IQueryable<StaffClinic> query, ViewListStaffRequest request, bool isClinicExist)
+        {
+            if (!isClinicExist)
+            {
+                return new List<StaffClinic>();
+            }
+
+            return await EntityFrameworkQueryableExtensions.ToListAsync(
+                query.OrderByDescending(x => x.CreatedAt)
+                     .Skip((request.PageNumber - 1) * request.PageSize)
+                     .Take(request.PageSize)
+            );
+        }
+
+        /// <summary>
         /// Analyzes state logic monitoring variables to determine outcome layout packaging choices.
         /// </summary>
         /// <param name="staffList">The persistent entity rows returned directly out of structural database executions.</param>
+        /// <param name="totalCount">The full total counting volume computed against processing matching criteria.</param>
+        /// <param name="request">Input pagination size request coordinates parameters payload.</param>
         /// <param name="isUserValid">Indicates whether user token extraction verification matched expectations successfully.</param>
         /// <param name="isClinicExist">Indicates data layer tracking context presence attributes.</param>
         /// <returns>A standardized application payload container detailed for transport serialization layers.</returns>
         private ApiResponse<List<StaffAccountResponse>> CreateResponse(
             List<StaffClinic> staffList,
+            int totalCount,
+            ViewListStaffRequest request,
             bool isUserValid,
             bool isClinicExist)
         {
@@ -131,9 +198,14 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAc
             {
                 return errorResponse;
             }
+
+            // Build structural metadata token block based explicitly on the provided MetaResponse schema model parameters
+            var metaPagination = new MetaResponse(request.PageNumber, request.PageSize, totalCount);
+
             return ApiResponse<List<StaffAccountResponse>>.Success(
                 GeneralCode.APP_MESSAGE_2000.ToString(),
-                MapToResponse(staffList));
+                MapToResponse(staffList),
+                metaPagination);
         }
 
         /// <summary>
@@ -144,13 +216,11 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAc
         /// <returns>A failed API standard metadata package capsule if an error rule trips; otherwise null properties.</returns>
         private ApiResponse<List<StaffAccountResponse>>? CreateErrorResponse(bool isUserValid, bool isClinicExist)
         {
-            // Return 4001 if authentication tokens fail validation operations
             if (!isUserValid)
             {
                 return ApiResponse<List<StaffAccountResponse>>.Fail(
                     GeneralCode.APP_MESSAGE_4001.ToString());
             }
-            // Return 4020 if the linked operations clinic setup drops out of active entity streams
             if (!isClinicExist)
             {
                 return ApiResponse<List<StaffAccountResponse>>.Fail(
