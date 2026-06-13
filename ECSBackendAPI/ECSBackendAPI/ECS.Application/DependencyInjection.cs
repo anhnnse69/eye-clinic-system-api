@@ -6,6 +6,7 @@ using ECS.Application.Services.ClinicAdminManagementServices.ClinicAppointmentSe
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicDashboardServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicFeedbackServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicProfileServices;
+using ECS.Application.Services.ClinicAdminManagementServices.CreateStaffAccountServices;
 using ECS.Application.Services.ClinicAdminManagementServices.EditClinicProfileServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAccountsServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.SearchClinicDoctorServices;
@@ -45,6 +46,7 @@ public static class DependencyInjection
         services.AddScoped<IViewClinicDashboardService, ViewClinicDashboardService>();
         services.AddScoped<IViewListStaffService, ViewListStaffService>();
         services.AddScoped<IGetClinicsService, GetClinicsService>();
+        services.AddScoped<ICreateStaffService, CreateStaffService>();
         services.AddScoped<IGetClinicFeedbacksService, GetClinicFeedbacksService>();
         services.AddScoped<IGetClinicAppointmentsService, GetClinicAppointmentsService>();
         services.AddScoped<IRegisterClinicApplicationService, RegisterClinicApplicationService>();
