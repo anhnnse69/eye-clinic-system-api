@@ -55,6 +55,7 @@ public class RepositoryBase<T, K, TContext>
         if (exist is null) return;
 
         _dbContext.Entry(exist).CurrentValues.SetValues(entity);
+        await _unitOfWork.CommitAsync();
     }
 
     public Task UpdateListAsync(IEnumerable<T> entities)
