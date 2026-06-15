@@ -8,10 +8,14 @@ using ECS.Application.Services.ClinicAdminManagementServices.ClinicDashboardServ
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicFeedbackServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicProfileServices;
 using ECS.Application.Services.ClinicAdminManagementServices.CreateStaffAccountServices;
+using ECS.Application.Services.ClinicAdminManagementServices.DeleteClinicFeedbackServices;
 using ECS.Application.Services.ClinicAdminManagementServices.EditClinicProfileServices;
+using ECS.Application.Services.ClinicAdminManagementServices.EditStaffAccountServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAccountsServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.RegisterClinicApplicationServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.SearchClinicDoctorServices;
+using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewClinicProfileServices;
+using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewDoctorSlotsServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemDeleteClinicServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemGetClinicDetailsServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemGetDashboardServices;
@@ -21,13 +25,10 @@ using ECS.Application.Services.SystemAdminServices.ClinicManagementServices;
 using ECS.Application.Services.SystemAdminServices.ClinicRegisterServices;
 using ECS.Application.Services.SystemAdminServices.RejectClinicApplicationServices;
 using ECS.Application.Services.SystemAdminServices.ReviewClinicRegisterServices;
+using ECS.Application.Services.ClinicAdminManagementServices.ViewListServiceServices;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
-using ECS.Application.Services.ClinicAdminManagementServices.EditStaffAccountServices;
-using ECS.Application.Services.ClinicAdminManagementServices.DeleteClinicFeedbackServices;
-using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewClinicProfileServices;
-using ECS.Application.Services.ClinicAdminManagementServices.ViewListServiceServices;
 
 namespace ECS.Application;
 
@@ -65,6 +66,7 @@ public static class DependencyInjection
         services.AddScoped<IDeleteClinicFeedbackService, DeleteClinicFeedbackService>();
         services.AddScoped<IViewClinicProfileService, ViewClinicProfileService>();
         services.AddScoped<IAdminSystemGetDashboardService, AdminSystemGetDashboardService>();
+        services.AddScoped<IViewDoctorSlotsService, ViewDoctorSlotsService>();
         services.AddScoped<IViewClinicServicesService, ViewClinicServicesService>();
 
         // ── FluentValidation ──────────────────────────────────
