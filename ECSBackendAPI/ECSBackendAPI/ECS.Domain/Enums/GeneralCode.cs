@@ -14,6 +14,7 @@
         APP_MESSAGE_2005, // Patient record created successfully
         APP_MESSAGE_2006, // Patient information updated successfully
         APP_MESSAGE_2007, // Appointment status updated successfully
+        APP_MESSAGE_2008, // Password changed successfully
 
         // Client error codes (4xxx series)
         APP_MESSAGE_4000, // General client error (considered ambiguous, use APP_MESSAGE_4019 for validation errors)
@@ -53,6 +54,8 @@
         APP_MESSAGE_4035, // Specified feedback not found
         APP_MESSAGE_4036, // Feedback does not belong to the authenticated clinic
         APP_MESSAGE_4037, // Feedback deleted successfully
+        APP_MESSAGE_4039, // Current password is incorrect
+        APP_MESSAGE_4040, // New password must be different from current password
         // Server error codes (5xxx series)
         APP_MESSAGE_5000, // General internal server error (unexpected exception)
         APP_MESSAGE_5001, // Database operation failed (e.g., connection issue or query error)
