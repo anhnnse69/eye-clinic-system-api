@@ -2,6 +2,7 @@
 using ECS.Application.Services.AuthServices.LoginServices;
 using ECS.Application.Services.AuthServices.RegisterServices;
 using ECS.Application.Services.AuthServices.ResetPasswordServices;
+using ECS.Application.Services.AuthServices.ViewAccountInfoServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicAppointmentServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicDashboardServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicFeedbackServices;
@@ -37,6 +38,7 @@ public static class DependencyInjection
         services.AddScoped<IRegisterService, RegisterService>();
         services.AddScoped<IForgotPasswordService, ForgotPasswordService>();
         services.AddScoped<IResetPasswordService, ResetPasswordService>();
+        services.AddScoped<IViewAccountInfoService, ViewAccountInfoService>();
         services.AddScoped<IGetClinicApplicationService, GetClinicApplicationService>();
         services.AddScoped<IGetClinicApplicationDetailService, GetClinicApplicationDetailService>();
         services.AddScoped<IApproveClinicApplicationService, ApproveClinicApplicationService>();
