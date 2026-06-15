@@ -27,6 +27,7 @@ using ECS.Application.Services.SystemAdminServices.ClinicRegisterServices;
 using ECS.Application.Services.SystemAdminServices.RejectClinicApplicationServices;
 using ECS.Application.Services.SystemAdminServices.ReviewClinicRegisterServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ViewListServiceServices;
+using ECS.Application.Services.AuthServices.ChangePasswordServices;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
@@ -70,6 +71,7 @@ public static class DependencyInjection
         services.AddScoped<IGetPersonalProfileService, GetPersonalProfileService>();
         services.AddScoped<IViewDoctorSlotsService, ViewDoctorSlotsService>();
         services.AddScoped<IViewClinicServicesService, ViewClinicServicesService>();
+        services.AddScoped<IChangePasswordService, ChangePasswordService>();
 
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
