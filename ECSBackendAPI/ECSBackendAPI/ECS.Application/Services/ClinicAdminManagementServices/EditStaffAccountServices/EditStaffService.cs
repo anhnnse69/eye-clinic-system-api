@@ -44,29 +44,29 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.EditStaffAccoun
             bool isTargetStaffExist = true;
             bool isBelongToSameClinic = true;
 
-            // Bước 1: Lấy thông tin Admin đang thao tác
+            // Step 1: Retrieve info of the Admin currently performing the operation
             var creatorAdminUserId = RetrieveAdminUserId(ref isCurrentAdminValid);
             var adminClinicId = await RetrieveContextClinicId(creatorAdminUserId, isCurrentAdminValid);
 
-            // Bước 2: Tìm kiếm dữ liệu nhân viên mục tiêu
+            // Step 2: Search for the target staff member's user data
             var targetUserRecord = await FetchTargetUserEntity(request.StaffUserId);
             isTargetStaffExist = (targetUserRecord != null);
 
-            // Bước 3: Tìm Clinic ID của nhân viên (Dùng hàm mới không bị chặn bởi trạng thái IsActive)
+            // Step 3: Find the staff member's Clinic ID (Uses a new method that is not restricted by the IsActive status)
             var targetClinicId = await RetrieveTargetStaffClinicId(request.StaffUserId, isTargetStaffExist);
 
-            // Bước 4: Kiểm tra xem nhân viên mục tiêu có thuộc cùng Clinic với Admin không
+            // Step 4: Verify if the target staff member belongs to the same Clinic as the Admin
             ValidateClinicBoundaryRelationship(adminClinicId, targetClinicId, ref isBelongToSameClinic);
 
-            // Bước 5: Kiểm tra tính duy nhất của Phone và Email
+            // Step 5: Check uniqueness of Phone and Email
             bool isPhoneUnique = await CheckPhoneUniqueness(request.Phone, request.StaffUserId, isBelongToSameClinic);
             bool isEmailUnique = await CheckEmailUniqueness(request.Email, request.StaffUserId, isBelongToSameClinic);
 
-            // Bước 6: Tiến hành cập nhật đồng thời trạng thái và phân quyền
+            // Step 6: Proceed to concurrently update status and authorization permissions
             var (committedStaffClinicNode, isExecutionSuccess) = await MutateAndPersistStaffGraph(
                 targetUserRecord,
                 request,
-                adminClinicId, // Truyền adminClinicId vào để định vị chính xác bản ghi StaffClinic cần sửa
+                adminClinicId,
                 isCurrentAdminValid && isTargetStaffExist && isBelongToSameClinic && isPhoneUnique && isEmailUnique
             );
 
@@ -85,7 +85,7 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.EditStaffAccoun
         }
 
         /// <summary>
-        /// Hàm lấy Clinic ID của Admin (chỉ chấp nhận Admin đang Active)
+        /// Retrieves the Clinic ID of the Admin (only accepts currently Active Admins)
         /// </summary>
         private async Task<Guid> RetrieveContextClinicId(Guid userId, bool isPreConditionValid)
         {
@@ -102,7 +102,7 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.EditStaffAccoun
         }
 
         /// <summary>
-        /// Hàm lấy Clinic ID của Nhân viên mục tiêu (Bỏ lọc IsActive để có thể kích hoạt lại tài khoản đang bị Khóa)
+        /// Retrieves the Clinic ID of the target staff member (Bypasses IsActive filter to allow re-activating locked accounts)
         /// </summary>
         private async Task<Guid> RetrieveTargetStaffClinicId(Guid staffUserId, bool isPreConditionValid)
         {
@@ -163,7 +163,7 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.EditStaffAccoun
         }
 
         /// <summary>
-        /// Thực hiện thay đổi dữ liệu đồng thời trên cả 2 thực thể User và StaffClinic một cách tường minh.
+        /// Explicitly executes data mutations concurrently across both User and StaffClinic entities.
         /// </summary>
         private async Task<(StaffClinic? StaffClinicNode, bool IsSuccess)> MutateAndPersistStaffGraph(
             User? userGraph,
@@ -198,31 +198,31 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.EditStaffAccoun
             using var transactionalScope = await _userRepository.BeginTransactionAsync();
             try
             {
-                // 1. Cập nhật bảng User
+                // 1. Update User table
                 userGraph.Phone = input.Phone;
                 userGraph.Email = input.Email;
                 userGraph.FullName = input.FullName;
                 userGraph.Role = mappedUserRole;
-                userGraph.IsActive = input.IsActive; // Cập nhật trạng thái User từ Request
+                userGraph.IsActive = input.IsActive; 
                 userGraph.UpdatedAt = DateTime.UtcNow;
 
                 await _userRepository.UpdateAsync(userGraph);
 
-                // 2. Tìm kiếm bản ghi StaffClinic của nhân viên dựa theo ClinicId mà Admin quản lý
+                // 2. Find the staff member's StaffClinic record based on the ClinicId managed by the Admin
                 var targetClinicMapping = userGraph.StaffClinics?
                     .FirstOrDefault(sc => sc.ClinicId == adminClinicId);
 
                 if (targetClinicMapping != null)
                 {
                     targetClinicMapping.Role = parsedStaffRole;
-                    targetClinicMapping.IsActive = input.IsActive; // Cập nhật trạng thái liên kết từ Request
+                    targetClinicMapping.IsActive = input.IsActive; 
                     targetClinicMapping.UpdatedAt = DateTime.UtcNow;
 
-                    // Ép cập nhật tường minh bằng Repository riêng biệt
+                    // Force explicit update using the dedicated Repository
                     await _staffClinicRepository.UpdateAsync(targetClinicMapping);
                 }
 
-                // 3. Thực thi lưu dữ liệu của cả 2 Repository xuống Database
+                // 3. Persist data from both Repositories down to the Database
                 await _userRepository.SaveChangesAsync();
                 await _staffClinicRepository.SaveChangesAsync();
 
