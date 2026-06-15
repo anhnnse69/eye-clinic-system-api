@@ -24,7 +24,9 @@ using ECS.Application.Services.SystemAdminServices.ReviewClinicRegisterServices;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
+using ECS.Application.Services.ClinicAdminManagementServices.EditStaffAccountServices;
 using ECS.Application.Services.ClinicAdminManagementServices.DeleteClinicFeedbackServices;
+using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewClinicProfileServices;
 
 namespace ECS.Application;
 
@@ -58,6 +60,9 @@ public static class DependencyInjection
         services.AddScoped<IUpdateClinicService, UpdateClinicService>();
         services.AddScoped<IGetClinicDetailsService, GetClinicDetailsService>();
         services.AddScoped<IAdminSystemDeleteClinicService, AdminSystemDeleteClinicService>();
+        services.AddScoped<IEditStaffService, EditStaffService>();
+        services.AddScoped<IDeleteClinicFeedbackService, DeleteClinicFeedbackService>();
+        services.AddScoped<IViewClinicProfileService, ViewClinicProfileService>();
         services.AddScoped<IAdminSystemGetDashboardService, AdminSystemGetDashboardService>();
 
         // ── FluentValidation ──────────────────────────────────
