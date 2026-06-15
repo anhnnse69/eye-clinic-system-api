@@ -48,7 +48,11 @@
         APP_MESSAGE_4030, // Invalid clinic application status for this action
         APP_MESSAGE_4031, // Invalid OTP code
         APP_MESSAGE_4032, // OTP code has expired
-
+        APP_MESSAGE_4033, // Authenticated user information is invalid
+        APP_MESSAGE_4034, // Clinic associated with current user not found
+        APP_MESSAGE_4035, // Specified feedback not found
+        APP_MESSAGE_4036, // Feedback does not belong to the authenticated clinic
+        APP_MESSAGE_4037, // Feedback deleted successfully
         // Server error codes (5xxx series)
         APP_MESSAGE_5000, // General internal server error (unexpected exception)
         APP_MESSAGE_5001, // Database operation failed (e.g., connection issue or query error)
