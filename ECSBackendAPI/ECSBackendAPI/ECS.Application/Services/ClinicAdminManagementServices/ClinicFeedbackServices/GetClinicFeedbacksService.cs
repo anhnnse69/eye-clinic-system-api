@@ -1,4 +1,5 @@
-﻿using System.Security.Claims;
+﻿using System.Linq.Expressions;
+using System.Security.Claims;
 using ECS.Application.Common.Response;
 using ECS.Domain.Entities.Clinics;
 using ECS.Domain.Entities.Feedbacks;
@@ -7,7 +8,6 @@ using ECS.Infrastructure.Persistence;
 using ECS.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
 
 namespace ECS.Application.Services.ClinicAdminManagementServices.ClinicFeedbackServices
 {
@@ -161,15 +161,16 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ClinicFeedbackS
             var targetClinicId = staffClinic.ClinicId;
 
             return x =>
-                x.ClinicId == targetClinicId
-                && x.Appointment.Status == AppointmentStatus.COMPLETED
-                && (!request.RatingDoctor.HasValue || x.RatingDoctor == request.RatingDoctor.Value)
-                && (!request.RatingClinic.HasValue || x.RatingClinic == request.RatingClinic.Value)
-                && (!request.FeedbackDate.HasValue || x.CreatedAt.Date == request.FeedbackDate.Value.Date)
-                && (string.IsNullOrEmpty(searchTerm)
-                    || x.Patient.FullName.ToLower().Contains(searchTerm)
-                    || x.Doctor.User.FullName.ToLower().Contains(searchTerm)
-                    || (x.Comment != null && x.Comment.ToLower().Contains(searchTerm)));
+                   x.ClinicId == targetClinicId
+                   && x.IsPublic
+                   && x.Appointment.Status == AppointmentStatus.COMPLETED
+                   && (!request.RatingDoctor.HasValue || x.RatingDoctor == request.RatingDoctor.Value)
+                   && (!request.RatingClinic.HasValue || x.RatingClinic == request.RatingClinic.Value)
+                   && (!request.FeedbackDate.HasValue || x.CreatedAt.Date == request.FeedbackDate.Value.Date)
+                   && (string.IsNullOrEmpty(searchTerm)
+                       || x.Patient.FullName.ToLower().Contains(searchTerm)
+                       || x.Doctor.User.FullName.ToLower().Contains(searchTerm)
+                       || (x.Comment != null && x.Comment.ToLower().Contains(searchTerm)));
         }
 
         /// <summary>
