@@ -3,6 +3,7 @@ using ECS.Application.Services.AuthServices.LoginServices;
 using ECS.Application.Services.AuthServices.RegisterServices;
 using ECS.Application.Services.AuthServices.ResetPasswordServices;
 using ECS.Application.Services.AuthServices.ViewAccountInfoServices;
+using ECS.Application.Services.AuthServices.ViewPersonalProfileServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicAppointmentServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicDashboardServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicFeedbackServices;
@@ -66,6 +67,7 @@ public static class DependencyInjection
         services.AddScoped<IDeleteClinicFeedbackService, DeleteClinicFeedbackService>();
         services.AddScoped<IViewClinicProfileService, ViewClinicProfileService>();
         services.AddScoped<IAdminSystemGetDashboardService, AdminSystemGetDashboardService>();
+        services.AddScoped<IGetPersonalProfileService, GetPersonalProfileService>();
         services.AddScoped<IViewDoctorSlotsService, ViewDoctorSlotsService>();
         services.AddScoped<IViewClinicServicesService, ViewClinicServicesService>();
 
