@@ -2,6 +2,7 @@
 using ECS.Application.Services.AuthServices.LoginServices;
 using ECS.Application.Services.AuthServices.RegisterServices;
 using ECS.Application.Services.AuthServices.ResetPasswordServices;
+using ECS.Application.Services.AuthServices.ViewAccountInfoServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicAppointmentServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicDashboardServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicFeedbackServices;
@@ -11,9 +12,9 @@ using ECS.Application.Services.ClinicAdminManagementServices.EditClinicProfileSe
 using ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAccountsServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.RegisterClinicApplicationServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.SearchClinicDoctorServices;
-using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewClinicProfileServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemDeleteClinicServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemGetClinicDetailsServices;
+using ECS.Application.Services.SystemAdminServices.AdminSystemGetDashboardServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemUpdateClinicServices;
 using ECS.Application.Services.SystemAdminServices.ApproveClinicApplicationServices;
 using ECS.Application.Services.SystemAdminServices.ClinicManagementServices;
@@ -25,6 +26,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using ECS.Application.Services.ClinicAdminManagementServices.EditStaffAccountServices;
 using ECS.Application.Services.ClinicAdminManagementServices.DeleteClinicFeedbackServices;
+using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewClinicProfileServices;
 
 namespace ECS.Application;
 
@@ -40,6 +42,7 @@ public static class DependencyInjection
         services.AddScoped<IRegisterService, RegisterService>();
         services.AddScoped<IForgotPasswordService, ForgotPasswordService>();
         services.AddScoped<IResetPasswordService, ResetPasswordService>();
+        services.AddScoped<IViewAccountInfoService, ViewAccountInfoService>();
         services.AddScoped<IGetClinicApplicationService, GetClinicApplicationService>();
         services.AddScoped<IGetClinicApplicationDetailService, GetClinicApplicationDetailService>();
         services.AddScoped<IApproveClinicApplicationService, ApproveClinicApplicationService>();
@@ -60,6 +63,7 @@ public static class DependencyInjection
         services.AddScoped<IEditStaffService, EditStaffService>();
         services.AddScoped<IDeleteClinicFeedbackService, DeleteClinicFeedbackService>();
         services.AddScoped<IViewClinicProfileService, ViewClinicProfileService>();
+        services.AddScoped<IAdminSystemGetDashboardService, AdminSystemGetDashboardService>();
 
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
