@@ -46,11 +46,10 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.CreateServiceSe
             // Step 2: Search operational relational databases to identify the clinic bound tightly to the active account context
             var clinicContext = await RetrieveClinicId(userContext.UserId, userContext.IsValid);
 
-            // Step 2.5: Đảm bảo không trùng tên dịch vụ y tế trong cùng một phòng khám
+            // Step 2.5: Ensure no duplicate medical service names exist within the same clinic
             var isDuplicate = await CheckDuplicateServiceName(request.ServiceName, clinicContext.ClinicId, clinicContext.IsValid);
 
             // Step 3: Map presentation layer requests directly into real physical database model structures
-            // ĐÃ SỬA: Truyền đủ 2 tham số request và clinicContext.ClinicId
             var targetEntity = MapToEntity(request, clinicContext.ClinicId);
 
             // Step 4: Execute database mutations writing new service assets safely
@@ -99,7 +98,7 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.CreateServiceSe
         }
 
         /// <summary>
-        /// Kiểm tra xem tên dịch vụ đã tồn tại trong phòng khám này chưa (không phân biệt chữ hoa, chữ thường và cắt khoảng trắng thừa).
+        /// Checks if the service name already exists in this clinic (case-insensitive and ignores leading/trailing whitespaces).
         /// </summary>
         private async Task<bool> CheckDuplicateServiceName(string serviceName, Guid clinicId, bool isClinicValid)
         {
@@ -130,13 +129,12 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.CreateServiceSe
         /// <summary>
         /// Transforms serialization boundary data properties directly into physical business domains records.
         /// </summary>
-        // ĐÃ SỬA: Nhận đủ 2 tham số đầu vào (CreateServiceRequest request, Guid clinicId)
         private Service MapToEntity(CreateServiceRequest request, Guid clinicId)
         {
             return new Service
             {
                 Id = Guid.NewGuid(),
-                ClinicId = clinicId, // ĐÃ SỬA: Khớp chính xác với tên tham số Guid clinicId bên trên
+                ClinicId = clinicId,
                 ServiceName = request.ServiceName.Trim(),
                 Price = request.Price,
                 DurationMinutes = request.DurationMinutes,
@@ -191,7 +189,7 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.CreateServiceSe
             if (isDuplicate)
             {
                 return ApiResponse<CreateServiceResponse>.Fail(
-                    GeneralCode.APP_MESSAGE_4041.ToString()); 
+                    GeneralCode.APP_MESSAGE_4041.ToString());
             }
 
             return null;
