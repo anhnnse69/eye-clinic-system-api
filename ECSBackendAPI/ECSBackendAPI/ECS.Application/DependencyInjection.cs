@@ -19,9 +19,10 @@ using ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAccoun
 using ECS.Application.Services.ClinicDoctorDiscoveryService.GetActiveSpecialtiesServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.RegisterClinicApplicationServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.SearchClinicDoctorServices;
+using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewClinicFeedbacksServices;
+using ECS.Application.Services.PatientProfileManagementServices.GetPatientProfilesServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewClinicProfileServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewDoctorSlotsServices;
-using ECS.Application.Services.PatientProfileManagementServices.GetPatientProfilesServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemDeleteClinicServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemGetClinicDetailsServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemGetDashboardServices;
@@ -75,6 +76,7 @@ public static class DependencyInjection
         services.AddScoped<IGetPersonalProfileService, GetPersonalProfileService>();
         services.AddScoped<IViewDoctorSlotsService, ViewDoctorSlotsService>();
         services.AddScoped<IViewClinicServicesService, ViewClinicServicesService>();
+        services.AddScoped<IViewClinicFeedbacksService, ViewClinicFeedbacksService>();
         services.AddScoped<IChangePasswordService, ChangePasswordService>();
         services.AddScoped<IUpdatePersonalProfileService, UpdatePersonalProfileService>();
         services.AddScoped<IGetActiveSpecialtiesService, GetActiveSpecialtiesService>();
