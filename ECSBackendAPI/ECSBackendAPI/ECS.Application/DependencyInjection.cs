@@ -1,8 +1,10 @@
 ﻿using System.Reflection;
+using ECS.Application.Services.AuthServices.ChangePasswordServices;
 using ECS.Application.Services.AuthServices.ForgotPasswordServices;
 using ECS.Application.Services.AuthServices.LoginServices;
 using ECS.Application.Services.AuthServices.RegisterServices;
 using ECS.Application.Services.AuthServices.ResetPasswordServices;
+using ECS.Application.Services.AuthServices.UpdatePersonalProfileServices;
 using ECS.Application.Services.AuthServices.ViewAccountInfoServices;
 using ECS.Application.Services.AuthServices.ViewPersonalProfileServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicAppointmentServices;
@@ -15,12 +17,14 @@ using ECS.Application.Services.ClinicAdminManagementServices.EditClinicProfileSe
 using ECS.Application.Services.ClinicAdminManagementServices.EditStaffAccountServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ViewListServiceServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAccountsServices;
+using ECS.Application.Services.ClinicDoctorDiscoveryService.GetActiveSpecialtiesServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.RegisterClinicApplicationServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.SearchClinicDoctorServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewClinicFeedbacksServices;
-using ECS.Application.Services.PatientProfileManagementServices.GetPatientProfilesServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewClinicProfileServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewDoctorSlotsServices;
+using ECS.Application.Services.PatientProfileManagementServices.CreatePatientProfileServices;
+using ECS.Application.Services.PatientProfileManagementServices.GetPatientProfilesServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemDeleteClinicServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemGetClinicDetailsServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemGetDashboardServices;
@@ -30,10 +34,9 @@ using ECS.Application.Services.SystemAdminServices.ClinicManagementServices;
 using ECS.Application.Services.SystemAdminServices.ClinicRegisterServices;
 using ECS.Application.Services.SystemAdminServices.RejectClinicApplicationServices;
 using ECS.Application.Services.SystemAdminServices.ReviewClinicRegisterServices;
-using ECS.Application.Services.AuthServices.ChangePasswordServices;
+using ECS.Application.Services.ClinicAdminManagementServices.CreateServiceServices;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
-using ECS.Application.Services.ClinicAdminManagementServices.CreateServiceServices;
 
 namespace ECS.Application;
 
@@ -78,6 +81,9 @@ public static class DependencyInjection
         services.AddScoped<IViewClinicFeedbacksService, ViewClinicFeedbacksService>();
         services.AddScoped<IChangePasswordService, ChangePasswordService>();
         services.AddScoped<ICreateService, CreateService>();
+        services.AddScoped<ICreatePatientProfileService, CreatePatientProfileService>();
+        services.AddScoped<IUpdatePersonalProfileService, UpdatePersonalProfileService>();
+        services.AddScoped<IGetActiveSpecialtiesService, GetActiveSpecialtiesService>();
 
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
