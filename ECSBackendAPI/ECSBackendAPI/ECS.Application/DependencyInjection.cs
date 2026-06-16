@@ -1,9 +1,10 @@
-﻿using System.Reflection;
+﻿﻿using System.Reflection;
 using ECS.Application.Services.AuthServices.ChangePasswordServices;
 using ECS.Application.Services.AuthServices.ForgotPasswordServices;
 using ECS.Application.Services.AuthServices.LoginServices;
 using ECS.Application.Services.AuthServices.RegisterServices;
 using ECS.Application.Services.AuthServices.ResetPasswordServices;
+using ECS.Application.Services.AuthServices.UpdatePersonalProfileServices;
 using ECS.Application.Services.AuthServices.ViewAccountInfoServices;
 using ECS.Application.Services.AuthServices.ViewPersonalProfileServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicAppointmentServices;
@@ -16,6 +17,7 @@ using ECS.Application.Services.ClinicAdminManagementServices.EditClinicProfileSe
 using ECS.Application.Services.ClinicAdminManagementServices.EditStaffAccountServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ViewListServiceServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAccountsServices;
+using ECS.Application.Services.ClinicDoctorDiscoveryService.GetActiveSpecialtiesServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.RegisterClinicApplicationServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.SearchClinicDoctorServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewClinicFeedbacksServices;
@@ -78,6 +80,8 @@ public static class DependencyInjection
         services.AddScoped<IViewClinicFeedbacksService, ViewClinicFeedbacksService>();
         services.AddScoped<IChangePasswordService, ChangePasswordService>();
         services.AddScoped<ICreatePatientProfileService, CreatePatientProfileService>();
+        services.AddScoped<IUpdatePersonalProfileService, UpdatePersonalProfileService>();
+        services.AddScoped<IGetActiveSpecialtiesService, GetActiveSpecialtiesService>();
 
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
