@@ -1,4 +1,4 @@
-﻿﻿using System.Reflection;
+﻿using System.Reflection;
 using ECS.Application.Services.AuthServices.ChangePasswordServices;
 using ECS.Application.Services.AuthServices.ForgotPasswordServices;
 using ECS.Application.Services.AuthServices.LoginServices;
@@ -34,6 +34,7 @@ using ECS.Application.Services.SystemAdminServices.ClinicManagementServices;
 using ECS.Application.Services.SystemAdminServices.ClinicRegisterServices;
 using ECS.Application.Services.SystemAdminServices.RejectClinicApplicationServices;
 using ECS.Application.Services.SystemAdminServices.ReviewClinicRegisterServices;
+using ECS.Application.Services.ClinicAdminManagementServices.CreateServiceServices;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -79,6 +80,7 @@ public static class DependencyInjection
         services.AddScoped<IViewClinicServicesService, ViewClinicServicesService>();
         services.AddScoped<IViewClinicFeedbacksService, ViewClinicFeedbacksService>();
         services.AddScoped<IChangePasswordService, ChangePasswordService>();
+        services.AddScoped<ICreateService, CreateService>();
         services.AddScoped<ICreatePatientProfileService, CreatePatientProfileService>();
         services.AddScoped<IUpdatePersonalProfileService, UpdatePersonalProfileService>();
         services.AddScoped<IGetActiveSpecialtiesService, GetActiveSpecialtiesService>();
