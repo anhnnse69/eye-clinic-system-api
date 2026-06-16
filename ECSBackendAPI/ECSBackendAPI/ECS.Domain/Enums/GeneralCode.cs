@@ -56,6 +56,7 @@
         APP_MESSAGE_4037, // Feedback deleted successfully
         APP_MESSAGE_4039, // Current password is incorrect
         APP_MESSAGE_4040, // New password must be different from current password
+        APP_MESSAGE_4041, // Service name already exists in this clinic
         // Server error codes (5xxx series)
         APP_MESSAGE_5000, // General internal server error (unexpected exception)
         APP_MESSAGE_5001, // Database operation failed (e.g., connection issue or query error)

@@ -33,6 +33,7 @@ using ECS.Application.Services.SystemAdminServices.ReviewClinicRegisterServices;
 using ECS.Application.Services.AuthServices.ChangePasswordServices;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using ECS.Application.Services.ClinicAdminManagementServices.CreateServiceServices;
 
 namespace ECS.Application;
 
@@ -76,6 +77,7 @@ public static class DependencyInjection
         services.AddScoped<IViewClinicServicesService, ViewClinicServicesService>();
         services.AddScoped<IViewClinicFeedbacksService, ViewClinicFeedbacksService>();
         services.AddScoped<IChangePasswordService, ChangePasswordService>();
+        services.AddScoped<ICreateService, CreateService>();
 
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
