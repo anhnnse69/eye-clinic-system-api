@@ -1,4 +1,4 @@
-using ECS.Application.Services.PatientMedicalRecordsServices.ViewPatientDemographicsServices;
+using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDemographicsServices;
 using ECS.Application.Common.Response;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

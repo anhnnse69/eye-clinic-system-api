@@ -9,10 +9,11 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
     {
         /// <summary>
         /// Returns the paginated list of patients
-        /// who booked an appointment with the doctor.
+        /// who booked an appointment with the doctor,
+        /// identified by the related user account id.
         /// </summary>
         Task<ApiResponse<ViewListPatientResponse>> Process(
-            Guid doctorId,
+            Guid userId,
             ViewListPatientRequest request);
     }
 }

@@ -22,11 +22,31 @@ namespace ECS.API.Middlewares
             {
                 await _next(context);
             }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Not found. Path: {Path}", context.Request.Path);
+                await HandleKeyNotFoundExceptionAsync(context, ex.Message);
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unhandled exception. Path: {Path}", context.Request.Path);
                 await HandleExceptionAsync(context);
             }
+        }
+
+        private static async Task HandleKeyNotFoundExceptionAsync(HttpContext context, string message)
+        {
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+
+            var response = ApiResponse<string>.Fail(message);
+
+            var json = JsonSerializer.Serialize(response, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            });
+
+            await context.Response.WriteAsync(json);
         }
 
         private static async Task HandleExceptionAsync(HttpContext context)

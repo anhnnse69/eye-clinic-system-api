@@ -1,7 +1,7 @@
 using FluentValidation;
 using ECS.Domain.Enums;
 
-namespace ECS.Application.Services.PatientMedicalRecordsServices.ViewPatientDemographicsServices
+namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDemographicsServices
 {
     public class ViewPatientDemographicsRequestValidator : AbstractValidator<ViewPatientDemographicsRequest>
     {

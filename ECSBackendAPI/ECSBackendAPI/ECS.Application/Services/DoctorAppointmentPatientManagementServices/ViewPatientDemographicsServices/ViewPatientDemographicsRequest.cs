@@ -1,4 +1,4 @@
-namespace ECS.Application.Services.PatientMedicalRecordsServices.ViewPatientDemographicsServices
+namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDemographicsServices
 {
     /// <summary>
     /// Request object for viewing patient demographics and medical records list.
