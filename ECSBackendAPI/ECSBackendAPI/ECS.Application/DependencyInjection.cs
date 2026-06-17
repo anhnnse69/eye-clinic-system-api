@@ -33,6 +33,7 @@ using ECS.Application.Services.PatientProfileManagementServices.GetPatientProfil
 using ECS.Application.Services.PatientProfileManagementServices.UpdatePatientProfileServices;
 using ECS.Application.Services.PatientProfileManagementServices.ViewPatientProfileDetailServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetAvailableSlotsServices;
+using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetPatientDetailsServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetPatientsListServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemDeleteClinicServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemGetClinicDetailsServices;
@@ -102,6 +103,7 @@ public static class DependencyInjection
         services.AddScoped<IUpdatePatientProfileService, UpdatePatientProfileService>();
         services.AddScoped<IGetClinicRoomsService, GetClinicRoomsService>();
         services.AddScoped<IReceptionistGetPatientsListService, ReceptionistGetPatientsListService>();
+        services.AddScoped<IReceptionistGetPatientDetailsService, ReceptionistGetPatientDetailsService>();
 
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
