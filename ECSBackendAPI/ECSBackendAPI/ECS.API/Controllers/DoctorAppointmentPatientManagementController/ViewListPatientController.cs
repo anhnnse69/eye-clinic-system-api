@@ -23,9 +23,10 @@ namespace ECS.API.Controllers.DoctorAppointmentPatientManagementController
 
         /// <summary>
         /// Returns the paginated list of patients
-        /// who booked appointments with the given doctor.
+        /// who booked appointments with the doctor
+        /// identified by the related user account id.
         /// </summary>
-        /// <param name="id">Doctor ID (GUID).</param>
+        /// <param name="id">User ID (GUID) linked to the doctor profile.</param>
         /// <param name="pageNumber">Page number (default 1).</param>
         /// <param name="pageSize">Page size (default 10).</param>
         /// <param name="status">

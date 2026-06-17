@@ -1,6 +1,6 @@
 using ECS.Application.Common.Response;
 
-namespace ECS.Application.Services.PatientMedicalRecordsServices.ViewPatientDemographicsServices
+namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDemographicsServices
 {
     /// <summary>
     /// Service contract defining operations for viewing patient demographics and associated medical records list.

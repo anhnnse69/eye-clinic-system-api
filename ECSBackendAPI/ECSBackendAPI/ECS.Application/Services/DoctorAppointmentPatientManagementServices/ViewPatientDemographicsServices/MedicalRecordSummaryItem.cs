@@ -1,4 +1,4 @@
-namespace ECS.Application.Services.PatientMedicalRecordsServices.ViewPatientDemographicsServices
+namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDemographicsServices
 {
     /// <summary>
     /// Summary item for a medical record in the list.

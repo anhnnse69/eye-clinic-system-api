@@ -9,7 +9,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
-namespace ECS.Application.Services.PatientMedicalRecordsServices.ViewPatientDemographicsServices
+namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDemographicsServices
 {
     /// <summary>
     /// Handles the business logic for viewing patient demographics and their medical records list.

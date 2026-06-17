@@ -1,4 +1,4 @@
-namespace ECS.Application.Services.PatientMedicalRecordsServices.ViewPatientDemographicsServices
+namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDemographicsServices
 {
     /// <summary>
     /// Response object representing patient demographics details.
