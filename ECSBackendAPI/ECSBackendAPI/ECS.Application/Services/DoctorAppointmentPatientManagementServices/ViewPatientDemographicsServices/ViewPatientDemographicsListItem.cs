@@ -1,9 +1,9 @@
-namespace ECS.Application.Services.PatientMedicalRecordsServices.ViewPatientDemographicsServices
+namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDemographicsServices
 {
     /// <summary>
-    /// Response object representing patient demographics details.
+    /// List item representing a patient demographics entry with associated medical record.
     /// </summary>
-    public class ViewPatientDemographicsResponse
+    public class ViewPatientDemographicsListItem
     {
         /// <summary>
         /// Gets or sets the stringified unique identification key for the patient profile.
@@ -61,13 +61,48 @@ namespace ECS.Application.Services.PatientMedicalRecordsServices.ViewPatientDemo
         public string? MedicalHistory { get; set; }
 
         /// <summary>
-        /// Gets or sets the total count of medical records for this patient.
+        /// Gets or sets the stringified unique identification key for the medical record.
         /// </summary>
-        public int TotalRecords { get; set; }
+        public string Id_MedicalRecord { get; set; } = string.Empty;
 
         /// <summary>
-        /// Gets or sets the collection of medical record summaries.
+        /// Gets or sets the record type code (e.g., MS21_TRAUMA, MS22_ANTERIOR).
         /// </summary>
-        public List<MedicalRecordSummaryItem> Records { get; set; } = new();
+        public string RecordType { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the display label for the record type.
+        /// </summary>
+        public string RecordTypeLabel { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the doctor full name who created this record.
+        /// </summary>
+        public string DoctorName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the appointment date.
+        /// </summary>
+        public string AppointmentDate { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the chief complaint.
+        /// </summary>
+        public string? ChiefComplaint { get; set; }
+
+        /// <summary>
+        /// Gets or sets the main diagnosis.
+        /// </summary>
+        public string? DiagnosisMain { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether the medical record is locked.
+        /// </summary>
+        public bool IsLocked { get; set; }
+
+        /// <summary>
+        /// Gets or sets the creation timestamp of the medical record.
+        /// </summary>
+        public string CreatedAt { get; set; } = string.Empty;
     }
 }

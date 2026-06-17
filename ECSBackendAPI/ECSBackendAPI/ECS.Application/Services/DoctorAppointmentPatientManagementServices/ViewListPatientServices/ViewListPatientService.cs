@@ -45,10 +45,11 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
 
         /// <summary>
         /// Retrieves paginated patients who booked
-        /// the specified doctor, with optional status filter.
+        /// appointments with the specified doctor,
+        /// identified by the related user account id.
         /// </summary>
-        /// <param name="doctorId">
-        /// Identifier of the doctor.
+        /// <param name="userId">
+        /// Identifier of the user account linked to the doctor profile.
         /// </param>
         /// <param name="request">
         /// Pagination and filter parameters.
@@ -58,15 +59,15 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
         /// patient list.
         /// </returns>
         public async Task<ApiResponse<ViewListPatientResponse>> Process(
-            Guid doctorId,
+            Guid userId,
             ViewListPatientRequest request)
         {
-            await ValidateDoctorExistsAsync(doctorId);
+            var doctorProfile = await ResolveActiveDoctorProfileAsync(userId);
 
             var (pageNumber, pageSize) = NormalizePaging(request);
 
             var totalRecords = await CountAppointmentsAsync(
-                doctorId,
+                doctorProfile.Id,
                 request.Status);
 
             var totalPages = CalculateTotalPages(
@@ -74,7 +75,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
                 pageSize);
 
             var patients = await FetchAppointmentsAsync(
-                doctorId,
+                doctorProfile.Id,
                 request.Status,
                 pageNumber,
                 pageSize);
@@ -90,27 +91,32 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
         }
 
         /// <summary>
-        /// Validates that the doctor exists and is active.
+        /// Resolves the active doctor profile for the specified user.
         /// Throws when not found.
         /// </summary>
-        /// <param name="doctorId">
-        /// Identifier of the doctor.
+        /// <param name="userId">
+        /// Identifier of the user account.
         /// </param>
+        /// <returns>
+        /// The resolved <see cref="DoctorProfile"/>.
+        /// </returns>
         /// <exception cref="KeyNotFoundException">
         /// Thrown when the doctor cannot be found.
         /// </exception>
-        private async Task ValidateDoctorExistsAsync(
-            Guid doctorId)
+        private async Task<DoctorProfile> ResolveActiveDoctorProfileAsync(
+            Guid userId)
         {
-            var exists = await _doctorRepository
+            var doctorProfile = await _doctorRepository
                 .FindByCondition(d =>
-                    d.Id == doctorId &&
+                    d.UserId == userId &&
                     d.IsActive)
-                .AnyAsync();
+                .FirstOrDefaultAsync();
 
-            if (!exists)
+            if (doctorProfile is null)
                 throw new KeyNotFoundException(
-                    GeneralCode.APP_MESSAGE_4008.ToString());
+                    GeneralCode.APP_MESSAGE_4011.ToString());
+
+            return doctorProfile;
         }
 
         /// <summary>
@@ -180,7 +186,9 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
                     AppointmentId = a.Id,
                     PatientId = a.Patient.Id,
                     PatientName = a.Patient.FullName,
-                    PatientAvatarUrl = a.Patient.User.AvatarUrl,
+                    PatientAvatarUrl = a.Patient.User != null
+                        ? a.Patient.User.AvatarUrl
+                        : null,
                     PatientPhone = a.Patient.PhoneNumber,
                     AppointmentDate = a.AppointmentDate,
                     Status = a.Status.ToString(),

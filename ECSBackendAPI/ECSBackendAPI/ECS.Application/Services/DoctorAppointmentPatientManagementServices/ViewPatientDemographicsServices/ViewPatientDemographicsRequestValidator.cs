@@ -1,16 +1,13 @@
 using FluentValidation;
 using ECS.Domain.Enums;
 
-namespace ECS.Application.Services.PatientMedicalRecordsServices.ViewPatientDemographicsServices
+namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDemographicsServices
 {
     public class ViewPatientDemographicsRequestValidator : AbstractValidator<ViewPatientDemographicsRequest>
     {
         public ViewPatientDemographicsRequestValidator()
         {
             RuleFor(x => x.PatientProfileId)
-                .NotEmpty()
-                    .WithErrorCode(GeneralCode.APP_MESSAGE_4003.ToString())
-                    .WithMessage(GeneralCode.APP_MESSAGE_4003.ToString())
                 .MaximumLength(50)
                     .WithErrorCode(GeneralCode.APP_MESSAGE_4019.ToString())
                     .WithMessage(GeneralCode.APP_MESSAGE_4019.ToString());

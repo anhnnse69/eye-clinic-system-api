@@ -1,14 +1,14 @@
-namespace ECS.Application.Services.PatientMedicalRecordsServices.ViewPatientDemographicsServices
+namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDemographicsServices
 {
     /// <summary>
-    /// Request object for viewing patient demographics and medical records list.
+    /// Request object for viewing patient demographics list.
     /// </summary>
     public class ViewPatientDemographicsRequest
     {
         /// <summary>
-        /// Gets or sets the patient profile identifier.
+        /// Gets or sets the optional patient profile identifier to filter demographics for a specific patient.
         /// </summary>
-        public string PatientProfileId { get; set; } = string.Empty;
+        public string? PatientProfileId { get; set; }
 
         /// <summary>
         /// Gets or sets the optional record type filter (e.g., MS21_TRAUMA, MS22_ANTERIOR).

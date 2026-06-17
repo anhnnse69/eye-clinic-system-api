@@ -27,9 +27,12 @@ using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewClinicFeedbacksS
 using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewClinicProfileServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewDoctorSlotsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewListPatientServices;
-using ECS.Application.Services.PatientMedicalRecordsServices.ViewPatientDemographicsServices;
+using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDemographicsServices;
 using ECS.Application.Services.PatientProfileManagementServices.CreatePatientProfileServices;
 using ECS.Application.Services.PatientProfileManagementServices.GetPatientProfilesServices;
+using ECS.Application.Services.PatientProfileManagementServices.ViewPatientProfileDetailServices;
+using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetAvailableSlotsServices;
+using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetPatientsListServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemDeleteClinicServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemGetClinicDetailsServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemGetDashboardServices;
@@ -92,8 +95,11 @@ public static class DependencyInjection
         services.AddScoped<IUpdatePersonalProfileService, UpdatePersonalProfileService>();
         services.AddScoped<IGetActiveSpecialtiesService, GetActiveSpecialtiesService>();
         services.AddScoped<IEditServiceService, EditServiceService>();
+        services.AddScoped<IViewPatientProfileDetailService, ViewPatientProfileDetailService>();
+        services.AddScoped<IGetAvailableSlotsService, GetAvailableSlotsService>();
         services.AddScoped<IDeactivateService, DeactivateService>();
         services.AddScoped<IGetClinicRoomsService, GetClinicRoomsService>();
+        services.AddScoped<IReceptionistGetPatientsListService, ReceptionistGetPatientsListService>();
 
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
