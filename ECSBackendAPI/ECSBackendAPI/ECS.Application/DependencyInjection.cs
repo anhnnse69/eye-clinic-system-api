@@ -13,6 +13,7 @@ using ECS.Application.Services.ClinicAdminManagementServices.ClinicFeedbackServi
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicProfileServices;
 using ECS.Application.Services.ClinicAdminManagementServices.CreateServiceServices;
 using ECS.Application.Services.ClinicAdminManagementServices.CreateStaffAccountServices;
+using ECS.Application.Services.ClinicAdminManagementServices.DeactivateServiceServices;
 using ECS.Application.Services.ClinicAdminManagementServices.DeleteClinicFeedbackServices;
 using ECS.Application.Services.ClinicAdminManagementServices.EditClinicProfileServices;
 using ECS.Application.Services.ClinicAdminManagementServices.EditServiceServices;
@@ -29,6 +30,8 @@ using ECS.Application.Services.PatientMedicalRecordsServices.ViewPatientDemograp
 using ECS.Application.Services.PatientProfileManagementServices.CreatePatientProfileServices;
 using ECS.Application.Services.PatientProfileManagementServices.GetPatientProfilesServices;
 using ECS.Application.Services.PatientProfileManagementServices.ViewPatientProfileDetailServices;
+using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewListPatientServices;
+using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetAvailableSlotsServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemDeleteClinicServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemGetClinicDetailsServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemGetDashboardServices;
@@ -83,6 +86,7 @@ public static class DependencyInjection
         services.AddScoped<IViewClinicServicesService, ViewClinicServicesService>();
         services.AddScoped<IViewClinicFeedbacksService, ViewClinicFeedbacksService>();
         services.AddScoped<IChangePasswordService, ChangePasswordService>();
+        services.AddScoped<IViewListPatientService, ViewPatientListService>();
         services.AddScoped<IViewPatientDemographicsService, ViewPatientDemographicsService>();
         services.AddScoped<ICreateService, CreateService>();
         services.AddScoped<ICreatePatientProfileService, CreatePatientProfileService>();
@@ -90,6 +94,8 @@ public static class DependencyInjection
         services.AddScoped<IGetActiveSpecialtiesService, GetActiveSpecialtiesService>();
         services.AddScoped<IEditServiceService, EditServiceService>();
         services.AddScoped<IViewPatientProfileDetailService, ViewPatientProfileDetailService>();
+        services.AddScoped<IGetAvailableSlotsService, GetAvailableSlotsService>();
+        services.AddScoped<IDeactivateService, DeactivateService>();
 
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
