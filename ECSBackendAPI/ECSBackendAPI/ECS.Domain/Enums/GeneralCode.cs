@@ -58,6 +58,7 @@
         APP_MESSAGE_4039, // Current password is incorrect
         APP_MESSAGE_4040, // New password must be different from current password
         APP_MESSAGE_4041, // Service name already exists in this clinic
+        APP_MESSAGE_4043, // Identity number already exists in the system.
         APP_MESSAGE_4042, // Password and confirm password do not match
         // Server error codes (5xxx series)
         APP_MESSAGE_5000, // General internal server error (unexpected exception)

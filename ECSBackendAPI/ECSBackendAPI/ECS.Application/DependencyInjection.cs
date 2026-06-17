@@ -30,6 +30,7 @@ using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewLi
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDemographicsServices;
 using ECS.Application.Services.PatientProfileManagementServices.CreatePatientProfileServices;
 using ECS.Application.Services.PatientProfileManagementServices.GetPatientProfilesServices;
+using ECS.Application.Services.PatientProfileManagementServices.UpdatePatientProfileServices;
 using ECS.Application.Services.PatientProfileManagementServices.ViewPatientProfileDetailServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetAvailableSlotsServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetPatientsListServices;
@@ -98,6 +99,7 @@ public static class DependencyInjection
         services.AddScoped<IViewPatientProfileDetailService, ViewPatientProfileDetailService>();
         services.AddScoped<IGetAvailableSlotsService, GetAvailableSlotsService>();
         services.AddScoped<IDeactivateService, DeactivateService>();
+        services.AddScoped<IUpdatePatientProfileService, UpdatePatientProfileService>();
         services.AddScoped<IGetClinicRoomsService, GetClinicRoomsService>();
         services.AddScoped<IReceptionistGetPatientsListService, ReceptionistGetPatientsListService>();
 
