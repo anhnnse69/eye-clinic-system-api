@@ -298,7 +298,7 @@ namespace ECS.Application.Services.PatientProfileManagementServices.UpdatePatien
             }
             if (!identityState)
             {
-                return ApiResponse<UpdatePatientProfileResponse>.Fail(GeneralCode.APP_MESSAGE_4042.ToString());
+                return ApiResponse<UpdatePatientProfileResponse>.Fail(GeneralCode.APP_MESSAGE_4043.ToString());
             }
             if (!successState)
             {
