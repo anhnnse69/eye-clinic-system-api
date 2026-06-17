@@ -43,6 +43,7 @@
         APP_MESSAGE_4023, // NameVi address already exists in the system
         APP_MESSAGE_4024, // Input contains potentially dangerous HTML content (XSS attempt detected)
         APP_MESSAGE_4025, // Input contains potentially dangerous SQL/NoSQL injection patterns
+        APP_MESSAGE_4026, // Password must be at least 8 characters and contain uppercase, lowercase, number and special character
         APP_MESSAGE_4027, // Medical record already exists for this appointment
         APP_MESSAGE_4028, // Medical record not found
         APP_MESSAGE_4029, // Clinic application request not found
@@ -57,6 +58,7 @@
         APP_MESSAGE_4039, // Current password is incorrect
         APP_MESSAGE_4040, // New password must be different from current password
         APP_MESSAGE_4041, // Service name already exists in this clinic
+        APP_MESSAGE_4042, // Password and confirm password do not match
         // Server error codes (5xxx series)
         APP_MESSAGE_5000, // General internal server error (unexpected exception)
         APP_MESSAGE_5001, // Database operation failed (e.g., connection issue or query error)
