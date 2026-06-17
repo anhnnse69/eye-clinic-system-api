@@ -1,7 +1,9 @@
 using System.Linq.Expressions;
 using ECS.Application.Common.Response;
+using ECS.Domain.Entities.Clinics;
 using ECS.Domain.Entities.MedicalRecords;
 using ECS.Domain.Entities.Patient;
+using ECS.Domain.Entities.Scheduling;
 using ECS.Domain.Enums;
 using ECS.Infrastructure.Persistence;
 using ECS.Infrastructure.Repositories.Interfaces;
@@ -12,7 +14,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDemographicsServices
 {
     /// <summary>
-    /// Handles the business logic for viewing patient demographics and their medical records list.
+    /// Handles the business logic for viewing a paginated list of patient demographics with associated medical records.
     /// </summary>
     public class ViewPatientDemographicsService : IViewPatientDemographicsService
     {
@@ -45,11 +47,11 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
         }
 
         /// <summary>
-        /// Processes the view patient demographics request by validating input, fetching patient data and records, and returning the aggregated response.
+        /// Processes the view patient demographics list request by validating input, fetching patient data and records, and returning the aggregated response.
         /// </summary>
         /// <param name="request">The view patient demographics request.</param>
-        /// <returns>An <see cref="ApiResponse{ViewPatientDemographicsResponse}"/> containing patient demographics and records list.</returns>
-        public async Task<ApiResponse<ViewPatientDemographicsResponse>> Process(ViewPatientDemographicsRequest request)
+        /// <returns>An <see cref="ApiResponse{ViewPatientDemographicsListResponse}"/> containing paginated patient demographics list.</returns>
+        public async Task<ApiResponse<ViewPatientDemographicsListResponse>> Process(ViewPatientDemographicsRequest request)
         {
             bool isValidationPassed = true;
             bool isDataScopeExist = true;
@@ -59,13 +61,24 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
             var currentUserId = RetrieveUserId(ref isDataScopeExist);
             var accessiblePatientIds = await RetrieveAccessiblePatientIds(currentUserId, isDataScopeExist);
 
-            ValidatePatientAccess(request, accessiblePatientIds, isDataScopeExist, ref isDataScopeExist);
+            var (pageNumber, pageSize) = NormalizePaging(request);
 
-            var (patientProfile, records, totalRecords) = await RetrievePatientData(request, accessiblePatientIds, isDataScopeExist);
+            var totalRecords = await CountDemographicsAsync(request, accessiblePatientIds, isDataScopeExist);
 
-            var result = MapToResponse(patientProfile, records, totalRecords);
+            var totalPages = CalculateTotalPages(totalRecords, pageSize);
 
-            return CreateResponse(result, isValidationPassed, isDataScopeExist);
+            var items = await FetchDemographicsAsync(request, accessiblePatientIds, isDataScopeExist, pageNumber, pageSize);
+
+            var response = new ViewPatientDemographicsListResponse
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = totalPages,
+                TotalRecords = totalRecords,
+                Items = items
+            };
+
+            return CreateResponse(response, isValidationPassed, isDataScopeExist);
         }
 
         /// <summary>
@@ -107,6 +120,29 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
         {
             if (!isDataScopeExist) return new List<Guid>();
 
+            var roleClaim = _httpContextAccessor
+                .HttpContext?
+                .User
+                .FindFirst(System.Security.Claims.ClaimTypes.Role)?
+                .Value;
+
+            if (string.Equals(roleClaim, "DOCTOR", StringComparison.OrdinalIgnoreCase))
+            {
+                var doctorProfile = await _context.Set<DoctorProfile>()
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(d => d.UserId == userId && d.IsActive);
+
+                if (doctorProfile == null)
+                    return new List<Guid>();
+
+                return await _context.Set<Appointment>()
+                    .AsNoTracking()
+                    .Where(a => a.DoctorId == doctorProfile.Id)
+                    .Select(a => a.PatientId)
+                    .Distinct()
+                    .ToListAsync();
+            }
+
             var directPatientIds = await _patientProfileRepository
                 .FindByCondition(x => x.UserId == userId, trackChanges: false)
                 .Select(x => x.Id)
@@ -122,134 +158,125 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
         }
 
         /// <summary>
-        /// Validates that the requested patient profile is within the accessible scope of the current user.
+        /// Normalizes pagination parameters.
         /// </summary>
-        private void ValidatePatientAccess(
-            ViewPatientDemographicsRequest request,
-            List<Guid> accessiblePatientIds,
-            bool isDataScopeExist,
-            ref bool isDataScopeExistResult)
+        private static (int PageNumber, int PageSize) NormalizePaging(ViewPatientDemographicsRequest request)
         {
-            if (!isDataScopeExist) return;
-
-            if (!Guid.TryParse(request.PatientProfileId, out Guid targetPatientId))
-            {
-                isDataScopeExistResult = false;
-                return;
-            }
-
-            if (!accessiblePatientIds.Contains(targetPatientId))
-            {
-                isDataScopeExistResult = false;
-            }
+            var pageNumber = request.PageNumber < 1 ? 1 : request.PageNumber;
+            var pageSize = request.PageSize < 1 ? 10 : request.PageSize;
+            return (pageNumber, pageSize);
         }
 
         /// <summary>
-        /// Queries the database for the patient profile and their medical records with pagination.
+        /// Counts total demographics items matching the request filters.
         /// </summary>
-        private async Task<(PatientProfile? Patient, List<MedicalRecord> Records, int TotalRecords)> RetrievePatientData(
+        private async Task<int> CountDemographicsAsync(
             ViewPatientDemographicsRequest request,
             List<Guid> accessiblePatientIds,
             bool isDataScopeExist)
         {
-            if (!isDataScopeExist) return (null, new List<MedicalRecord>(), 0);
+            if (!isDataScopeExist) return 0;
 
-            if (!Guid.TryParse(request.PatientProfileId, out Guid patientProfileId))
-            {
-                return (null, new List<MedicalRecord>(), 0);
-            }
+            var query = BuildBaseQuery(request, accessiblePatientIds, isDataScopeExist);
+            return await query.CountAsync();
+        }
 
-            var patientProfile = await _patientProfileRepository
-                .FindByCondition(x => x.Id == patientProfileId, trackChanges: false)
-                .FirstOrDefaultAsync();
+        /// <summary>
+        /// Fetches a page of demographics items with associated patient and record data.
+        /// </summary>
+        private async Task<List<ViewPatientDemographicsListItem>> FetchDemographicsAsync(
+            ViewPatientDemographicsRequest request,
+            List<Guid> accessiblePatientIds,
+            bool isDataScopeExist,
+            int pageNumber,
+            int pageSize)
+        {
+            if (!isDataScopeExist) return new List<ViewPatientDemographicsListItem>();
 
-            if (patientProfile == null)
-            {
-                return (null, new List<MedicalRecord>(), 0);
-            }
+            var query = BuildBaseQuery(request, accessiblePatientIds, isDataScopeExist);
 
-            Expression<Func<MedicalRecord, bool>> recordFilter = x => x.PatientId == patientProfileId;
-
-            if (!string.IsNullOrWhiteSpace(request.RecordType))
-            {
-                if (Enum.TryParse<RecordType>(request.RecordType, true, out var recordType))
+            return await query
+                .OrderByDescending(x => x.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(r => new ViewPatientDemographicsListItem
                 {
-                    recordFilter = x => x.PatientId == patientProfileId && x.RecordType == recordType;
-                }
+                    Id_PatientProfile = r.Patient.Id.ToString(),
+                    FullName = r.Patient.FullName,
+                    Gender = r.Patient.Gender.ToString(),
+                    Dob = r.Patient.Dob.ToString("dd/MM/yyyy"),
+                    IdentityNumber = r.Patient.IdentityNumber,
+                    PhoneNumber = r.Patient.PhoneNumber,
+                    Address = r.Patient.Address,
+                    BhytNumber = r.Patient.BhytNumber,
+                    BloodType = r.Patient.BloodType,
+                    Allergies = r.Patient.Allergies,
+                    MedicalHistory = r.Patient.MedicalHistory,
+                    Id_MedicalRecord = r.Id.ToString(),
+                    RecordType = r.RecordType.ToString(),
+                    RecordTypeLabel = GetRecordTypeLabel(r.RecordType),
+                    DoctorName = r.Doctor.User.FullName,
+                    AppointmentDate = r.Appointment.AppointmentDate.ToString("dd/MM/yyyy"),
+                    ChiefComplaint = r.ChiefComplaint,
+                    DiagnosisMain = r.DiagnosisMain,
+                    IsLocked = r.IsLocked,
+                    CreatedAt = r.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                })
+                .ToListAsync();
+        }
+
+        /// <summary>
+        /// Builds the base queryable for demographics, applying accessible patient scope and filters.
+        /// </summary>
+        private IQueryable<MedicalRecord> BuildBaseQuery(
+            ViewPatientDemographicsRequest request,
+            List<Guid> accessiblePatientIds,
+            bool isDataScopeExist)
+        {
+            if (!isDataScopeExist)
+                return _medicalRecordRepository.FindByCondition(r => false, trackChanges: false);
+
+            IQueryable<MedicalRecord> query = _medicalRecordRepository
+                .FindByCondition(r => accessiblePatientIds.Contains(r.PatientId), trackChanges: false)
+                .Include(r => r.Patient)
+                .Include(r => r.Doctor)
+                    .ThenInclude(d => d.User)
+                .Include(r => r.Appointment);
+
+            if (Guid.TryParse(request.PatientProfileId, out Guid patientProfileId))
+            {
+                query = query.Where(r => r.PatientId == patientProfileId);
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.RecordType) &&
+                Enum.TryParse<RecordType>(request.RecordType, true, out var recordType))
+            {
+                query = query.Where(r => r.RecordType == recordType);
             }
 
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
                 var searchTerm = request.SearchTerm.Trim().ToLower();
-                recordFilter = x => x.PatientId == patientProfileId
-                    && (x.DiagnosisMain != null && x.DiagnosisMain.ToLower().Contains(searchTerm)
-                        || x.ChiefComplaint != null && x.ChiefComplaint.ToLower().Contains(searchTerm));
+                query = query.Where(r =>
+                    (r.DiagnosisMain != null && r.DiagnosisMain.ToLower().Contains(searchTerm)) ||
+                    (r.ChiefComplaint != null && r.ChiefComplaint.ToLower().Contains(searchTerm)));
             }
 
-            var query = _medicalRecordRepository
-                .FindByCondition(recordFilter, trackChanges: false)
-                .Include(x => x.Doctor.User)
-                .Include(x => x.Appointment);
-
-            var totalRecords = await query.CountAsync();
-
-            var records = await query
-                .OrderByDescending(x => x.CreatedAt)
-                .Skip((request.PageNumber - 1) * request.PageSize)
-                .Take(request.PageSize)
-                .ToListAsync();
-
-            return (patientProfile, records, totalRecords);
+            return query;
         }
 
         /// <summary>
-        /// Maps domain entities to the response DTO.
+        /// Calculates the total number of pages.
         /// </summary>
-        private ViewPatientDemographicsResponse MapToResponse(
-            PatientProfile? patientProfile,
-            List<MedicalRecord> records,
-            int totalRecords)
+        private static int CalculateTotalPages(int totalRecords, int pageSize)
         {
-            if (patientProfile == null)
-            {
-                return new ViewPatientDemographicsResponse();
-            }
-
-            var recordItems = records.Select(r => new MedicalRecordSummaryItem
-            {
-                Id_MedicalRecord = r.Id.ToString(),
-                RecordType = r.RecordType.ToString(),
-                RecordTypeLabel = GetRecordTypeLabel(r.RecordType),
-                DoctorName = r.Doctor?.User?.FullName ?? "N/A",
-                AppointmentDate = r.Appointment?.AppointmentDate.ToString("dd/MM/yyyy") ?? "N/A",
-                ChiefComplaint = r.ChiefComplaint,
-                DiagnosisMain = r.DiagnosisMain,
-                IsLocked = r.IsLocked,
-                CreatedAt = r.CreatedAt.ToString("dd/MM/yyyy HH:mm")
-            }).ToList();
-
-            return new ViewPatientDemographicsResponse
-            {
-                Id_PatientProfile = patientProfile.Id.ToString(),
-                FullName = patientProfile.FullName,
-                Gender = patientProfile.Gender.ToString(),
-                Dob = patientProfile.Dob.ToString("dd/MM/yyyy"),
-                IdentityNumber = patientProfile.IdentityNumber,
-                PhoneNumber = patientProfile.PhoneNumber,
-                Address = patientProfile.Address,
-                BhytNumber = patientProfile.BhytNumber,
-                BloodType = patientProfile.BloodType,
-                Allergies = patientProfile.Allergies,
-                MedicalHistory = patientProfile.MedicalHistory,
-                TotalRecords = totalRecords,
-                Records = recordItems
-            };
+            return pageSize == 0 ? 0 : (int)Math.Ceiling((double)totalRecords / pageSize);
         }
 
         /// <summary>
         /// Returns the Vietnamese display label for the given record type.
         /// </summary>
-        private string GetRecordTypeLabel(RecordType recordType)
+        private static string GetRecordTypeLabel(RecordType recordType)
         {
             return recordType switch
             {
@@ -266,24 +293,24 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
         /// <summary>
         /// Packages the result into the standardized API response envelope.
         /// </summary>
-        private ApiResponse<ViewPatientDemographicsResponse> CreateResponse(
-            ViewPatientDemographicsResponse result,
+        private static ApiResponse<ViewPatientDemographicsListResponse> CreateResponse(
+            ViewPatientDemographicsListResponse result,
             bool isValidationPassed,
             bool isDataScopeExist)
         {
             if (!isValidationPassed)
             {
-                return ApiResponse<ViewPatientDemographicsResponse>.Fail(
+                return ApiResponse<ViewPatientDemographicsListResponse>.Fail(
                     GeneralCode.APP_MESSAGE_4019.ToString());
             }
 
-            if (!isDataScopeExist || result == null || string.IsNullOrEmpty(result.Id_PatientProfile))
+            if (!isDataScopeExist || result == null)
             {
-                return ApiResponse<ViewPatientDemographicsResponse>.Fail(
+                return ApiResponse<ViewPatientDemographicsListResponse>.Fail(
                     GeneralCode.APP_MESSAGE_4010.ToString());
             }
 
-            return ApiResponse<ViewPatientDemographicsResponse>.Success(
+            return ApiResponse<ViewPatientDemographicsListResponse>.Success(
                 GeneralCode.APP_MESSAGE_2000.ToString(),
                 result);
         }

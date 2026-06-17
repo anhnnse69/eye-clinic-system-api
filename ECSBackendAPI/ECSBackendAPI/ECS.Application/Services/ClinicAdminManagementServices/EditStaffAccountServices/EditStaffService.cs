@@ -181,6 +181,8 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.EditStaffAccoun
                 return (null, false);
             }
 
+            UserRole currentRole = userGraph.Role;
+
             UserRole mappedUserRole = UserRole.RECEPTIONIST;
             switch (parsedStaffRole)
             {
@@ -195,6 +197,15 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.EditStaffAccoun
                     break;
             }
 
+            if (currentRole != UserRole.CLINIC_ADMIN)
+            {
+                if (mappedUserRole == UserRole.CLINIC_ADMIN)
+                {
+                    return (null, false); 
+                }
+            }
+            // ------------------------------------------------
+
             using var transactionalScope = await _userRepository.BeginTransactionAsync();
             try
             {
@@ -203,7 +214,7 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.EditStaffAccoun
                 userGraph.Email = input.Email;
                 userGraph.FullName = input.FullName;
                 userGraph.Role = mappedUserRole;
-                userGraph.IsActive = input.IsActive; 
+                userGraph.IsActive = input.IsActive;
                 userGraph.UpdatedAt = DateTime.UtcNow;
 
                 await _userRepository.UpdateAsync(userGraph);
@@ -215,7 +226,7 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.EditStaffAccoun
                 if (targetClinicMapping != null)
                 {
                     targetClinicMapping.Role = parsedStaffRole;
-                    targetClinicMapping.IsActive = input.IsActive; 
+                    targetClinicMapping.IsActive = input.IsActive;
                     targetClinicMapping.UpdatedAt = DateTime.UtcNow;
 
                     // Force explicit update using the dedicated Repository

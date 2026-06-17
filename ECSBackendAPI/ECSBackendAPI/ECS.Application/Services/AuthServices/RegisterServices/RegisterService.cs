@@ -50,7 +50,7 @@ namespace ECS.Application.Services.AuthServices.RegisterServices
             // Step 3: Check for duplicate phone
             var phoneResult = await CheckPhoneUniqueness(request, validationResult.IsPassed);
             // Step 4: Assemble API payload or generate error response
-            return CreateResponse(validationResult, emailResult, phoneResult, request);
+            return await CreateResponse(validationResult, emailResult, phoneResult, request);
         }
 
         /// <summary>
@@ -119,7 +119,7 @@ namespace ECS.Application.Services.AuthServices.RegisterServices
         /// <param name="phoneResult">The result of phone uniqueness check.</param>
         /// <param name="request">The validated registration request.</param>
         /// <returns>A configured <see cref="ApiResponse{Boolean}"/>.</returns>
-        private ApiResponse<object> CreateResponse(
+        private async Task<ApiResponse<object>> CreateResponse(
             ValidationResult validationResult,
             UniquenessResult emailResult,
             UniquenessResult phoneResult,
@@ -130,8 +130,7 @@ namespace ECS.Application.Services.AuthServices.RegisterServices
             {
                 return errorResponse;
             }
-            return ApiResponse<object>.Success(
-                GeneralCode.APP_MESSAGE_2000.ToString(), true);
+            return await CreateUserAsync(request);
         }
 
         /// <summary>
@@ -168,12 +167,12 @@ namespace ECS.Application.Services.AuthServices.RegisterServices
         /// </summary>
         /// <param name="request">The validated registration request.</param>
         /// <returns>A success <see cref="ApiResponse{Boolean}"/> with value true.</returns>
-        private ApiResponse<bool> CreateUser(RegisterRequest request)
+        private async Task<ApiResponse<object>> CreateUserAsync(RegisterRequest request)
         {
             var user = BuildUser(request);
-            _userRepository.CreateAsync(user);
-            _userRepository.SaveChangesAsync();
-            return ApiResponse<bool>.Success(
+            await _userRepository.CreateAsync(user);
+            await _userRepository.SaveChangesAsync();
+            return ApiResponse<object>.Success(
                 GeneralCode.APP_MESSAGE_2000.ToString(), true);
         }
 
@@ -187,15 +186,15 @@ namespace ECS.Application.Services.AuthServices.RegisterServices
         {
             return new User
             {
-                Id           = Guid.NewGuid(),
-                FullName     = request.FullName.Trim(),
-                Email        = request.Email.Trim().ToLower(),
-                Phone        = request.Phone.Trim(),
+                Id = Guid.NewGuid(),
+                FullName = request.FullName.Trim(),
+                Email = request.Email.Trim().ToLower(),
+                Phone = request.Phone.Trim(),
                 PasswordHash = PasswordHelper.HashPassword(request.Password),
-                Role         = UserRole.PATIENT,
-                IsActive     = true,
-                CreatedAt    = DateTime.UtcNow,
-                UpdatedAt    = DateTime.UtcNow
+                Role = UserRole.PATIENT,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
             };
         }
 
