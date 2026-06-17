@@ -186,7 +186,9 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
                     AppointmentId = a.Id,
                     PatientId = a.Patient.Id,
                     PatientName = a.Patient.FullName,
-                    PatientAvatarUrl = a.Patient.User.AvatarUrl,
+                    PatientAvatarUrl = a.Patient.User != null
+                        ? a.Patient.User.AvatarUrl
+                        : null,
                     PatientPhone = a.Patient.PhoneNumber,
                     AppointmentDate = a.AppointmentDate,
                     Status = a.Status.ToString(),
