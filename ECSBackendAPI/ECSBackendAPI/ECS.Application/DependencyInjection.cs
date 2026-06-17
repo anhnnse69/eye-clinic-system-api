@@ -10,6 +10,7 @@ using ECS.Application.Services.ClinicAdminManagementServices.ClinicAppointmentSe
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicDashboardServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicFeedbackServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicProfileServices;
+using ECS.Application.Services.ClinicAdminManagementServices.ClinicRoomServices.ViewListRoomServices;
 using ECS.Application.Services.ClinicAdminManagementServices.CreateServiceServices;
 using ECS.Application.Services.ClinicAdminManagementServices.CreateStaffAccountServices;
 using ECS.Application.Services.ClinicAdminManagementServices.DeactivateServiceServices;
@@ -92,6 +93,7 @@ public static class DependencyInjection
         services.AddScoped<IGetActiveSpecialtiesService, GetActiveSpecialtiesService>();
         services.AddScoped<IEditServiceService, EditServiceService>();
         services.AddScoped<IDeactivateService, DeactivateService>();
+        services.AddScoped<IGetClinicRoomsService, GetClinicRoomsService>();
 
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
