@@ -1,7 +1,9 @@
 using System.Linq.Expressions;
 using ECS.Application.Common.Response;
+using ECS.Domain.Entities.Clinics;
 using ECS.Domain.Entities.MedicalRecords;
 using ECS.Domain.Entities.Patient;
+using ECS.Domain.Entities.Scheduling;
 using ECS.Domain.Enums;
 using ECS.Infrastructure.Persistence;
 using ECS.Infrastructure.Repositories.Interfaces;
@@ -117,6 +119,29 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
         private async Task<List<Guid>> RetrieveAccessiblePatientIds(Guid userId, bool isDataScopeExist)
         {
             if (!isDataScopeExist) return new List<Guid>();
+
+            var roleClaim = _httpContextAccessor
+                .HttpContext?
+                .User
+                .FindFirst(System.Security.Claims.ClaimTypes.Role)?
+                .Value;
+
+            if (string.Equals(roleClaim, "DOCTOR", StringComparison.OrdinalIgnoreCase))
+            {
+                var doctorProfile = await _context.Set<DoctorProfile>()
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(d => d.UserId == userId && d.IsActive);
+
+                if (doctorProfile == null)
+                    return new List<Guid>();
+
+                return await _context.Set<Appointment>()
+                    .AsNoTracking()
+                    .Where(a => a.DoctorId == doctorProfile.Id)
+                    .Select(a => a.PatientId)
+                    .Distinct()
+                    .ToListAsync();
+            }
 
             var directPatientIds = await _patientProfileRepository
                 .FindByCondition(x => x.UserId == userId, trackChanges: false)
