@@ -17,6 +17,7 @@ namespace ECS.Domain.Entities.Scheduling
         public DateTime UpdatedAt { get; set; }
 
         public virtual DoctorProfile Doctor { get; set; } = null!;
+        public virtual FacilityRoom? Room { get; set; }
         public virtual ICollection<TimeSlot>? TimeSlots { get; set; }
     }
 }

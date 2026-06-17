@@ -1,4 +1,5 @@
-﻿using ECS.Application.Services.AuthServices.ChangePasswordServices;
+﻿using System.Reflection;
+using ECS.Application.Services.AuthServices.ChangePasswordServices;
 using ECS.Application.Services.AuthServices.ForgotPasswordServices;
 using ECS.Application.Services.AuthServices.LoginServices;
 using ECS.Application.Services.AuthServices.RegisterServices;
@@ -29,6 +30,8 @@ using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewLi
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDemographicsServices;
 using ECS.Application.Services.PatientProfileManagementServices.CreatePatientProfileServices;
 using ECS.Application.Services.PatientProfileManagementServices.GetPatientProfilesServices;
+using ECS.Application.Services.PatientProfileManagementServices.ViewPatientProfileDetailServices;
+using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetAvailableSlotsServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemDeleteClinicServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemGetClinicDetailsServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemGetDashboardServices;
@@ -40,7 +43,6 @@ using ECS.Application.Services.SystemAdminServices.RejectClinicApplicationServic
 using ECS.Application.Services.SystemAdminServices.ReviewClinicRegisterServices;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
 
 namespace ECS.Application;
 
@@ -91,6 +93,8 @@ public static class DependencyInjection
         services.AddScoped<IUpdatePersonalProfileService, UpdatePersonalProfileService>();
         services.AddScoped<IGetActiveSpecialtiesService, GetActiveSpecialtiesService>();
         services.AddScoped<IEditServiceService, EditServiceService>();
+        services.AddScoped<IViewPatientProfileDetailService, ViewPatientProfileDetailService>();
+        services.AddScoped<IGetAvailableSlotsService, GetAvailableSlotsService>();
         services.AddScoped<IDeactivateService, DeactivateService>();
 
         // ── FluentValidation ──────────────────────────────────
