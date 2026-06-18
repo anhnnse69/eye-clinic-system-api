@@ -11,6 +11,7 @@ using ECS.Application.Services.ClinicAdminManagementServices.ClinicDashboardServ
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicFeedbackServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicProfileServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicRoomServices.CreateRoom;
+using ECS.Application.Services.ClinicAdminManagementServices.ClinicRoomServices.EditRoom;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicRoomServices.ViewListRoomServices;
 using ECS.Application.Services.ClinicAdminManagementServices.CreateServiceServices;
 using ECS.Application.Services.ClinicAdminManagementServices.CreateStaffAccountServices;
@@ -111,6 +112,7 @@ public static class DependencyInjection
         services.AddScoped<IViewDoctorAppointmentsService, ViewDoctorAppointmentsService>();
 
         services.AddScoped<ICreateRoomService, CreateRoomService>();
+        services.AddScoped<IEditRoomService, EditRoomService>();
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
