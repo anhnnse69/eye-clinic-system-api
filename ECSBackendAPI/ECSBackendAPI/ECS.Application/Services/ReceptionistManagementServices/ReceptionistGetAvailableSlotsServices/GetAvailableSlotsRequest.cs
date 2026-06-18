@@ -13,7 +13,7 @@
         /// <summary>
         /// The target evaluation calendar date boundary. Defaults to UTC current date markers.
         /// </summary>
-        public DateTime WorkDate { get; set; } = DateTime.UtcNow.Date;
+        public DateTime WorkDate { get; set; } = DateTime.Today;
 
         /// <summary>
         /// Optional query substring matching doctor profile fullname sequences.
