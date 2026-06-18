@@ -11,6 +11,7 @@ using ECS.Application.Services.ClinicAdminManagementServices.ClinicDashboardServ
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicFeedbackServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicProfileServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicRoomServices.CreateRoom;
+using ECS.Application.Services.ClinicAdminManagementServices.ClinicRoomServices.DeleteRoom;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicRoomServices.EditRoom;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicRoomServices.ViewListRoomServices;
 using ECS.Application.Services.ClinicAdminManagementServices.CreateServiceServices;
@@ -110,6 +111,7 @@ public static class DependencyInjection
         services.AddScoped<IReceptionistGetPatientDetailsService, ReceptionistGetPatientDetailsService>();
         services.AddScoped<IViewPatientDetailService, ViewPatientDetailService>();
         services.AddScoped<IViewDoctorAppointmentsService, ViewDoctorAppointmentsService>();
+        services.AddScoped<IDeleteRoomService, DeleteRoomService>();
 
         services.AddScoped<ICreateRoomService, CreateRoomService>();
         services.AddScoped<IEditRoomService, EditRoomService>();
