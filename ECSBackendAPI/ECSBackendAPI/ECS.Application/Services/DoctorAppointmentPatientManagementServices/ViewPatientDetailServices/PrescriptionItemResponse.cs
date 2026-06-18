@@ -3,7 +3,7 @@
     /// <summary>
     /// Represents a prescribed medicine item.
     /// </summary>
-    public class PrescriptionItem
+    public class PrescriptionItemResponse
     {
         public Guid Id { get; set; }
         public string MedicineName { get; set; } = null!;

@@ -8,6 +8,6 @@
         public Guid Id { get; set; }
         public string? Notes { get; set; }
         public DateTime CreatedAt { get; set; }
-        public List<PrescriptionItem> Items { get; set; } = [];
+        public List<PrescriptionItemResponse> Items { get; set; } = [];
     }
 }

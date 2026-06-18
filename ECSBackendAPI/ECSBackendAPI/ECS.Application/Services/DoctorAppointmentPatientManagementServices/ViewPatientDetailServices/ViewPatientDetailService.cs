@@ -270,7 +270,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
                 Id = rx.Id,
                 Notes = rx.Notes,
                 CreatedAt = rx.CreatedAt,
-                Items = rx.Items.Select(MapPrescriptionItem).ToList(),
+                Items = rx.Items.Select(MapPrescriptionItemResponse).ToList(),
             };
         }
 
@@ -280,10 +280,10 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
         /// </summary>
         /// <param name="item">The prescription line item to map.</param>
         /// <returns>A populated <see cref="PrescriptionItem"/>.</returns>
-        private static PrescriptionItem MapPrescriptionItem(
-            Domain.Entities.Prescriptions.PrescriptionItem item)
+        private static PrescriptionItemResponse MapPrescriptionItemResponse(
+            PrescriptionItem item)
         {
-            return new PrescriptionItem
+            return new PrescriptionItemResponse
             {
                 Id = item.Id,
                 MedicineName = item.MedicineName,
