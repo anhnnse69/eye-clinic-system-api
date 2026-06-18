@@ -1,4 +1,5 @@
-﻿using ECS.Application.Services.AuthServices.ChangePasswordServices;
+﻿using System.Reflection;
+using ECS.Application.Services.AuthServices.ChangePasswordServices;
 using ECS.Application.Services.AuthServices.ForgotPasswordServices;
 using ECS.Application.Services.AuthServices.LoginServices;
 using ECS.Application.Services.AuthServices.RegisterServices;
@@ -36,6 +37,7 @@ using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPa
 using ECS.Application.Services.PatientProfileManagementServices.CreatePatientProfileServices;
 using ECS.Application.Services.PatientProfileManagementServices.GetPatientProfilesServices;
 using ECS.Application.Services.PatientProfileManagementServices.UpdatePatientProfileServices;
+using ECS.Application.Services.PatientProfileManagementServices.ViewMyFeedbackHistoryServices;
 using ECS.Application.Services.PatientProfileManagementServices.ViewPatientProfileDetailServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetAvailableSlotsServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetPatientDetailsServices;
@@ -51,7 +53,6 @@ using ECS.Application.Services.SystemAdminServices.RejectClinicApplicationServic
 using ECS.Application.Services.SystemAdminServices.ReviewClinicRegisterServices;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
 
 namespace ECS.Application;
 
@@ -112,6 +113,7 @@ public static class DependencyInjection
         services.AddScoped<IViewPatientDetailService, ViewPatientDetailService>();
         services.AddScoped<IViewDoctorAppointmentsService, ViewDoctorAppointmentsService>();
         services.AddScoped<IDeleteRoomService, DeleteRoomService>();
+        services.AddScoped<IViewMyFeedbackHistoryService, ViewMyFeedbackHistoryService>();
 
         services.AddScoped<ICreateRoomService, CreateRoomService>();
         services.AddScoped<IEditRoomService, EditRoomService>();
