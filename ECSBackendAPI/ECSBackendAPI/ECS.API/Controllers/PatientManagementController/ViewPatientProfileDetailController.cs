@@ -9,7 +9,7 @@ namespace ECS.API.Controllers.PatientManagementController
     /// </summary>
     [ApiController]
     [Route("api/v1/patient-profiles")]
-    [Authorize]
+    [Authorize(Roles = "PATIENT")]
     public class ViewPatientProfileDetailController : ControllerBase
     {
         private readonly IViewPatientProfileDetailService

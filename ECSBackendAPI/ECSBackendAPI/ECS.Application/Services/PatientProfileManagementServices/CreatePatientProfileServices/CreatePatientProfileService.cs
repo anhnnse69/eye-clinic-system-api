@@ -214,7 +214,7 @@ namespace ECS.Application.Services.PatientProfileManagementServices.CreatePatien
             }
             if (!identityState)
             {
-                return ApiResponse<CreatePatientProfileResponse>.Fail(GeneralCode.APP_MESSAGE_4019.ToString()); // General validation error / Identity number conflict
+                return ApiResponse<CreatePatientProfileResponse>.Fail(GeneralCode.APP_MESSAGE_4043.ToString()); // Identity number already exists in the system.
             }
             if (!successState)
             {

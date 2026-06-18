@@ -10,6 +10,9 @@ using ECS.Application.Services.ClinicAdminManagementServices.ClinicAppointmentSe
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicDashboardServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicFeedbackServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicProfileServices;
+using ECS.Application.Services.ClinicAdminManagementServices.ClinicRoomServices.CreateRoom;
+using ECS.Application.Services.ClinicAdminManagementServices.ClinicRoomServices.DeleteRoom;
+using ECS.Application.Services.ClinicAdminManagementServices.ClinicRoomServices.EditRoom;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicRoomServices.ViewListRoomServices;
 using ECS.Application.Services.ClinicAdminManagementServices.CreateServiceServices;
 using ECS.Application.Services.ClinicAdminManagementServices.CreateStaffAccountServices;
@@ -26,13 +29,18 @@ using ECS.Application.Services.ClinicDoctorDiscoveryService.SearchClinicDoctorSe
 using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewClinicFeedbacksServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewClinicProfileServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewDoctorSlotsServices;
+using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewDoctorAppointmentsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewListPatientServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDemographicsServices;
 using ECS.Application.Services.PatientProfileManagementServices.CreatePatientDemographicsServices;
+using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDetailServices;
 using ECS.Application.Services.PatientProfileManagementServices.CreatePatientProfileServices;
+using ECS.Application.Services.DoctorAppointmentPatientManagementServices.GetDetailPatientDemographicsServices;
 using ECS.Application.Services.PatientProfileManagementServices.GetPatientProfilesServices;
+using ECS.Application.Services.PatientProfileManagementServices.UpdatePatientProfileServices;
 using ECS.Application.Services.PatientProfileManagementServices.ViewPatientProfileDetailServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetAvailableSlotsServices;
+using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetPatientDetailsServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetPatientsListServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemDeleteClinicServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemGetClinicDetailsServices;
@@ -99,10 +107,18 @@ public static class DependencyInjection
         services.AddScoped<IViewPatientProfileDetailService, ViewPatientProfileDetailService>();
         services.AddScoped<IGetAvailableSlotsService, GetAvailableSlotsService>();
         services.AddScoped<IDeactivateService, DeactivateService>();
+        services.AddScoped<IUpdatePatientProfileService, UpdatePatientProfileService>();
         services.AddScoped<IGetClinicRoomsService, GetClinicRoomsService>();
         services.AddScoped<IReceptionistGetPatientsListService, ReceptionistGetPatientsListService>();
         services.AddScoped<ICreatePatientDemographicsService, CreatePatientDemographicsService>();
+        services.AddScoped<IReceptionistGetPatientDetailsService, ReceptionistGetPatientDetailsService>();
+        services.AddScoped<IGetDetailPatientDemographicsService, GetDetailPatientDemographicsService>();
+        services.AddScoped<IViewPatientDetailService, ViewPatientDetailService>();
+        services.AddScoped<IViewDoctorAppointmentsService, ViewDoctorAppointmentsService>();
+        services.AddScoped<IDeleteRoomService, DeleteRoomService>();
 
+        services.AddScoped<ICreateRoomService, CreateRoomService>();
+        services.AddScoped<IEditRoomService, EditRoomService>();
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
