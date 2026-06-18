@@ -144,6 +144,7 @@ namespace ECS.Application.Services.ReceptionistManagementServices.ReceptionistGe
         /// <returns>The collection containing formatted <see cref="GetAvailableSlotsResponse"/> items.</returns>
         private List<GetAvailableSlotsResponse> MapToDoctorShiftMatrix(List<DoctorSchedule> schedules)
         {
+            var nowLocal = DateTime.UtcNow;
             return schedules.Select(s => new GetAvailableSlotsResponse
             {
                 Id = s.Id.ToString(),
@@ -154,16 +155,27 @@ namespace ECS.Application.Services.ReceptionistManagementServices.ReceptionistGe
                 RoomName = s.Room != null ? s.Room.RoomName : "Chưa gán phòng trực",
                 Slots = (s.TimeSlots ?? new List<TimeSlot>())
                     .OrderBy(ts => ts.StartTime)
-                    .Select(ts => new TimeSlotResponse
-                    {
-                        Id = ts.Id.ToString(),
-                        StartTime = ts.StartTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
-                        EndTime = ts.EndTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
-                        MaxPatients = ts.MaxPatients,
-                        CurrentPatients = ts.CurrentPatients,
-                        Status = ts.Status.ToString().ToUpper()
-                    }).ToList()
-            }).ToList();
+                    .Select(ts =>
+        {
+            var currentStatus = ts.Status.ToString().ToUpper();
+            if (currentStatus == "AVAILABLE")
+            {
+                if (nowLocal >= ts.StartTime.AddMinutes(30))
+                {
+                    currentStatus = "BLOCKED";
+                }
+            }
+            return new TimeSlotResponse
+            {
+                Id = ts.Id.ToString(),
+                StartTime = ts.StartTime.ToString("yyyy-MM-ddTHH:mm:ss"),
+                EndTime = ts.EndTime.ToString("yyyy-MM-ddTHH:mm:ss"),
+                MaxPatients = ts.MaxPatients,
+                CurrentPatients = ts.CurrentPatients,
+                Status = currentStatus
+            };
+                }).ToList()
+                }).ToList();
         }
 
         /// <summary>
