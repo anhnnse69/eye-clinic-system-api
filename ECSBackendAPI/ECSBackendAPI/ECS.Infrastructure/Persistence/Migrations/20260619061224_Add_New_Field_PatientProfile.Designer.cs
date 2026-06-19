@@ -4,6 +4,7 @@ using ECS.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ECS.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260619061224_Add_New_Field_PatientProfile")]
+    partial class Add_New_Field_PatientProfile
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2560,10 +2563,6 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("FollowUpFromAppointmentId")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("follow_up_from_appointment_id");
-
-                    b.Property<string>("NoteReason")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("note_reason");
 
                     b.Property<Guid>("PatientId")
                         .HasColumnType("uniqueidentifier")

@@ -220,6 +220,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
                     ChiefComplaint = r.ChiefComplaint,
                     DiagnosisMain = r.DiagnosisMain,
                     IsLocked = r.IsLocked,
+                    HasMedicalDemographics = r.Patient.HasMedicalDemographics,
                     CreatedAt = r.CreatedAt.ToString("dd/MM/yyyy HH:mm")
                 })
                 .ToListAsync();
