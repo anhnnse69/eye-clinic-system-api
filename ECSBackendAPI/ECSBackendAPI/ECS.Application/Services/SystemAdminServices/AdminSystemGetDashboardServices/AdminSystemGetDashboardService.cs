@@ -58,17 +58,44 @@ namespace ECS.Application.Services.SystemAdminServices.AdminSystemGetDashboardSe
             {
                 baseQuery = baseQuery.Where(u => u.StaffClinics!.Any(sc => sc.ClinicId == clinicId.Value));
             }
-            var groupedRoles = await baseQuery
+            var rawGroupedRoles = await baseQuery
                 .GroupBy(u => u.Role)
-                .Select(g => new { Role = g.Key, Count = g.Count() })
-                .ToDictionaryAsync(x => x.Role, x => x.Count);
+                .Select(g => new { RawRole = g.Key, Count = g.Count() })
+                .ToListAsync();
+            var groupedRoles = rawGroupedRoles
+                .Select(x => new
+                {
+                    NormalizedRole = NormalizeRoleName(x.RawRole),
+                    x.Count
+                })
+                .Where(x => x.NormalizedRole != "PATIENT")
+                .GroupBy(x => x.NormalizedRole)
+                .ToDictionary(g => g.Key, g => g.Sum(x => x.Count));
             return new AdminSystemGetDashboardResponse.TotalSystemAccountsDto
             {
                 Total = groupedRoles.Values.Sum(),
-                Doctor = groupedRoles.GetValueOrDefault(UserRole.DOCTOR, 0),
-                Receptionist = groupedRoles.GetValueOrDefault(UserRole.RECEPTIONIST, 0),
-                ClinicAdmin = groupedRoles.GetValueOrDefault(UserRole.CLINIC_ADMIN, 0),
-                SystemAdmin = groupedRoles.GetValueOrDefault(UserRole.SYSTEM_ADMIN, 0)
+                Doctor = groupedRoles.GetValueOrDefault("DOCTOR", 0),
+                ClinicAdmin = groupedRoles.GetValueOrDefault("CLINIC_ADMIN", 0),
+                Receptionist = groupedRoles.GetValueOrDefault("RECEPTIONIST", 0),
+                SystemAdmin = groupedRoles.GetValueOrDefault("SYSTEM_ADMIN", 0)
+            };
+        }
+
+        /// <summary>
+        /// This helper function safely converts role values ​​from the database (whether it's the number "1" or the word "Doctor") to a standard uppercase string.
+        /// </summary>
+        private string NormalizeRoleName(object? role)
+        {
+            if (role == null) return string.Empty;
+            string roleStr = role.ToString()!.Trim().ToUpper();
+            return roleStr switch
+            {
+                "0" => "PATIENT",
+                "1" => "DOCTOR",
+                "2" => "CLINIC_ADMIN",
+                "3" => "RECEPTIONIST",
+                "4" => "SYSTEM_ADMIN",
+                _ => roleStr 
             };
         }
 
