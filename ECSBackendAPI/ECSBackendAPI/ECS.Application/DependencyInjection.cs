@@ -35,6 +35,7 @@ using ECS.Application.Services.DoctorAppointmentPatientManagementServices.Confir
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.CreatePatientDemographicsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.GetDetailPatientDemographicsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewDoctorAppointmentsServices;
+using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewDoctorPersonalScheduleServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewListPatientServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDemographicsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDetailServices;
@@ -135,6 +136,7 @@ public static class DependencyInjection
         services.AddScoped<ICreateMedicineCatalogService, CreateMedicineCatalogService>();
         services.AddScoped<IReceptionistGetDailyAppointmentsService, ReceptionistGetDailyAppointmentsService>();
         services.AddScoped<IConfirmRejectAppointmentService, ConfirmRejectAppointmentService>();
+        services.AddScoped<IViewDoctorPersonalScheduleService, ViewDoctorPersonalScheduleService>();
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
