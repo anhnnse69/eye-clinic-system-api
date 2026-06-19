@@ -25,6 +25,14 @@ namespace ECS.Domain.Entities.Patient
         public string? MedicalHistory { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; }
+        public string? FamilyHistory { get; set; }
+        public string? LifestyleFactors { get; set; }
+        public string? CurrentEyeMedications { get; set; }
+        public string? PreviousEyeSurgery { get; set; }
+        public string? EyeVisionHistory { get; set; }
+        
+        // Flag to indicate if medical demographics has been created by doctor
+        public bool HasMedicalDemographics { get; set; } = false;
 
         public virtual User? User { get; set; }
         public virtual ICollection<UserPatient>? UserPatients { get; set; }
