@@ -21,6 +21,7 @@ using ECS.Application.Services.ClinicAdminManagementServices.DeleteClinicFeedbac
 using ECS.Application.Services.ClinicAdminManagementServices.EditClinicProfileServices;
 using ECS.Application.Services.ClinicAdminManagementServices.EditServiceServices;
 using ECS.Application.Services.ClinicAdminManagementServices.EditStaffAccountServices;
+using ECS.Application.Services.ClinicAdminManagementServices.MedicineCatalogServices.Create;
 using ECS.Application.Services.ClinicAdminManagementServices.MedicineCatalogServices.ViewList;
 using ECS.Application.Services.ClinicAdminManagementServices.ViewListServiceServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAccountsServices;
@@ -131,6 +132,7 @@ public static class DependencyInjection
         services.AddScoped<IGetMedicineCatalogService, GetMedicineCatalogService>();
         services.AddScoped<ICreateRoomService, CreateRoomService>();
         services.AddScoped<IEditRoomService, EditRoomService>();
+        services.AddScoped<ICreateMedicineCatalogService, CreateMedicineCatalogService>();
         services.AddScoped<IReceptionistGetDailyAppointmentsService, ReceptionistGetDailyAppointmentsService>();
         services.AddScoped<IConfirmRejectAppointmentService, ConfirmRejectAppointmentService>();
         // ── FluentValidation ──────────────────────────────────
