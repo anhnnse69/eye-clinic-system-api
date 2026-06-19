@@ -44,6 +44,7 @@ using ECS.Application.Services.PatientProfileManagementServices.ViewMyFeedbackHi
 using ECS.Application.Services.PatientProfileManagementServices.ViewPatientProfileDetailServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistCreatePatientProfileServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetAvailableSlotsServices;
+using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetDailyAppointmentsServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetPatientDetailsServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetPatientsListServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistSearchAccountServices;
@@ -130,6 +131,7 @@ public static class DependencyInjection
         services.AddScoped<IGetMedicineCatalogService, GetMedicineCatalogService>();
         services.AddScoped<ICreateRoomService, CreateRoomService>();
         services.AddScoped<IEditRoomService, EditRoomService>();
+        services.AddScoped<IReceptionistGetDailyAppointmentsService, ReceptionistGetDailyAppointmentsService>();
         services.AddScoped<IConfirmRejectAppointmentService, ConfirmRejectAppointmentService>();
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
