@@ -38,6 +38,7 @@ using ECS.Application.Services.ReceptionistManagementServices.ReceptionistCreate
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetAvailableSlotsServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetPatientDetailsServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetPatientsListServices;
+using ECS.Application.Services.ReceptionistManagementServices.ReceptionistSearchAccountServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistUpdatePatientProfileServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemDeleteClinicServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemGetClinicDetailsServices;
@@ -111,6 +112,7 @@ public static class DependencyInjection
         services.AddScoped<IViewPatientDetailService, ViewPatientDetailService>();
         services.AddScoped<IReceptionistUpdatePatientProfileService, ReceptionistUpdatePatientProfileService>();
         services.AddScoped<IReceptionistCreatePatientProfileService, ReceptionistCreatePatientProfileService>();
+        services.AddScoped<IReceptionistSearchAccountService, ReceptionistSearchAccountService>();
 
         services.AddScoped<ICreateRoomService, CreateRoomService>();
         // ── FluentValidation ──────────────────────────────────
