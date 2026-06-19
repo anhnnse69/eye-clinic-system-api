@@ -27,6 +27,7 @@ namespace ECS.Domain.Entities.Scheduling
         public Guid? FollowUpFromAppointmentId { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; }
+        public string? NoteReason { get; set; }
 
         public virtual PatientProfile Patient { get; set; } = null!;
         public virtual DoctorProfile Doctor { get; set; } = null!;

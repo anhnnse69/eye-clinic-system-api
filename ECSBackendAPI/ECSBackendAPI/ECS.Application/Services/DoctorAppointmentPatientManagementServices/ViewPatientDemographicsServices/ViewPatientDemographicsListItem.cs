@@ -104,5 +104,10 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
         /// Gets or sets the creation timestamp of the medical record.
         /// </summary>
         public string CreatedAt { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets whether the patient has medical demographics record.
+        /// </summary>
+        public bool HasMedicalDemographics { get; set; }
     }
 }
