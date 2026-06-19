@@ -1,14 +1,14 @@
 using ECS.Application.Common.Response;
 
-namespace ECS.Application.Services.PatientProfileManagementServices.CreatePatientDemographicsServices
+namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.CreatePatientDemographicsServices
 {
     /// <summary>
-    /// Defines business transaction workflows for patient demographics creation.
+    /// Defines business transaction workflows for create patient demographics.
     /// </summary>
     public interface ICreatePatientDemographicsService
     {
         /// <summary>
-        /// Executes orchestration process logic to register a new patient demographics record.
+        /// Executes orchestration process logic to create a new patient demographics record with optional medical record.
         /// </summary>
         /// <param name="request">The structural data parameter carrier specifying target demographics settings attributes.</param>
         /// <returns>An encapsulated standard workflow execution response tracking model wrapper.</returns>
