@@ -8,11 +8,20 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewDoctorPersonalScheduleServices
 {
+    /// <summary>
+    /// Service responsible for retrieving a doctor's personal schedule
+    /// including shifts, time slots, and related appointments for a given date.
+    /// </summary>
     public class ViewDoctorPersonalScheduleService : IViewDoctorPersonalScheduleService
     {
         private readonly IRepositoryQueryBase<DoctorProfile, Guid, AppDbContext> _doctorRepo;
         private readonly IRepositoryQueryBase<DoctorSchedule, Guid, AppDbContext> _scheduleRepo;
 
+        /// <summary>
+        /// Initializes a new instance of the service.
+        /// </summary>
+        /// <param name="doctorRepo">Repository for querying doctor profiles.</param>
+        /// <param name="scheduleRepo">Repository for querying doctor schedules.</param>
         public ViewDoctorPersonalScheduleService(
             IRepositoryQueryBase<DoctorProfile, Guid, AppDbContext> doctorRepo,
             IRepositoryQueryBase<DoctorSchedule, Guid, AppDbContext> scheduleRepo)
@@ -21,6 +30,17 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
             _scheduleRepo = scheduleRepo;
         }
 
+        /// <summary>
+        /// Processes the request to retrieve a doctor's personal schedule.
+        /// </summary>
+        /// <param name="userId">The ID of the authenticated user (doctor).</param>
+        /// <param name="request">Request containing work date and optional shift filter.</param>
+        /// <returns>
+        /// An <see cref="ApiResponse{T}"/> containing the doctor's schedule grouped by shifts.
+        /// </returns>
+        /// <exception cref="KeyNotFoundException">
+        /// Thrown when the doctor profile is not found or inactive.
+        /// </exception>
         public async Task<ApiResponse<ViewDoctorPersonalScheduleResponse>> Process(
             Guid userId,
             ViewDoctorPersonalScheduleRequest request)
@@ -34,8 +54,6 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
             var response = BuildResponse(request.WorkDate, shifts);
             return CreateSuccessResponse(response);
         }
-
-        // ── Private helpers ───────────────────────────────────────────────
 
         /// <summary>
         /// Resolves the active doctor profile for the given user.
