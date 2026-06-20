@@ -22,6 +22,7 @@ using ECS.Application.Services.ClinicAdminManagementServices.EditClinicProfileSe
 using ECS.Application.Services.ClinicAdminManagementServices.EditServiceServices;
 using ECS.Application.Services.ClinicAdminManagementServices.EditStaffAccountServices;
 using ECS.Application.Services.ClinicAdminManagementServices.MedicineCatalogServices.Create;
+using ECS.Application.Services.ClinicAdminManagementServices.MedicineCatalogServices.Edit;
 using ECS.Application.Services.ClinicAdminManagementServices.MedicineCatalogServices.ViewList;
 using ECS.Application.Services.ClinicAdminManagementServices.ViewListServiceServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAccountsServices;
@@ -35,6 +36,7 @@ using ECS.Application.Services.DoctorAppointmentPatientManagementServices.Confir
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.CreatePatientDemographicsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.GetDetailPatientDemographicsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewDoctorAppointmentsServices;
+using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewDoctorPersonalScheduleServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewListPatientServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDemographicsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDetailServices;
@@ -139,6 +141,8 @@ public static class DependencyInjection
         services.AddScoped<IConfirmRejectAppointmentService, ConfirmRejectAppointmentService>();
         services.AddScoped<IReceptionistPayDepositService, ReceptionistPayDepositService>();
         services.AddScoped<IReceptionistCheckInService, ReceptionistCheckInService>();
+        services.AddScoped<IViewDoctorPersonalScheduleService, ViewDoctorPersonalScheduleService>();
+        services.AddScoped<IUpdateMedicineCatalogService, UpdateMedicineCatalogService>();
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
