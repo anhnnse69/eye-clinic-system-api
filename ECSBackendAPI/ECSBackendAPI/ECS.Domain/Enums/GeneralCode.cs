@@ -60,7 +60,8 @@
         APP_MESSAGE_4041, // Service name already exists in this clinic
         APP_MESSAGE_4043, // Identity number already exists in the system.
         APP_MESSAGE_4042, // Password and confirm password do not match
-        APP_MESSAGE_4099, // Demographics record already exists for this patient (UC36 EX-01)
+        APP_MESSAGE_4099, // Demographics record already exists for this patient
+
         // Server error codes (5xxx series)
         APP_MESSAGE_5000, // General internal server error (unexpected exception)
         APP_MESSAGE_5001, // Database operation failed (e.g., connection issue or query error)

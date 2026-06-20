@@ -32,6 +32,7 @@ using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewClinicFeedbacksS
 using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewClinicProfileServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewDoctorSlotsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ConfirmRejectAppointmentServices;
+using ECS.Application.Services.DoctorAppointmentPatientManagementServices.CreateMedicalRecordServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.CreatePatientDemographicsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.GetDetailPatientDemographicsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewDoctorAppointmentsServices;
@@ -135,6 +136,7 @@ public static class DependencyInjection
         services.AddScoped<ICreateMedicineCatalogService, CreateMedicineCatalogService>();
         services.AddScoped<IReceptionistGetDailyAppointmentsService, ReceptionistGetDailyAppointmentsService>();
         services.AddScoped<IConfirmRejectAppointmentService, ConfirmRejectAppointmentService>();
+        services.AddScoped<ICreateMedicalRecordService, CreateMedicalRecordService>();
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 

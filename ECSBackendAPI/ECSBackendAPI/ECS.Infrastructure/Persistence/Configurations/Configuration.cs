@@ -439,6 +439,7 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.Property(e => e.IopMethod).HasMaxLength(50);
             entity.Property(e => e.RefractionSph).HasPrecision(6, 2);
             entity.Property(e => e.RefractionCyl).HasPrecision(6, 2);
+            entity.Property(e => e.RefractionAdd).HasPrecision(4, 2);
             entity.Property(e => e.Pd).HasPrecision(5, 1);
             entity.Property(e => e.ProptosisMm).HasPrecision(5, 2);
             entity.Property(e => e.PreAtropine).HasDefaultValue(false);
@@ -480,6 +481,7 @@ namespace ECS.Infrastructure.Persistence.Configurations
 
             entity.Property(e => e.DiameterMm).HasPrecision(5, 2);
             entity.Property(e => e.PerforationDiameterMm).HasPrecision(5, 2);
+            entity.Property(e => e.CornealThickness).HasPrecision(5, 2);
             entity.Property(e => e.CorneaExtras).HasColumnType("nvarchar(max)"); // JSONB
 
             entity.HasOne(e => e.MedicalRecord).WithMany(m => m.EyeCorneas).HasForeignKey(e => e.RecordId).OnDelete(DeleteBehavior.Cascade);
@@ -689,19 +691,72 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
 
-            // JSONB fields
-            entity.Property(e => e.Symptoms).HasColumnType("nvarchar(max)");
-            entity.Property(e => e.HistoryEye).HasColumnType("nvarchar(max)");
-            entity.Property(e => e.HistorySteroid).HasColumnType("nvarchar(max)");
-            entity.Property(e => e.HistorySystemic).HasColumnType("nvarchar(max)");
-            entity.Property(e => e.FamilyGlaucoma).HasColumnType("nvarchar(max)");
+            // Symptoms fields
+            entity.Property(e => e.EyePainLevel).HasMaxLength(50);
+            entity.Property(e => e.VisionSymptoms).HasMaxLength(100);
+            entity.Property(e => e.VisionProgression).HasMaxLength(100);
+            entity.Property(e => e.SystemicSymptoms).HasMaxLength(200);
 
-            entity.Property(e => e.GlaucomaType).HasMaxLength(50);
+            // Visual acuity & IOP
+            entity.Property(e => e.VaWithoutCorrectionOd).HasPrecision(6, 2);
+            entity.Property(e => e.VaWithoutCorrectionOs).HasPrecision(6, 2);
+            entity.Property(e => e.VaWithCorrectionOd).HasPrecision(6, 2);
+            entity.Property(e => e.VaWithCorrectionOs).HasPrecision(6, 2);
+            entity.Property(e => e.IopOd).HasPrecision(5, 2);
+            entity.Property(e => e.IopOs).HasPrecision(5, 2);
+            entity.Property(e => e.IopMethod).HasMaxLength(50);
             entity.Property(e => e.IopTargetOd).HasPrecision(5, 2);
             entity.Property(e => e.IopTargetOs).HasPrecision(5, 2);
+
+            // History
+            entity.Property(e => e.HistoryEye).HasMaxLength(100);
+            entity.Property(e => e.HistoryEyeSurgery).HasMaxLength(200);
+            entity.Property(e => e.PriorEyeSurgeryDetails).HasMaxLength(500);
+            entity.Property(e => e.SteroidUse).HasMaxLength(200);
+            entity.Property(e => e.SteroidPrescribed).HasMaxLength(200);
+            entity.Property(e => e.GlaucomaMedications).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.MedicationChangeReason).HasMaxLength(200);
+            entity.Property(e => e.OtherMedications).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.TreatmentProgress).HasColumnType("nvarchar(max)");
+
+            // Family history
+            entity.Property(e => e.FamilyGlaucomaRelation).HasMaxLength(100);
+
+            // Classification
+            entity.Property(e => e.GlaucomaType).HasMaxLength(100);
             entity.Property(e => e.StageOd).HasMaxLength(50);
             entity.Property(e => e.StageOs).HasMaxLength(50);
+
+            // Examination
+            entity.Property(e => e.AcDepthSmith).HasMaxLength(50);
+            entity.Property(e => e.AcDepthHerick).HasMaxLength(50);
+            entity.Property(e => e.GonioscopyOd).HasMaxLength(100);
+            entity.Property(e => e.GonioscopyOs).HasMaxLength(100);
+            entity.Property(e => e.AngleFindings).HasMaxLength(200);
+            entity.Property(e => e.BlebLocation).HasMaxLength(100);
+            entity.Property(e => e.BlebStatus).HasMaxLength(50);
+            entity.Property(e => e.CornealTransparency).HasMaxLength(50);
+            entity.Property(e => e.CornealThickness).HasPrecision(5, 2);
+            entity.Property(e => e.IrisColor).HasMaxLength(50);
+            entity.Property(e => e.IrisCondition).HasMaxLength(50);
+            entity.Property(e => e.PupilDiameter).HasMaxLength(20);
+            entity.Property(e => e.PupilPigmentBorder).HasMaxLength(50);
+            entity.Property(e => e.PupilReflexResponse).HasMaxLength(50);
+            entity.Property(e => e.LensStatus).HasMaxLength(50);
+            entity.Property(e => e.FundusRetinaFindings).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.FundusMaculaFindings).HasColumnType("nvarchar(max)");
             entity.Property(e => e.OpticDiscDescription).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.NerveRimOd).HasMaxLength(100);
+            entity.Property(e => e.NerveRimOs).HasMaxLength(100);
+            entity.Property(e => e.OpticDiscCupRatio).HasMaxLength(20);
+            entity.Property(e => e.OpticDiscVesselChange).HasMaxLength(100);
+            entity.Property(e => e.EyeAxialLength).HasMaxLength(50);
+
+            // Treatment plan
+            entity.Property(e => e.TreatmentPlanSurgery).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.TreatmentPlanLaser).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.TreatmentPlanMedication).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.FollowUpPlan).HasColumnType("nvarchar(max)");
 
             entity.HasOne(e => e.MedicalRecord).WithOne(m => m.GlaucomaRecord).HasForeignKey<GlaucomaRecord>(e => e.RecordId).OnDelete(DeleteBehavior.Cascade);
         }
@@ -737,17 +792,69 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
 
-            // JSONB fields
-            entity.Property(e => e.StrabismusType).HasColumnType("nvarchar(max)");
-            entity.Property(e => e.RefractionPreAtropine).HasColumnType("nvarchar(max)");
-            entity.Property(e => e.RefractionPostAtropine).HasColumnType("nvarchar(max)");
-            entity.Property(e => e.PrismMeasurements).HasColumnType("nvarchar(max)");
-            entity.Property(e => e.BinocularStatus).HasColumnType("nvarchar(max)");
-            entity.Property(e => e.MarcusGunn).HasColumnType("nvarchar(max)");
+            // Chief complaint
+            entity.Property(e => e.StrabismusType).HasMaxLength(100);
+            entity.Property(e => e.NystagmusType).HasMaxLength(100);
 
+            // Treatment history
+            entity.Property(e => e.PriorAmblyopiaTreatment).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.PriorAmblyopiaResult).HasMaxLength(50);
+            entity.Property(e => e.PriorSurgery).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.PriorSurgeryResult).HasMaxLength(100);
+
+            // Visual acuity
+            entity.Property(e => e.VaBeforeAtropineOd).HasMaxLength(50);
+            entity.Property(e => e.VaBeforeAtropineOs).HasMaxLength(50);
+            entity.Property(e => e.VaAfterAtropineOd).HasMaxLength(50);
+            entity.Property(e => e.VaAfterAtropineOs).HasMaxLength(50);
+
+            // Refraction
+            entity.Property(e => e.RefractionPreAtropine).HasMaxLength(100);
+            entity.Property(e => e.RefractionPostAtropine).HasMaxLength(100);
+
+            // Tests
+            entity.Property(e => e.PupilShadowTestOd).HasMaxLength(100);
+            entity.Property(e => e.PupilShadowTestOs).HasMaxLength(100);
+            entity.Property(e => e.EomGazeTest).HasMaxLength(100);
+            entity.Property(e => e.EomInternalOd).HasMaxLength(50);
+            entity.Property(e => e.EomInternalOs).HasMaxLength(50);
+            entity.Property(e => e.ConvergencePoint).HasMaxLength(100);
+            entity.Property(e => e.CoverTestResult).HasMaxLength(200);
+            entity.Property(e => e.HirschbergBeforeAtropine).HasMaxLength(100);
+            entity.Property(e => e.HirschbergAfterAtropine).HasMaxLength(100);
+            entity.Property(e => e.PrismNear).HasMaxLength(50);
+            entity.Property(e => e.PrismDistance).HasMaxLength(50);
+            entity.Property(e => e.PrismUp).HasMaxLength(50);
+            entity.Property(e => e.PrismDown).HasMaxLength(50);
+            entity.Property(e => e.StrabismusSyndrome).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.SynoptophoreObjective).HasMaxLength(100);
+            entity.Property(e => e.SynoptophoreSubjective).HasMaxLength(100);
+
+            // Binocular vision
+            entity.Property(e => e.BinocularStatus).HasMaxLength(50);
+            entity.Property(e => e.FusionAmplitude).HasMaxLength(100);
+            entity.Property(e => e.RetinalCorrespondence).HasMaxLength(100);
+            entity.Property(e => e.Diplopia).HasMaxLength(100);
+            entity.Property(e => e.CompensatoryHeadPosture).HasColumnType("nvarchar(max)");
+
+            // Ptosis measurements
+            entity.Property(e => e.PtosisDegreeOd).HasMaxLength(50);
+            entity.Property(e => e.PtosisDegreeOs).HasMaxLength(50);
+            entity.Property(e => e.LevatorFunctionOd).HasMaxLength(50);
+            entity.Property(e => e.LevatorFunctionOs).HasMaxLength(50);
+            entity.Property(e => e.MarcusGunn).HasMaxLength(50);
+            entity.Property(e => e.BellPhenomenon).HasMaxLength(50);
+            entity.Property(e => e.FixationOd).HasMaxLength(50);
+            entity.Property(e => e.FixationOs).HasMaxLength(50);
+            entity.Property(e => e.PalpebralReflexOd).HasMaxLength(50);
+            entity.Property(e => e.PalpebralReflexOs).HasMaxLength(50);
+
+            // Defaults
             entity.Property(e => e.Nystagmus).HasDefaultValue(false);
             entity.Property(e => e.Congenital).HasDefaultValue(false);
             entity.Property(e => e.Acquired).HasDefaultValue(false);
+            entity.Property(e => e.ChiefStrabismus).HasDefaultValue(false);
+            entity.Property(e => e.ChiefPtosis).HasDefaultValue(false);
 
             entity.HasOne(e => e.MedicalRecord).WithOne(m => m.StrabismusPtosisRecord).HasForeignKey<StrabismusPtosisRecord>(e => e.RecordId).OnDelete(DeleteBehavior.Cascade);
         }

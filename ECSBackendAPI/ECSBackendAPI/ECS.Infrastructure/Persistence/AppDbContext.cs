@@ -65,6 +65,7 @@ namespace ECS.Infrastructure.Persistence
 
         // Subspecialty Records
         public DbSet<TraumaRecord> TraumaRecords => Set<TraumaRecord>();
+        public DbSet<TraumaSurgery> TraumaSurgeries => Set<TraumaSurgery>();
         public DbSet<GlaucomaRecord> GlaucomaRecords => Set<GlaucomaRecord>();
         public DbSet<GlaucomaHistory> GlaucomaHistories => Set<GlaucomaHistory>();
         public DbSet<StrabismusPtosisRecord> StrabismusPtosisRecords => Set<StrabismusPtosisRecord>();
