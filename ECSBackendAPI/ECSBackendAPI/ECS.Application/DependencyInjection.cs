@@ -22,6 +22,7 @@ using ECS.Application.Services.ClinicAdminManagementServices.EditClinicProfileSe
 using ECS.Application.Services.ClinicAdminManagementServices.EditServiceServices;
 using ECS.Application.Services.ClinicAdminManagementServices.EditStaffAccountServices;
 using ECS.Application.Services.ClinicAdminManagementServices.MedicineCatalogServices.Create;
+using ECS.Application.Services.ClinicAdminManagementServices.MedicineCatalogServices.Delete;
 using ECS.Application.Services.ClinicAdminManagementServices.MedicineCatalogServices.Edit;
 using ECS.Application.Services.ClinicAdminManagementServices.MedicineCatalogServices.ViewList;
 using ECS.Application.Services.ClinicAdminManagementServices.ViewListServiceServices;
@@ -147,6 +148,7 @@ public static class DependencyInjection
         services.AddScoped<ICreateDoctorScheduleService, CreateDoctorScheduleService>();
         services.AddScoped<IViewDoctorClinicRoomsService, ViewDoctorClinicRoomsService>();
         services.AddScoped<IUpdateMedicineCatalogService, UpdateMedicineCatalogService>();
+        services.AddScoped<IDeleteMedicineCatalogService, DeleteMedicineCatalogService>();
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
