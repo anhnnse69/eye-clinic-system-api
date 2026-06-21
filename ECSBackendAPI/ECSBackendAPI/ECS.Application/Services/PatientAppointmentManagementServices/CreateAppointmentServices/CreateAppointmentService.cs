@@ -7,13 +7,14 @@ using ECS.Domain.Entities.Scheduling;
 using ECS.Domain.Enums;
 using ECS.Infrastructure.Persistence;
 using ECS.Infrastructure.Repositories.Interfaces;
+using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace ECS.Application.Services.PatientAppointmentManagementServices.CreateAppointmentServices
 {
     /// <summary>
-    /// Implements domain process pipelines to create appointments with validation and transaction management.
+    /// Implements core domain orchestration workflows executing authorized patient appointment creation logic bounded within transactional scopes.
     /// </summary>
     public class CreateAppointmentService : ICreateAppointmentService
     {
@@ -22,17 +23,19 @@ namespace ECS.Application.Services.PatientAppointmentManagementServices.CreateAp
         private readonly IRepositoryQueryBase<DoctorProfile, Guid, AppDbContext> _doctorRepository;
         private readonly IRepositoryQueryBase<Service, Guid, AppDbContext> _serviceRepository;
         private readonly IRepositoryQueryBase<PatientProfile, Guid, AppDbContext> _patientProfileRepository;
+        private readonly IValidator<CreateAppointmentRequest> _validator;
         private readonly AppDbContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
         /// <summary>
-        /// Initializes a new operational instance with required repository dependencies.
+        /// Initializes a new operational instance of the <see cref="CreateAppointmentService"/> class with required domain boundary infrastructure dependencies.
         /// </summary>
         /// <param name="appointmentRepository">Repository boundary instance for tracking persistent appointment write changes.</param>
         /// <param name="slotRepository">Repository boundary instance for tracking persistent slot state adjustments.</param>
         /// <param name="doctorRepository">Repository boundary instance for querying physical doctor profile records.</param>
         /// <param name="serviceRepository">Repository boundary instance for querying physical healthcare service records.</param>
         /// <param name="patientProfileRepository">Repository boundary instance for querying physical patient relationship profile records.</param>
+        /// <param name="validator">The declarative structural request boundary validation contract engine.</param>
         /// <param name="context">The underlying infrastructure entity framework core database contextual session unit.</param>
         /// <param name="httpContextAccessor">The infrastructure environment component capturing localized incoming transport context state streams.</param>
         public CreateAppointmentService(
@@ -41,6 +44,7 @@ namespace ECS.Application.Services.PatientAppointmentManagementServices.CreateAp
             IRepositoryQueryBase<DoctorProfile, Guid, AppDbContext> doctorRepository,
             IRepositoryQueryBase<Service, Guid, AppDbContext> serviceRepository,
             IRepositoryQueryBase<PatientProfile, Guid, AppDbContext> patientProfileRepository,
+            IValidator<CreateAppointmentRequest> validator,
             AppDbContext context,
             IHttpContextAccessor httpContextAccessor)
         {
@@ -49,92 +53,113 @@ namespace ECS.Application.Services.PatientAppointmentManagementServices.CreateAp
             _doctorRepository = doctorRepository;
             _serviceRepository = serviceRepository;
             _patientProfileRepository = patientProfileRepository;
+            _validator = validator;
             _context = context;
             _httpContextAccessor = httpContextAccessor;
         }
 
         /// <summary>
-        /// Core orchestration handling transactional logic to create appointments with validation.
+        /// Processes the internal transactional business logic data pipeline to validate parameters, check restrictions, and commit a new appointment record.
         /// </summary>
-        /// <param name="request">The parameters containing appointment data.</param>
-        /// <returns>An <see cref="ApiResponse{CreateAppointmentResponse}"/> enclosing state payloads.</returns>
+        /// <param name="request">The data container tracking transaction parameters and structural entity keys requested by the presentation layer.</param>
+        /// <returns>An <see cref="ApiResponse{CreateAppointmentResponse}"/> enclosing descriptive state transaction payloads alongside system outcomes.</returns>
         public async Task<ApiResponse<CreateAppointmentResponse>> Process(CreateAppointmentRequest request)
         {
-            // Initialize status tracking flags tracking pipeline mutations safely without memory ref constraints
-            var validationResult = new ValidationResult
-            {
-                IsUserValid = true,
-                IsDoctorValid = true,
-                IsServiceValid = true,
-                IsPatientAccessible = true,
-                IsSlotValid = true,
-                IsDuplicateValid = true,
-                IsTransactionSuccess = true
-            };
+            var state = new ExecutionState();
 
-            // Step 1: Extract Authenticated User ID from contextual claims identity tokens
-            var activeUserId = RetrieveAuthenticatedUserId(validationResult);
+            // Step 1: Validate incoming request data
+            ValidateRequest(request, state);
 
-            // Step 2: Validate and retrieve doctor profile metadata from database stores
-            var doctorProfile = await RetrieveActiveDoctor(request.DoctorId, validationResult);
+            // Step 2: Extract authenticated user ID from JWT token
+            RetrieveAuthenticatedUserId(state);
 
-            // Step 3: Validate and retrieve service information within matching clinic boundaries
-            var serviceEntity = await RetrieveActiveService(
-                request.ServiceId,
-                doctorProfile?.ClinicId,
-                validationResult);
+            // Step 3: Validate and retrieve active doctor profile
+            await RetrieveActiveDoctor(request.DoctorId, state);
 
-            // Step 4: Ensure target patient profile is fully accessible by current user context boundaries
-            await EnsurePatientProfileAccess(request.PatientId, activeUserId, validationResult);
+            // Step 4: Validate and retrieve active service (optional)
+            await RetrieveActiveService(request.ServiceId, state);
 
-            // Step 5: Validate and retrieve bookable timeline chronological availability slot structures
-            var timeSlot = await RetrieveBookableSlot(request.SlotId, request.DoctorId, validationResult);
+            // Step 5: Ensure patient profile is accessible by current user
+            await EnsurePatientProfileAccess(request.PatientId, state);
 
-            // Step 6: Check for parallel active duplicates across identical patient timelines
-            await CheckDuplicateAppointment(request.PatientId, request.SlotId, validationResult);
+            // Step 6: Validate and retrieve bookable time slot
+            await RetrieveBookableSlot(request.SlotId, request.DoctorId, state);
 
-            // Step 7: Build persistent appointment domain core entity records from parameters
-            var appointmentEntity = ConstructAppointmentEntity(
-                request, activeUserId, timeSlot, validationResult);
+            // Step 7: Check for duplicate appointments
+            await CheckDuplicateAppointment(request.PatientId, request.SlotId, state);
 
-            // Step 8: Persist transactional graphics records and update capacity values atomically
-            var (committedAppointment, executionSuccess) = await PersistAppointmentGraph(
-                appointmentEntity, timeSlot, validationResult);
+            // Step 8: Construct appointment entity
+            ConstructAppointmentEntity(request, state);
 
-            // Step 9: Compile data objects onto decoupled final payload container structures
-            return CreateResponse(
-                committedAppointment, doctorProfile, serviceEntity, timeSlot,
-                validationResult, executionSuccess);
+            // Step 9: Persist appointment and update slot capacity
+            await PersistAppointmentGraph(state);
+
+            // Step 10: Build and return the response
+            return CreateResponse(state);
         }
 
         /// <summary>
-        /// Resolves claims structures to retrieve authenticated user identifier.
+        /// ExecutionState holds all mutable state for the process flow.
+        /// All properties are initialized to safe defaults to avoid null checks.
         /// </summary>
-        /// <param name="validationResult">Validation result tracking instance used to mark token decoding state failures.</param>
-        /// <returns>The decoded user identity identifier value token.</returns>
-        private Guid RetrieveAuthenticatedUserId(ValidationResult validationResult)
+        private class ExecutionState
         {
-            var principalIdValue = _httpContextAccessor.HttpContext?.User
-                .FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            public bool IsValidationPassed { get; set; } = true;
+            public bool IsUserValid { get; set; } = true;
+            public bool IsDoctorValid { get; set; } = true;
+            public bool IsServiceValid { get; set; } = true;
+            public bool IsPatientAccessible { get; set; } = true;
+            public bool IsSlotValid { get; set; } = true;
+            public bool IsSlotInPast { get; set; } = false;
+            public bool IsDuplicateValid { get; set; } = true;
+            public bool IsExecutionSuccess { get; set; } = true;
+            public bool HasError { get; set; } = false;
 
-            if (!Guid.TryParse(principalIdValue, out var parsedUserId))
-            {
-                validationResult.IsUserValid = false;
-                return Guid.Empty;
-            }
+            public Guid ActiveUserId { get; set; }
+            public DoctorProfile? DoctorProfile { get; set; }
+            public Service? Service { get; set; }
+            public TimeSlot? TimeSlot { get; set; }
+            public Appointment? Appointment { get; set; }
 
-            return parsedUserId;
+            public string? ErrorCode { get; set; }
         }
 
         /// <summary>
-        /// Retrieves active doctor profile with related data.
+        /// Evaluates structural input configurations against predefined declarative constraints using the core validation provider engine.
         /// </summary>
-        /// <param name="doctorId">The doctor identifier to validate.</param>
-        /// <param name="validationResult">Validation result tracking instance used to flag database row lookup failure states.</param>
-        /// <returns>The active doctor profile or null if invalid.</returns>
-        private async Task<DoctorProfile?> RetrieveActiveDoctor(Guid doctorId, ValidationResult validationResult)
+        /// <param name="request">The data container tracking transaction parameters and structural entity keys from the presentation boundary.</param>
+        /// <param name="state">The mutable pipeline execution context matrix monitoring workflow parameters state mutations.</param>
+        private void ValidateRequest(CreateAppointmentRequest request, ExecutionState state)
         {
-            if (!validationResult.IsUserValid) return null;
+            var result = _validator.Validate(request);
+            state.IsValidationPassed = result.IsValid;
+            state.HasError = !result.IsValid;
+            state.ErrorCode = result.IsValid ? null : GeneralCode.APP_MESSAGE_4003.ToString();
+        }
+
+        /// <summary>
+        /// Dispatches claims resolution algorithms to safely decode and map incoming authenticated transport identity token contexts.
+        /// </summary>
+        /// <param name="state">The mutable pipeline execution context matrix monitoring workflow parameters state mutations.</param>
+        private void RetrieveAuthenticatedUserId(ExecutionState state)
+        {
+            var principalIdValue = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var parseResult = Guid.TryParse(principalIdValue, out var parsedUserId);
+
+            state.IsUserValid = parseResult;
+            state.ActiveUserId = parseResult ? parsedUserId : Guid.Empty;
+            state.HasError = state.HasError || !parseResult;
+            state.ErrorCode = parseResult ? state.ErrorCode : GeneralCode.APP_MESSAGE_4033.ToString();
+        }
+
+        /// <summary>
+        /// Validates doctor record parameters and related clinic operational status against the central data layer.
+        /// </summary>
+        /// <param name="doctorId">The unique primary reference identity coordinate token locating the target doctor.</param>
+        /// <param name="state">The mutable pipeline execution context matrix monitoring workflow parameters state mutations.</param>
+        private async Task RetrieveActiveDoctor(Guid doctorId, ExecutionState state)
+        {
+            if (state.HasError) return;
 
             var doctor = await _doctorRepository
                 .FindByCondition(d => d.Id == doctorId && d.IsActive)
@@ -142,69 +167,64 @@ namespace ECS.Application.Services.PatientAppointmentManagementServices.CreateAp
                 .Include(d => d.Clinic)
                 .FirstOrDefaultAsync();
 
-            if (doctor is null || !doctor.Clinic.IsActive)
-            {
-                validationResult.IsDoctorValid = false;
-                return null;
-            }
-
-            return doctor;
+            state.DoctorProfile = doctor;
+            state.IsDoctorValid = doctor != null && doctor.Clinic.IsActive;
+            state.HasError = state.HasError || !state.IsDoctorValid;
+            state.ErrorCode = state.IsDoctorValid ? state.ErrorCode : GeneralCode.APP_MESSAGE_4011.ToString();
         }
 
         /// <summary>
-        /// Retrieves active service within the specified clinic.
+        /// Resolves healthcare service metadata records verifying matching functional clinic infrastructure assignment matrices.
         /// </summary>
-        /// <param name="serviceId">The service identifier (nullable).</param>
-        /// <param name="clinicId">The clinic identifier to validate service belongs to.</param>
-        /// <param name="validationResult">Validation result tracking instance monitoring specific service parameters mismatch states.</param>
-        /// <returns>The active service or null if not provided or invalid.</returns>
-        private async Task<Service?> RetrieveActiveService(Guid? serviceId, Guid? clinicId, ValidationResult validationResult)
+        /// <param name="serviceId">The optional system tracking token identifier mapping care options.</param>
+        /// <param name="state">The mutable pipeline execution context matrix monitoring workflow parameters state mutations.</param>
+        private async Task RetrieveActiveService(Guid? serviceId, ExecutionState state)
         {
-            if (!validationResult.IsUserValid || !validationResult.IsDoctorValid) return null;
-            if (!serviceId.HasValue || !clinicId.HasValue) return null;
+            if (state.HasError) return;
+            if (!serviceId.HasValue) return;
+
+            var clinicId = state.DoctorProfile?.ClinicId;
+            if (!clinicId.HasValue) return;
 
             var service = await _serviceRepository
                 .FindByCondition(s => s.Id == serviceId.Value && s.ClinicId == clinicId.Value && s.IsActive)
                 .FirstOrDefaultAsync();
 
-            if (service is null)
-            {
-                validationResult.IsServiceValid = false;
-                return null;
-            }
-
-            return service;
+            state.Service = service;
+            state.IsServiceValid = service != null;
+            state.HasError = state.HasError || !state.IsServiceValid;
+            state.ErrorCode = state.IsServiceValid ? state.ErrorCode : GeneralCode.APP_MESSAGE_4044.ToString();
         }
 
         /// <summary>
-        /// Ensures the patient profile is accessible by the current user.
+        /// Asserts context security policies ensuring relationship paths authorize data sharing interactions between user tokens and patient profiles.
         /// </summary>
         /// <param name="patientId">The physical tracking target identifier mapping active profile structures.</param>
-        /// <param name="userId">The current executing operator identification verification context coordinates.</param>
-        /// <param name="validationResult">Validation result tracking instance updating relationship context access boundaries failure flags.</param>
-        private async Task EnsurePatientProfileAccess(Guid patientId, Guid userId, ValidationResult validationResult)
+        /// <param name="state">The mutable pipeline execution context matrix monitoring workflow parameters state mutations.</param>
+        private async Task EnsurePatientProfileAccess(Guid patientId, ExecutionState state)
         {
-            if (!validationResult.IsUserValid) return;
+            if (state.HasError) return;
 
             var isAccessible = await PatientProfileAccessHelper.IsProfileAccessibleAsync(
-                userId, patientId, _patientProfileRepository, _context);
+                state.ActiveUserId,
+                patientId,
+                _patientProfileRepository,
+                _context);
 
-            if (!isAccessible)
-            {
-                validationResult.IsPatientAccessible = false;
-            }
+            state.IsPatientAccessible = isAccessible;
+            state.HasError = state.HasError || !state.IsPatientAccessible;
+            state.ErrorCode = state.IsPatientAccessible ? state.ErrorCode : GeneralCode.APP_MESSAGE_4014.ToString();
         }
 
         /// <summary>
-        /// Retrieves and validates a bookable time slot.
+        /// Assesses the requested scheduler availability segment mapping capacity parameters and timeline constraints.
         /// </summary>
-        /// <param name="slotId">The slot identifier.</param>
-        /// <param name="doctorId">The doctor identifier for validation.</param>
-        /// <param name="validationResult">Validation result tracking instance monitoring timeline expiration states.</param>
-        /// <returns>The validated time slot or null if invalid.</returns>
-        private async Task<TimeSlot?> RetrieveBookableSlot(Guid slotId, Guid doctorId, ValidationResult validationResult)
+        /// <param name="slotId">The timeline grid cell checkpoint tracking primary identifier value token.</param>
+        /// <param name="doctorId">The assigned doctor profile key used to safeguard operational calendar boundaries.</param>
+        /// <param name="state">The mutable pipeline execution context matrix monitoring workflow parameters state mutations.</param>
+        private async Task RetrieveBookableSlot(Guid slotId, Guid doctorId, ExecutionState state)
         {
-            if (!validationResult.IsUserValid || !validationResult.IsDoctorValid) return null;
+            if (state.HasError) return;
 
             var slot = await _slotRepository
                 .FindByCondition(s => s.Id == slotId, trackChanges: true)
@@ -213,36 +233,42 @@ namespace ECS.Application.Services.PatientAppointmentManagementServices.CreateAp
 
             if (slot is null || slot.Schedule.DoctorId != doctorId)
             {
-                validationResult.IsSlotValid = false;
-                return null;
+                state.IsSlotValid = false;
+                state.HasError = true;
+                state.ErrorCode = GeneralCode.APP_MESSAGE_4006.ToString();
+                return;
             }
 
             if (slot.StartTime <= DateTime.Now)
             {
-                validationResult.IsSlotValid = false;
-                validationResult.IsSlotInPast = true;
-                return null;
+                state.IsSlotValid = false;
+                state.IsSlotInPast = true;
+                state.HasError = true;
+                state.ErrorCode = GeneralCode.APP_MESSAGE_4005.ToString();
+                return;
             }
 
             if (slot.Status != SlotStatus.AVAILABLE || slot.CurrentPatients >= slot.MaxPatients)
             {
-                validationResult.IsSlotValid = false;
-                return null;
+                state.IsSlotValid = false;
+                state.HasError = true;
+                state.ErrorCode = GeneralCode.APP_MESSAGE_4007.ToString();
+                return;
             }
 
-            return slot;
+            state.TimeSlot = slot;
+            state.IsSlotValid = true;
         }
 
         /// <summary>
-        /// Checks for duplicate appointments for the same patient and slot.
+        /// Executes analytical concurrency verification querying storage indices for active overlapping duplicate patient appointments.
         /// </summary>
-        /// <param name="patientId">The targeted patient system tracker identity vector.</param>
-        /// <param name="slotId">The timeline checkpoint slot mapping location parameters.</param>
-        /// <param name="validationResult">Validation result tracking instance setting concurrency conflict flag maps.</param>
-        private async Task CheckDuplicateAppointment(Guid patientId, Guid slotId, ValidationResult validationResult)
+        /// <param name="patientId">The specific patient tracking structural token identifier context.</param>
+        /// <param name="slotId">The targeted scheduler time matrix primary reference block key identifier.</param>
+        /// <param name="state">The mutable pipeline execution context matrix monitoring workflow parameters state mutations.</param>
+        private async Task CheckDuplicateAppointment(Guid patientId, Guid slotId, ExecutionState state)
         {
-            if (!validationResult.IsUserValid || !validationResult.IsPatientAccessible ||
-                !validationResult.IsSlotValid) return;
+            if (state.HasError) return;
 
             var duplicateExists = await _appointmentRepository
                 .FindByCondition(a => a.PatientId == patientId
@@ -250,153 +276,92 @@ namespace ECS.Application.Services.PatientAppointmentManagementServices.CreateAp
                     && a.Status != AppointmentStatus.CANCELLED)
                 .AnyAsync();
 
-            if (duplicateExists)
-            {
-                validationResult.IsDuplicateValid = false;
-            }
+            state.IsDuplicateValid = !duplicateExists;
+            state.HasError = state.HasError || !state.IsDuplicateValid;
+            state.ErrorCode = state.IsDuplicateValid ? state.ErrorCode : GeneralCode.APP_MESSAGE_4015.ToString();
         }
 
         /// <summary>
-        /// Constructs the appointment entity from validated data.
+        /// Constructs a transient concrete instance of the appointment domain core entity using successfully validated configuration frameworks.
         /// </summary>
-        /// <param name="request">The input payload model detailing request context maps.</param>
-        /// <param name="userId">The tracking authenticated principal creator token key identifier.</param>
-        /// <param name="slot">The target chronological timeline sector configuration model details.</param>
-        /// <param name="validationResult">Validation result state evaluation metadata block matrix.</param>
-        /// <returns>A concrete initialized domain core entity state ready for persistence tracks.</returns>
-        private Appointment? ConstructAppointmentEntity(
-            CreateAppointmentRequest request,
-            Guid userId,
-            TimeSlot? slot,
-            ValidationResult validationResult)
+        /// <param name="request">The parameters containing initial presentation layer values.</param>
+        /// <param name="state">The mutable pipeline execution context matrix monitoring workflow parameters state mutations.</param>
+        private void ConstructAppointmentEntity(CreateAppointmentRequest request, ExecutionState state)
         {
-            if (!validationResult.IsUserValid || !validationResult.IsDoctorValid ||
-                !validationResult.IsPatientAccessible || !validationResult.IsSlotValid ||
-                !validationResult.IsDuplicateValid || slot is null)
-            {
-                return null;
-            }
+            if (state.HasError || state.TimeSlot == null) return;
 
-            return new Appointment
+            state.Appointment = new Appointment
             {
                 Id = Guid.NewGuid(),
                 PatientId = request.PatientId,
                 DoctorId = request.DoctorId,
                 SlotId = request.SlotId,
                 ServiceId = request.ServiceId,
-                AppointmentDate = slot.StartTime,
+                AppointmentDate = state.TimeSlot.StartTime,
                 Symptoms = request.Symptoms,
                 Status = AppointmentStatus.PENDING,
                 BookingSource = "ONLINE",
-                CreatedById = userId,
+                CreatedById = state.ActiveUserId,
                 CreatedAt = DateTime.Now,
                 UpdatedAt = DateTime.Now
             };
         }
 
         /// <summary>
-        /// Persists the appointment and updates slot capacity in a transaction.
+        /// Commits the structured entity record graph atomically to the persistent database store while incrementing timeline vacancy metrics.
         /// </summary>
-        /// <param name="appointment">The constructed transient appointment model entity.</param>
-        /// <param name="slot">The physical entity track allocation database tracking row to lock.</param>
-        /// <param name="validationResult">Validation result context updating structural storage transaction checkpoint logs.</param>
-        /// <returns>A compound result pairing the updated core entity model safely alongside storage success state values.</returns>
-        private async Task<(Appointment? Appointment, bool IsSuccess)> PersistAppointmentGraph(
-            Appointment? appointment,
-            TimeSlot? slot,
-            ValidationResult validationResult)
+        /// <param name="state">The mutable pipeline execution context matrix monitoring workflow parameters state mutations.</param>
+        private async Task PersistAppointmentGraph(ExecutionState state)
         {
-            if (appointment is null || slot is null ||
-                !validationResult.IsUserValid || !validationResult.IsDoctorValid ||
-                !validationResult.IsPatientAccessible || !validationResult.IsSlotValid ||
-                !validationResult.IsDuplicateValid)
+            if (state.HasError || state.Appointment == null || state.TimeSlot == null)
             {
-                return (null, false);
+                state.IsExecutionSuccess = false;
+                return;
             }
 
             using var transactionalScope = await _appointmentRepository.BeginTransactionAsync();
 
             try
             {
-                await _appointmentRepository.CreateAsync(appointment);
+                await _appointmentRepository.CreateAsync(state.Appointment);
 
-                slot.CurrentPatients += 1;
-                if (slot.CurrentPatients >= slot.MaxPatients)
+                state.TimeSlot.CurrentPatients += 1;
+                if (state.TimeSlot.CurrentPatients >= state.TimeSlot.MaxPatients)
                 {
-                    slot.Status = SlotStatus.BOOKED;
+                    state.TimeSlot.Status = SlotStatus.BOOKED;
                 }
 
                 await _appointmentRepository.SaveChangesAsync();
                 await transactionalScope.CommitAsync();
 
-                validationResult.IsTransactionSuccess = true;
-                return (appointment, true);
+                state.IsExecutionSuccess = true;
             }
             catch (Exception)
             {
                 await transactionalScope.RollbackAsync();
-                validationResult.IsTransactionSuccess = false;
-                return (null, false);
+                state.IsExecutionSuccess = false;
+                state.HasError = true;
+                state.ErrorCode = GeneralCode.APP_MESSAGE_5001.ToString();
             }
         }
 
         /// <summary>
-        /// Transforms processing contexts into appropriate application response payloads.
+        /// Evaluates transaction processing checkpoints to compile an structured network-safe outcome application response serialization payload.
         /// </summary>
-        /// <param name="appointment">The successfully committed backend model core representation row layout.</param>
-        /// <param name="doctor">The associated structured profile configuration dataset metrics context.</param>
-        /// <param name="service">The selected transactional operational care procedure description text metadata profile.</param>
-        /// <param name="slot">The timeline interval coordinate parameters.</param>
-        /// <param name="validationResult">The final tracking diagnostic matrix structure assessing data flow safety loops.</param>
-        /// <param name="successState">Guard tracking flag verifying internal transactional engine operations outcome state logs.</param>
-        /// <returns>An endpoint transport safe formatted serialization container.</returns>
-        private ApiResponse<CreateAppointmentResponse> CreateResponse(
-            Appointment? appointment,
-            DoctorProfile? doctor,
-            Service? service,
-            TimeSlot? slot,
-            ValidationResult validationResult,
-            bool successState)
+        /// <param name="state">The mutable pipeline execution context matrix monitoring workflow parameters state mutations.</param>
+        /// <returns>An endpoint transport safe formatted serialization envelope containing specific process diagnostic state indicators.</returns>
+        private ApiResponse<CreateAppointmentResponse> CreateResponse(ExecutionState state)
         {
-            if (!validationResult.IsUserValid)
+            if (state.HasError)
             {
-                return ApiResponse<CreateAppointmentResponse>.Fail(GeneralCode.APP_MESSAGE_4033.ToString());
+                var errorCode = state.ErrorCode ?? GeneralCode.APP_MESSAGE_4001.ToString();
+                return ApiResponse<CreateAppointmentResponse>.Fail(errorCode);
             }
 
-            if (!validationResult.IsDoctorValid)
-            {
-                return ApiResponse<CreateAppointmentResponse>.Fail(GeneralCode.APP_MESSAGE_4011.ToString());
-            }
-
-            if (!validationResult.IsPatientAccessible)
-            {
-                return ApiResponse<CreateAppointmentResponse>.Fail(GeneralCode.APP_MESSAGE_4014.ToString());
-            }
-
-            if (!validationResult.IsSlotValid)
-            {
-                return ApiResponse<CreateAppointmentResponse>.Fail(GeneralCode.APP_MESSAGE_4006.ToString());
-            }
-
-            if (validationResult.IsSlotInPast)
-            {
-                return ApiResponse<CreateAppointmentResponse>.Fail(GeneralCode.APP_MESSAGE_4005.ToString());
-            }
-
-            if (!validationResult.IsDuplicateValid)
-            {
-                return ApiResponse<CreateAppointmentResponse>.Fail(GeneralCode.APP_MESSAGE_4015.ToString());
-            }
-
-            if (!validationResult.IsServiceValid)
-            {
-                return ApiResponse<CreateAppointmentResponse>.Fail(GeneralCode.APP_MESSAGE_4044.ToString());
-            }
-
-            if (!successState || appointment is null || doctor is null || slot is null)
-            {
-                return ApiResponse<CreateAppointmentResponse>.Fail(GeneralCode.APP_MESSAGE_5001.ToString());
-            }
+            var doctor = state.DoctorProfile!;
+            var slot = state.TimeSlot!;
+            var appointment = state.Appointment!;
+            var service = state.Service;
 
             var response = new CreateAppointmentResponse
             {
@@ -413,22 +378,8 @@ namespace ECS.Application.Services.PatientAppointmentManagementServices.CreateAp
             };
 
             return ApiResponse<CreateAppointmentResponse>.Success(
-                GeneralCode.APP_MESSAGE_2001.ToString(), response);
-        }
-
-        /// <summary>
-        /// Validation result container class to avoid ref parameters in async methods.
-        /// </summary>
-        private class ValidationResult
-        {
-            public bool IsUserValid { get; set; }
-            public bool IsDoctorValid { get; set; }
-            public bool IsServiceValid { get; set; }
-            public bool IsPatientAccessible { get; set; }
-            public bool IsSlotValid { get; set; }
-            public bool IsDuplicateValid { get; set; }
-            public bool IsTransactionSuccess { get; set; }
-            public bool IsSlotInPast { get; set; }
+                GeneralCode.APP_MESSAGE_2001.ToString(),
+                response);
         }
     }
 }
