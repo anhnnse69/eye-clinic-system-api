@@ -13,9 +13,10 @@ namespace ECS.Domain.Entities.Scheduling
         public DateTime WorkDate { get; set; }
         public ShiftType ShiftType { get; set; }
         public string? Note { get; set; }
+        public bool IsDeleted { get; set; } = false;
+        public DateTime? DeletedAt { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; }
-
         public virtual DoctorProfile Doctor { get; set; } = null!;
         public virtual FacilityRoom? Room { get; set; }
         public virtual ICollection<TimeSlot>? TimeSlots { get; set; }
