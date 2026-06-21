@@ -65,6 +65,7 @@ using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetPat
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistPayDepositServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistSearchAccountServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistUpdatePatientProfileServices;
+using ECS.Application.Services.SystemAdminServices.AccountServices.View;
 using ECS.Application.Services.SystemAdminServices.AdminSystemDeleteClinicServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemGetClinicDetailsServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemGetDashboardServices;
@@ -166,6 +167,7 @@ public static class DependencyInjection
         services.AddScoped<IBlockUnblockSlotService, BlockUnblockSlotService>();
 
         services.AddScoped<IDeleteMedicineCatalogService, DeleteMedicineCatalogService>();
+        services.AddScoped<IGetAccountsService, GetAccountsService>();
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
