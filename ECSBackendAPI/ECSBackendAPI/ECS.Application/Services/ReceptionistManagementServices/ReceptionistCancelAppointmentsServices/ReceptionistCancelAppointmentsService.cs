@@ -95,6 +95,11 @@ namespace ECS.Application.Services.ReceptionistManagementServices.ReceptionistCa
                 return ApiResponse<ReceptionistCancelAppointmentsResponse>.Fail("CANCELLATION_REASON_REQUIRED");
             if (appointment.Status == AppointmentStatus.CANCELLED)
                 return ApiResponse<ReceptionistCancelAppointmentsResponse>.Fail("APPOINTMENT_ALREADY_CANCELLED");
+            DateTime todayVn = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time")).Date;
+            if (appointment.AppointmentDate.Date < todayVn)
+            {
+                return ApiResponse<ReceptionistCancelAppointmentsResponse>.Fail("CANNOT_CANCEL_PAST_APPOINTMENT");
+            }
             if (appointment.Status == AppointmentStatus.COMPLETED ||
                 appointment.Status == AppointmentStatus.IN_PROGRESS ||
                 appointment.Status == AppointmentStatus.ARRIVED)
