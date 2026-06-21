@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ECS.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260616175344_Update_RoomId_Into_DoctorSchedule")]
-    partial class Update_RoomId_Into_DoctorSchedule
+    [Migration("20260621102625_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -674,6 +674,10 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("ac_lens_material");
 
+                    b.Property<string>("AcOtherFindings")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ac_other_findings");
+
                     b.Property<decimal?>("AcPusMm")
                         .HasPrecision(5, 2)
                         .HasColumnType("decimal(5,2)")
@@ -686,6 +690,10 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     b.Property<bool>("AngleNeovascularization")
                         .HasColumnType("bit")
                         .HasColumnName("angle_neovascularization");
+
+                    b.Property<string>("AngleOtherFindings")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("angle_other_findings");
 
                     b.Property<bool>("AnglePigment")
                         .HasColumnType("bit")
@@ -703,9 +711,17 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("iris_busacca_nodules");
 
+                    b.Property<bool>("IrisCiliaryProcesses")
+                        .HasColumnType("bit")
+                        .HasColumnName("iris_ciliary_processes");
+
                     b.Property<string>("IrisColor")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("iris_color");
+
+                    b.Property<string>("IrisCondition")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("iris_condition");
 
                     b.Property<bool>("IrisDegeneration")
                         .HasColumnType("bit")
@@ -739,10 +755,18 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("iris_root_tear_degree");
 
+                    b.Property<string>("IrisTumorLocation")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("iris_tumor_location");
+
                     b.Property<decimal?>("PupilDiameterMm")
                         .HasPrecision(5, 2)
                         .HasColumnType("decimal(5,2)")
                         .HasColumnName("pupil_diameter_mm");
+
+                    b.Property<bool>("PupilDilated")
+                        .HasColumnType("bit")
+                        .HasColumnName("pupil_dilated");
 
                     b.Property<bool>("PupilIrregular")
                         .HasColumnType("bit")
@@ -751,6 +775,14 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     b.Property<string>("PupilLightReflex")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("pupil_light_reflex");
+
+                    b.Property<bool>("PupilParalyzed")
+                        .HasColumnType("bit")
+                        .HasColumnName("pupil_paralyzed");
+
+                    b.Property<string>("PupilPtdtTest")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("pupil_ptdt_test");
 
                     b.Property<string>("PupilReflex")
                         .HasColumnType("nvarchar(max)")
@@ -763,6 +795,10 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     b.Property<bool>("PupilSychiae")
                         .HasColumnType("bit")
                         .HasColumnName("pupil_sychiae");
+
+                    b.Property<string>("PupilSynechiaeLocation")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("pupil_synechiae_location");
 
                     b.Property<Guid>("RecordId")
                         .HasColumnType("uniqueidentifier")
@@ -802,6 +838,11 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("cornea_extras");
 
+                    b.Property<decimal?>("CornealThickness")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)")
+                        .HasColumnName("corneal_thickness");
+
                     b.Property<bool>("DescemetRupture")
                         .HasColumnType("bit")
                         .HasColumnName("descemet_rupture");
@@ -811,6 +852,10 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("decimal(5,2)")
                         .HasColumnName("diameter_mm");
 
+                    b.Property<string>("DrugDeposit")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("drug_deposit");
+
                     b.Property<string>("EndotheliumFolds")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("endothelium_folds");
@@ -818,6 +863,10 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     b.Property<string>("EpitheliumBullous")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("epithelium_bullous");
+
+                    b.Property<string>("EpitheliumEdemaLevel")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("epithelium_edema_level");
 
                     b.Property<string>("EpitheliumLoss")
                         .HasColumnType("nvarchar(max)")
@@ -839,9 +888,21 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("laceration");
 
+                    b.Property<string>("LacerationLocation")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("laceration_location");
+
+                    b.Property<string>("LacerationSize")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("laceration_size");
+
                     b.Property<bool?>("LacerationSutured")
                         .HasColumnType("bit")
                         .HasColumnName("laceration_sutured");
+
+                    b.Property<string>("LacerationType")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("laceration_type");
 
                     b.Property<bool>("LimbalStemDeficiency")
                         .HasColumnType("bit")
@@ -850,6 +911,14 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     b.Property<bool>("Neovascularization")
                         .HasColumnType("bit")
                         .HasColumnName("neovascularization");
+
+                    b.Property<string>("NeovascularizationExtent")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("neovascularization_extent");
+
+                    b.Property<string>("NeovascularizationLocation")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("neovascularization_location");
 
                     b.Property<bool>("Perforation")
                         .HasColumnType("bit")
@@ -860,13 +929,29 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("decimal(5,2)")
                         .HasColumnName("perforation_diameter_mm");
 
+                    b.Property<string>("PerforationLocation")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("perforation_location");
+
                     b.Property<bool>("PerforationThreatened")
                         .HasColumnType("bit")
                         .HasColumnName("perforation_threatened");
 
+                    b.Property<string>("PosteriorDepositLocation")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("posterior_deposit_location");
+
+                    b.Property<string>("PosteriorSurfaceDeposit")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("posterior_surface_deposit");
+
                     b.Property<Guid>("RecordId")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("record_id");
+
+                    b.Property<string>("SeidelTest")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("seidel_test");
 
                     b.Property<string>("Sensation")
                         .HasColumnType("nvarchar(max)")
@@ -898,9 +983,25 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("stroma_thinning");
 
+                    b.Property<bool>("TissueEntrapped")
+                        .HasColumnType("bit")
+                        .HasColumnName("tissue_entrapped");
+
                     b.Property<bool>("Ulcer")
                         .HasColumnType("bit")
                         .HasColumnName("ulcer");
+
+                    b.Property<string>("UlcerDescription")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ulcer_description");
+
+                    b.Property<string>("UlcerLocation")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ulcer_location");
+
+                    b.Property<string>("UlcerSize")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ulcer_size");
 
                     b.HasKey("Id")
                         .HasName("pk_eye_cornea");
@@ -922,6 +1023,10 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("auto_refraction");
 
+                    b.Property<string>("CoverTestResult")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("cover_test_result");
+
                     b.Property<bool>("EomNormal")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -935,6 +1040,14 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     b.Property<string>("EyeballStatus")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("eyeball_status");
+
+                    b.Property<string>("EyeballTexture")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("eyeball_texture");
+
+                    b.Property<string>("HirschbergTest")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("hirschberg_test");
 
                     b.Property<string>("IopMethod")
                         .HasMaxLength(50)
@@ -983,17 +1096,38 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("pre_atropine");
 
+                    b.Property<string>("PrismMeasurement")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("prism_measurement");
+
                     b.Property<decimal?>("ProptosisMm")
                         .HasPrecision(5, 2)
                         .HasColumnType("decimal(5,2)")
                         .HasColumnName("proptosis_mm");
+
+                    b.Property<string>("PupilAccommodation")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("pupil_accommodation");
+
+                    b.Property<string>("PupilExamResult")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("pupil_exam_result");
+
+                    b.Property<string>("PupilReflexLight")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("pupil_reflex_light");
+
+                    b.Property<string>("PupilRelativeAfferentDefect")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("pupil_relative_afferent_defect");
 
                     b.Property<Guid>("RecordId")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("record_id");
 
                     b.Property<decimal?>("RefractionAdd")
-                        .HasColumnType("decimal(18,2)")
+                        .HasPrecision(4, 2)
+                        .HasColumnType("decimal(4,2)")
                         .HasColumnName("refraction_add");
 
                     b.Property<int?>("RefractionAxis")
@@ -1020,6 +1154,10 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(10)")
                         .HasColumnName("side");
 
+                    b.Property<string>("StrabismusType")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("strabismus_type");
+
                     b.Property<string>("SubjectiveRefraction")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("subjective_refraction");
@@ -1043,6 +1181,10 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasPrecision(5, 2)
                         .HasColumnType("decimal(5,2)")
                         .HasColumnName("va_uncorrected");
+
+                    b.Property<string>("VisualField")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("visual_field");
 
                     b.HasKey("Id")
                         .HasName("pk_eye_exam_basic");
@@ -1086,9 +1228,25 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("conjunctiva_hemorrhage");
 
+                    b.Property<string>("ConjunctivaHemorrhageLocation")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("conjunctiva_hemorrhage_location");
+
                     b.Property<bool>("ConjunctivaKeratinization")
                         .HasColumnType("bit")
                         .HasColumnName("conjunctiva_keratinization");
+
+                    b.Property<bool>("ConjunctivaLaceration")
+                        .HasColumnType("bit")
+                        .HasColumnName("conjunctiva_laceration");
+
+                    b.Property<string>("ConjunctivaLacerationLocation")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("conjunctiva_laceration_location");
+
+                    b.Property<bool>("ConjunctivaNormal")
+                        .HasColumnType("bit")
+                        .HasColumnName("conjunctiva_normal");
 
                     b.Property<string>("ConjunctivaOther")
                         .HasColumnType("nvarchar(max)")
@@ -1110,9 +1268,29 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("entropion");
 
+                    b.Property<bool>("EntropionPediatric")
+                        .HasColumnType("bit")
+                        .HasColumnName("entropion_pediatric");
+
+                    b.Property<bool>("Epicanthus")
+                        .HasColumnType("bit")
+                        .HasColumnName("epicanthus");
+
+                    b.Property<string>("EpicanthusType")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("epicanthus_type");
+
                     b.Property<bool>("EyelidEdema")
                         .HasColumnType("bit")
                         .HasColumnName("eyelid_edema");
+
+                    b.Property<bool>("EyelidHemorrhage")
+                        .HasColumnType("bit")
+                        .HasColumnName("eyelid_hemorrhage");
+
+                    b.Property<bool>("EyelidNormal")
+                        .HasColumnType("bit")
+                        .HasColumnName("eyelid_normal");
 
                     b.Property<string>("EyelidOther")
                         .HasColumnType("nvarchar(max)")
@@ -1126,6 +1304,10 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("fornix_status");
 
+                    b.Property<bool>("HasTumor")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_tumor");
+
                     b.Property<bool>("Hordeolum")
                         .HasColumnType("bit")
                         .HasColumnName("hordeolum");
@@ -1138,9 +1320,45 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("laceration_depth");
 
+                    b.Property<string>("LacerationExtent")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("laceration_extent");
+
+                    b.Property<bool>("LacerationSutured")
+                        .HasColumnType("bit")
+                        .HasColumnName("laceration_sutured");
+
+                    b.Property<bool>("LacerationUnsutured")
+                        .HasColumnType("bit")
+                        .HasColumnName("laceration_unsutured");
+
+                    b.Property<bool>("LacrimalDuctCut")
+                        .HasColumnType("bit")
+                        .HasColumnName("lacrimal_duct_cut");
+
+                    b.Property<string>("LacrimalDuctCutLocation")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("lacrimal_duct_cut_location");
+
+                    b.Property<bool>("LacrimalDuctNormal")
+                        .HasColumnType("bit")
+                        .HasColumnName("lacrimal_duct_normal");
+
                     b.Property<bool>("Lagophthalmos")
                         .HasColumnType("bit")
                         .HasColumnName("lagophthalmos");
+
+                    b.Property<bool>("Pterygium")
+                        .HasColumnType("bit")
+                        .HasColumnName("pterygium");
+
+                    b.Property<string>("PterygiumLocation")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("pterygium_location");
+
+                    b.Property<string>("PterygiumSize")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("pterygium_size");
 
                     b.Property<bool>("Ptosis")
                         .HasColumnType("bit")
@@ -1172,6 +1390,18 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("symblepharon_width");
 
+                    b.Property<string>("TumorLocation")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("tumor_location");
+
+                    b.Property<string>("TumorNature")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("tumor_nature");
+
+                    b.Property<string>("TumorSize")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("tumor_size");
+
                     b.HasKey("Id")
                         .HasName("pk_eye_eyelid_conjunctiva");
 
@@ -1188,9 +1418,21 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("id");
 
+                    b.Property<string>("ChoroidalFindings")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("choroidal_findings");
+
+                    b.Property<bool>("ChoroidalNormal")
+                        .HasColumnType("bit")
+                        .HasColumnName("choroidal_normal");
+
                     b.Property<string>("DiscMaculaExtras")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("disc_macula_extras");
+
+                    b.Property<string>("MaculaCondition")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("macula_condition");
 
                     b.Property<string>("MaculaEdemaType")
                         .HasColumnType("nvarchar(max)")
@@ -1222,6 +1464,10 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("optic_disc_atrophy");
 
+                    b.Property<string>("OpticDiscColor")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("optic_disc_color");
+
                     b.Property<string>("OpticDiscCupRatio")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("optic_disc_cup_ratio");
@@ -1251,6 +1497,10 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     b.Property<bool>("OpticDiscPallor")
                         .HasColumnType("bit")
                         .HasColumnName("optic_disc_pallor");
+
+                    b.Property<string>("OpticDiscRimLocation")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("optic_disc_rim_location");
 
                     b.Property<string>("OpticDiscRimStatus")
                         .HasColumnType("nvarchar(max)")
@@ -1298,6 +1548,10 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("int")
                         .HasColumnName("chorioretinitis_count");
 
+                    b.Property<string>("ChorioretinitisLocation")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("chorioretinitis_location");
+
                     b.Property<bool>("ChorioretinitisScar")
                         .HasColumnType("bit")
                         .HasColumnName("chorioretinitis_scar");
@@ -1306,9 +1560,37 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("choroidal_neovascularization");
 
+                    b.Property<bool>("ChoroidalNeovesselsSubretinal")
+                        .HasColumnType("bit")
+                        .HasColumnName("choroidal_neovessels_subretinal");
+
+                    b.Property<string>("DegenerativeDescription")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("degenerative_description");
+
+                    b.Property<string>("DegenerativeType")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("degenerative_type");
+
+                    b.Property<string>("ExudateType")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("exudate_type");
+
+                    b.Property<string>("HemorrhageLocation")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("hemorrhage_location");
+
                     b.Property<bool>("IntraocularForeignBody")
                         .HasColumnType("bit")
                         .HasColumnName("intraocular_foreign_body");
+
+                    b.Property<string>("IofbLocation")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("iofb_location");
+
+                    b.Property<string>("IofbSize")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("iofb_size");
 
                     b.Property<bool>("OcclusionEdema")
                         .HasColumnType("bit")
@@ -1317,6 +1599,10 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     b.Property<bool>("OcclusionIschemia")
                         .HasColumnType("bit")
                         .HasColumnName("occlusion_ischemia");
+
+                    b.Property<string>("OcclusionType")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("occlusion_type");
 
                     b.Property<Guid>("RecordId")
                         .HasColumnType("uniqueidentifier")
@@ -1350,13 +1636,25 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("retina_hemorrhage_superficial");
 
+                    b.Property<bool>("RetinaNormal")
+                        .HasColumnType("bit")
+                        .HasColumnName("retina_normal");
+
                     b.Property<string>("RetinaVesselExtras")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("retina_vessel_extras");
 
+                    b.Property<string>("RetinalCondition")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("retinal_condition");
+
                     b.Property<bool>("RetinalDetachment")
                         .HasColumnType("bit")
                         .HasColumnName("retinal_detachment");
+
+                    b.Property<string>("RetinalDetachmentLevel")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("retinal_detachment_level");
 
                     b.Property<bool>("RetinalTear")
                         .HasColumnType("bit")
@@ -1365,6 +1663,14 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     b.Property<int?>("RetinalTearCount")
                         .HasColumnType("int")
                         .HasColumnName("retinal_tear_count");
+
+                    b.Property<string>("RetinalTearLocation")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("retinal_tear_location");
+
+                    b.Property<string>("RetinalTearMorphology")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("retinal_tear_morphology");
 
                     b.Property<string>("Side")
                         .IsRequired()
@@ -1398,6 +1704,10 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("id");
 
+                    b.Property<bool>("LensAnteriorPigmentation")
+                        .HasColumnType("bit")
+                        .HasColumnName("lens_anterior_pigmentation");
+
                     b.Property<bool>("LensClear")
                         .HasColumnType("bit")
                         .HasColumnName("lens_clear");
@@ -1405,6 +1715,14 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     b.Property<bool>("LensIntoAnterior")
                         .HasColumnType("bit")
                         .HasColumnName("lens_into_anterior");
+
+                    b.Property<bool>("LensIntoVitreous")
+                        .HasColumnType("bit")
+                        .HasColumnName("lens_into_vitreous");
+
+                    b.Property<string>("LensIolPosition")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("lens_iol_position");
 
                     b.Property<bool>("LensIolPresent")
                         .HasColumnType("bit")
@@ -1414,9 +1732,17 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("lens_iol_status");
 
+                    b.Property<string>("LensOpacityLocation")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("lens_opacity_location");
+
                     b.Property<string>("LensOpacityType")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("lens_opacity_type");
+
+                    b.Property<bool>("LensPurulent")
+                        .HasColumnType("bit")
+                        .HasColumnName("lens_purulent");
 
                     b.Property<bool>("LensRupture")
                         .HasColumnType("bit")
@@ -1444,6 +1770,10 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("vitreous_clear");
 
+                    b.Property<bool>("VitreousForeignBody")
+                        .HasColumnType("bit")
+                        .HasColumnName("vitreous_foreign_body");
+
                     b.Property<bool>("VitreousHemorrhage")
                         .HasColumnType("bit")
                         .HasColumnName("vitreous_hemorrhage");
@@ -1451,6 +1781,14 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     b.Property<bool>("VitreousOpacity")
                         .HasColumnType("bit")
                         .HasColumnName("vitreous_opacity");
+
+                    b.Property<bool>("VitreousOrganized")
+                        .HasColumnType("bit")
+                        .HasColumnName("vitreous_organized");
+
+                    b.Property<bool>("VitreousPurulent")
+                        .HasColumnType("bit")
+                        .HasColumnName("vitreous_purulent");
 
                     b.Property<bool>("VitreousPvd")
                         .HasColumnType("bit")
@@ -1500,6 +1838,14 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("sclera_laceration");
 
+                    b.Property<string>("ScleraLacerationLocation")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("sclera_laceration_location");
+
+                    b.Property<string>("ScleraLacerationSize")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("sclera_laceration_size");
+
                     b.Property<bool?>("ScleraLacerationSutured")
                         .HasColumnType("bit")
                         .HasColumnName("sclera_laceration_sutured");
@@ -1517,6 +1863,10 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     b.Property<bool>("ScleraThinning")
                         .HasColumnType("bit")
                         .HasColumnName("sclera_thinning");
+
+                    b.Property<bool>("ScleraTissueEntrapped")
+                        .HasColumnType("bit")
+                        .HasColumnName("sclera_tissue_entrapped");
 
                     b.Property<string>("ScleritisType")
                         .HasColumnType("nvarchar(max)")
@@ -1562,9 +1912,17 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("irrigation_regurgitation_same");
 
+                    b.Property<string>("LacrimalDischarge")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("lacrimal_discharge");
+
                     b.Property<string>("LacrimalOther")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("lacrimal_other");
+
+                    b.Property<string>("NasolacrimalStatus")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("nasolacrimal_status");
 
                     b.Property<Guid>("RecordId")
                         .HasColumnType("uniqueidentifier")
@@ -2242,9 +2600,21 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("GETUTCDATE()");
 
+                    b.Property<string>("CurrentEyeMedications")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("current_eye_medications");
+
                     b.Property<DateTime>("Dob")
                         .HasColumnType("date")
                         .HasColumnName("dob");
+
+                    b.Property<string>("EyeVisionHistory")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("eye_vision_history");
+
+                    b.Property<string>("FamilyHistory")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("family_history");
 
                     b.Property<string>("FullName")
                         .IsRequired()
@@ -2258,10 +2628,18 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(10)")
                         .HasColumnName("gender");
 
+                    b.Property<bool>("HasMedicalDemographics")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_medical_demographics");
+
                     b.Property<string>("IdentityNumber")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("identity_number");
+
+                    b.Property<string>("LifestyleFactors")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("lifestyle_factors");
 
                     b.Property<string>("MedicalHistory")
                         .HasColumnType("nvarchar(max)")
@@ -2271,6 +2649,10 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("phone_number");
+
+                    b.Property<string>("PreviousEyeSurgery")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("previous_eye_surgery");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2")
@@ -2539,6 +2921,10 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("FollowUpFromAppointmentId")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("follow_up_from_appointment_id");
+
+                    b.Property<string>("NoteReason")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("note_reason");
 
                     b.Property<Guid>("PatientId")
                         .HasColumnType("uniqueidentifier")
@@ -2832,42 +3218,179 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("id");
 
-                    b.Property<string>("BlebOdStatus")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("bleb_od_status");
-
-                    b.Property<string>("BlebOsStatus")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("bleb_os_status");
-
-                    b.Property<string>("FamilyGlaucoma")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("family_glaucoma");
-
-                    b.Property<string>("GlaucomaType")
+                    b.Property<string>("AcDepthHerick")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
+                        .HasColumnName("ac_depth_herick");
+
+                    b.Property<string>("AcDepthSmith")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("ac_depth_smith");
+
+                    b.Property<string>("AngleFindings")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("angle_findings");
+
+                    b.Property<string>("BlebLocation")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("bleb_location");
+
+                    b.Property<string>("BlebStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("bleb_status");
+
+                    b.Property<decimal?>("CornealThickness")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)")
+                        .HasColumnName("corneal_thickness");
+
+                    b.Property<string>("CornealTransparency")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("corneal_transparency");
+
+                    b.Property<string>("EyeAxialLength")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("eye_axial_length");
+
+                    b.Property<string>("EyePainLevel")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("eye_pain_level");
+
+                    b.Property<string>("FamilyGlaucomaRelation")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("family_glaucoma_relation");
+
+                    b.Property<bool>("FamilyHasGlaucoma")
+                        .HasColumnType("bit")
+                        .HasColumnName("family_has_glaucoma");
+
+                    b.Property<string>("FollowUpPlan")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("follow_up_plan");
+
+                    b.Property<string>("FundusMaculaFindings")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("fundus_macula_findings");
+
+                    b.Property<string>("FundusRetinaFindings")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("fundus_retina_findings");
+
+                    b.Property<string>("GlaucomaMedications")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("glaucoma_medications");
+
+                    b.Property<string>("GlaucomaType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
                         .HasColumnName("glaucoma_type");
 
                     b.Property<string>("GonioscopyOd")
-                        .HasColumnType("nvarchar(max)")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
                         .HasColumnName("gonioscopy_od");
 
                     b.Property<string>("GonioscopyOs")
-                        .HasColumnType("nvarchar(max)")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
                         .HasColumnName("gonioscopy_os");
 
+                    b.Property<bool>("HasCNV")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_cnv");
+
+                    b.Property<bool>("HasCardiovascularDisease")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_cardiovascular_disease");
+
+                    b.Property<bool>("HasCarotidFistula")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_carotid_fistula");
+
+                    b.Property<bool>("HasConjunctivalInjection")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_conjunctival_injection");
+
+                    b.Property<bool>("HasDiabetes")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_diabetes");
+
+                    b.Property<bool>("HasEyelidSwelling")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_eyelid_swelling");
+
+                    b.Property<bool>("HasFilteringBleb")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_filtering_bleb");
+
+                    b.Property<bool>("HasHypertension")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_hypertension");
+
+                    b.Property<bool>("HasIrisNeovascularization")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_iris_neovascularization");
+
+                    b.Property<bool>("HasOpticDiscHemorrhage")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_optic_disc_hemorrhage");
+
+                    b.Property<bool>("HasPhotophobia")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_photophobia");
+
+                    b.Property<bool>("HasRedness")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_redness");
+
+                    b.Property<bool>("HasRetinalHemorrhage")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_retinal_hemorrhage");
+
+                    b.Property<bool>("HasRimAtrophy")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_rim_atrophy");
+
+                    b.Property<bool>("HasScleralThinning")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_scleral_thinning");
+
+                    b.Property<bool>("HasTearing")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_tearing");
+
                     b.Property<string>("HistoryEye")
-                        .HasColumnType("nvarchar(max)")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
                         .HasColumnName("history_eye");
 
-                    b.Property<string>("HistorySteroid")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("history_steroid");
+                    b.Property<string>("HistoryEyeSurgery")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("history_eye_surgery");
 
-                    b.Property<string>("HistorySystemic")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("history_systemic");
+                    b.Property<string>("IopMethod")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("iop_method");
+
+                    b.Property<decimal?>("IopOd")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)")
+                        .HasColumnName("iop_od");
+
+                    b.Property<decimal?>("IopOs")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)")
+                        .HasColumnName("iop_os");
 
                     b.Property<decimal?>("IopTargetOd")
                         .HasPrecision(5, 2)
@@ -2879,21 +3402,85 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("decimal(5,2)")
                         .HasColumnName("iop_target_os");
 
+                    b.Property<string>("IrisColor")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("iris_color");
+
+                    b.Property<string>("IrisCondition")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("iris_condition");
+
+                    b.Property<string>("LensStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("lens_status");
+
+                    b.Property<string>("MedicationChangeReason")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("medication_change_reason");
+
                     b.Property<string>("NerveRimOd")
-                        .HasColumnType("nvarchar(max)")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
                         .HasColumnName("nerve_rim_od");
 
                     b.Property<string>("NerveRimOs")
-                        .HasColumnType("nvarchar(max)")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
                         .HasColumnName("nerve_rim_os");
+
+                    b.Property<string>("OpticDiscCupRatio")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("optic_disc_cup_ratio");
 
                     b.Property<string>("OpticDiscDescription")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("optic_disc_description");
 
+                    b.Property<string>("OpticDiscVesselChange")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("optic_disc_vessel_change");
+
+                    b.Property<string>("OtherMedications")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("other_medications");
+
+                    b.Property<string>("OtherSystemicDisease")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("other_systemic_disease");
+
+                    b.Property<string>("PriorEyeSurgeryDetails")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("prior_eye_surgery_details");
+
+                    b.Property<string>("PupilDiameter")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("pupil_diameter");
+
+                    b.Property<string>("PupilPigmentBorder")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("pupil_pigment_border");
+
+                    b.Property<string>("PupilReflexResponse")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("pupil_reflex_response");
+
                     b.Property<Guid>("RecordId")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("record_id");
+
+                    b.Property<string>("ScleralScarLocation")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("scleral_scar_location");
 
                     b.Property<string>("StageOd")
                         .HasMaxLength(50)
@@ -2905,9 +3492,66 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("stage_os");
 
-                    b.Property<string>("Symptoms")
+                    b.Property<string>("SteroidPrescribed")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("steroid_prescribed");
+
+                    b.Property<string>("SteroidUse")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("steroid_use");
+
+                    b.Property<string>("SystemicSymptoms")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("systemic_symptoms");
+
+                    b.Property<string>("TreatmentPlanLaser")
                         .HasColumnType("nvarchar(max)")
-                        .HasColumnName("symptoms");
+                        .HasColumnName("treatment_plan_laser");
+
+                    b.Property<string>("TreatmentPlanMedication")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("treatment_plan_medication");
+
+                    b.Property<string>("TreatmentPlanSurgery")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("treatment_plan_surgery");
+
+                    b.Property<string>("TreatmentProgress")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("treatment_progress");
+
+                    b.Property<decimal?>("VaWithCorrectionOd")
+                        .HasPrecision(6, 2)
+                        .HasColumnType("decimal(6,2)")
+                        .HasColumnName("va_with_correction_od");
+
+                    b.Property<decimal?>("VaWithCorrectionOs")
+                        .HasPrecision(6, 2)
+                        .HasColumnType("decimal(6,2)")
+                        .HasColumnName("va_with_correction_os");
+
+                    b.Property<decimal?>("VaWithoutCorrectionOd")
+                        .HasPrecision(6, 2)
+                        .HasColumnType("decimal(6,2)")
+                        .HasColumnName("va_without_correction_od");
+
+                    b.Property<decimal?>("VaWithoutCorrectionOs")
+                        .HasPrecision(6, 2)
+                        .HasColumnType("decimal(6,2)")
+                        .HasColumnName("va_without_correction_os");
+
+                    b.Property<string>("VisionProgression")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("vision_progression");
+
+                    b.Property<string>("VisionSymptoms")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("vision_symptoms");
 
                     b.HasKey("Id")
                         .HasName("pk_glaucoma_record");
@@ -2958,6 +3602,34 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("eyeball_od_status");
 
+                    b.Property<string>("EyeballOsStatus")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("eyeball_os_status");
+
+                    b.Property<string>("EyeballTexture")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("eyeball_texture");
+
+                    b.Property<string>("EyelidTumor")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("eyelid_tumor");
+
+                    b.Property<string>("EyelidTumorLocation")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("eyelid_tumor_location");
+
+                    b.Property<string>("EyelidTumorSize")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("eyelid_tumor_size");
+
+                    b.Property<string>("FixationPreferenceOd")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("fixation_preference_od");
+
+                    b.Property<string>("FixationPreferenceOs")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("fixation_preference_os");
+
                     b.Property<string>("FundusSummaryOd")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("fundus_summary_od");
@@ -2966,11 +3638,19 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("fundus_summary_os");
 
+                    b.Property<string>("GeneralHealthStatus")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("general_health_status");
+
                     b.Property<bool>("IntellectualDevelopmentNormal")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(true)
                         .HasColumnName("intellectual_development_normal");
+
+                    b.Property<string>("IntellectualDevelopmentStatus")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("intellectual_development_status");
 
                     b.Property<bool>("PregnancyIllness")
                         .ValueGeneratedOnAdd()
@@ -3021,17 +3701,31 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("acquired_onset");
 
+                    b.Property<string>("BellPhenomenon")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("bell_phenomenon");
+
                     b.Property<string>("BinocularStatus")
-                        .HasColumnType("nvarchar(max)")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
                         .HasColumnName("binocular_status");
 
                     b.Property<bool>("ChiefPtosis")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
+                        .HasDefaultValue(false)
                         .HasColumnName("chief_ptosis");
 
                     b.Property<bool>("ChiefStrabismus")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
+                        .HasDefaultValue(false)
                         .HasColumnName("chief_strabismus");
+
+                    b.Property<string>("CompensatoryHeadPosture")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("compensatory_head_posture");
 
                     b.Property<bool>("Congenital")
                         .ValueGeneratedOnAdd()
@@ -3039,28 +3733,74 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("congenital");
 
+                    b.Property<string>("ConvergencePoint")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("convergence_point");
+
                     b.Property<string>("CoverTestResult")
-                        .HasColumnType("nvarchar(max)")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
                         .HasColumnName("cover_test_result");
 
+                    b.Property<string>("Diplopia")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("diplopia");
+
+                    b.Property<string>("EomGazeTest")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("eom_gaze_test");
+
+                    b.Property<string>("EomInternalOd")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("eom_internal_od");
+
+                    b.Property<string>("EomInternalOs")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("eom_internal_os");
+
                     b.Property<string>("FixationOd")
-                        .HasColumnType("nvarchar(max)")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
                         .HasColumnName("fixation_od");
 
                     b.Property<string>("FixationOs")
-                        .HasColumnType("nvarchar(max)")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
                         .HasColumnName("fixation_os");
 
+                    b.Property<string>("FusionAmplitude")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("fusion_amplitude");
+
+                    b.Property<string>("HirschbergAfterAtropine")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("hirschberg_after_atropine");
+
+                    b.Property<string>("HirschbergBeforeAtropine")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("hirschberg_before_atropine");
+
                     b.Property<string>("LevatorFunctionOd")
-                        .HasColumnType("nvarchar(max)")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
                         .HasColumnName("levator_function_od");
 
                     b.Property<string>("LevatorFunctionOs")
-                        .HasColumnType("nvarchar(max)")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
                         .HasColumnName("levator_function_os");
 
                     b.Property<string>("MarcusGunn")
-                        .HasColumnType("nvarchar(max)")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
                         .HasColumnName("marcus_gunn");
 
                     b.Property<bool>("Nystagmus")
@@ -3070,8 +3810,24 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnName("nystagmus");
 
                     b.Property<string>("NystagmusType")
-                        .HasColumnType("nvarchar(max)")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
                         .HasColumnName("nystagmus_type");
+
+                    b.Property<string>("PalpebralReflexOd")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("palpebral_reflex_od");
+
+                    b.Property<string>("PalpebralReflexOs")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("palpebral_reflex_os");
+
+                    b.Property<string>("PriorAmblyopiaResult")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("prior_amblyopia_result");
 
                     b.Property<string>("PriorAmblyopiaTreatment")
                         .HasColumnType("nvarchar(max)")
@@ -3081,37 +3837,108 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("prior_surgery");
 
-                    b.Property<string>("PrismMeasurements")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("prism_measurements");
+                    b.Property<string>("PriorSurgeryResult")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("prior_surgery_result");
 
-                    b.Property<string>("PtosisOdDegree")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("ptosis_od_degree");
+                    b.Property<string>("PrismDistance")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("prism_distance");
 
-                    b.Property<string>("PtosisOsDegree")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("ptosis_os_degree");
+                    b.Property<string>("PrismDown")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("prism_down");
+
+                    b.Property<string>("PrismNear")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("prism_near");
+
+                    b.Property<string>("PrismUp")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("prism_up");
+
+                    b.Property<string>("PtosisDegreeOd")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("ptosis_degree_od");
+
+                    b.Property<string>("PtosisDegreeOs")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("ptosis_degree_os");
+
+                    b.Property<string>("PupilShadowTestOd")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("pupil_shadow_test_od");
+
+                    b.Property<string>("PupilShadowTestOs")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("pupil_shadow_test_os");
 
                     b.Property<Guid>("RecordId")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("record_id");
 
                     b.Property<string>("RefractionPostAtropine")
-                        .HasColumnType("nvarchar(max)")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
                         .HasColumnName("refraction_post_atropine");
 
                     b.Property<string>("RefractionPreAtropine")
-                        .HasColumnType("nvarchar(max)")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
                         .HasColumnName("refraction_pre_atropine");
+
+                    b.Property<string>("RetinalCorrespondence")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("retinal_correspondence");
 
                     b.Property<string>("StrabismusSyndrome")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("strabismus_syndrome");
 
                     b.Property<string>("StrabismusType")
-                        .HasColumnType("nvarchar(max)")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
                         .HasColumnName("strabismus_type");
+
+                    b.Property<string>("SynoptophoreObjective")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("synoptophore_objective");
+
+                    b.Property<string>("SynoptophoreSubjective")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("synoptophore_subjective");
+
+                    b.Property<string>("VaAfterAtropineOd")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("va_after_atropine_od");
+
+                    b.Property<string>("VaAfterAtropineOs")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("va_after_atropine_os");
+
+                    b.Property<string>("VaBeforeAtropineOd")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("va_before_atropine_od");
+
+                    b.Property<string>("VaBeforeAtropineOs")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("va_before_atropine_os");
 
                     b.HasKey("Id")
                         .HasName("pk_strabismus_ptosis_record");
@@ -3129,6 +3956,14 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("id");
+
+                    b.Property<string>("DiagnosisCause")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("diagnosis_cause");
+
+                    b.Property<string>("DiagnosisClinical")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("diagnosis_clinical");
 
                     b.Property<string>("InjuryCause")
                         .HasColumnType("nvarchar(max)")
@@ -3166,6 +4001,14 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("trauma_conclusion");
 
+                    b.Property<string>("TreatmentPlan")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("treatment_plan");
+
+                    b.Property<string>("TreatmentProcess")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("treatment_process");
+
                     b.HasKey("Id")
                         .HasName("pk_trauma_record");
 
@@ -3174,6 +4017,61 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_trauma_record_record_id");
 
                     b.ToTable("trauma_record", (string)null);
+                });
+
+            modelBuilder.Entity("ECS.Domain.Entities.SubspecialtyRecords.TraumaSurgery", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AnesthesiaType")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("anesthesia_type");
+
+                    b.Property<Guid?>("MedicalRecordId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("medical_record_id");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("notes");
+
+                    b.Property<string>("PostSurgeryCondition")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("post_surgery_condition");
+
+                    b.Property<string>("SurgeonName")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("surgeon_name");
+
+                    b.Property<DateTime?>("SurgeryDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("surgery_date");
+
+                    b.Property<string>("SurgeryDescription")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("surgery_description");
+
+                    b.Property<string>("SurgeryType")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("surgery_type");
+
+                    b.Property<Guid>("TraumaRecordId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("trauma_record_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_trauma_surgeries");
+
+                    b.HasIndex("MedicalRecordId")
+                        .HasDatabaseName("ix_trauma_surgeries_medical_record_id");
+
+                    b.HasIndex("TraumaRecordId")
+                        .HasDatabaseName("ix_trauma_surgeries_trauma_record_id");
+
+                    b.ToTable("trauma_surgeries", (string)null);
                 });
 
             modelBuilder.Entity("ECS.Domain.Entities.Clinics.ClinicRegistrationRequest", b =>
@@ -3840,6 +4738,23 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     b.Navigation("MedicalRecord");
                 });
 
+            modelBuilder.Entity("ECS.Domain.Entities.SubspecialtyRecords.TraumaSurgery", b =>
+                {
+                    b.HasOne("ECS.Domain.Entities.MedicalRecords.MedicalRecord", null)
+                        .WithMany("TraumaSurgeries")
+                        .HasForeignKey("MedicalRecordId")
+                        .HasConstraintName("fk_trauma_surgeries_medical_records_medical_record_id");
+
+                    b.HasOne("ECS.Domain.Entities.SubspecialtyRecords.TraumaRecord", "TraumaRecord")
+                        .WithMany("Surgeries")
+                        .HasForeignKey("TraumaRecordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_trauma_surgeries_trauma_records_trauma_record_id");
+
+                    b.Navigation("TraumaRecord");
+                });
+
             modelBuilder.Entity("ECS.Domain.Entities.Auth.User", b =>
                 {
                     b.Navigation("AppointmentsCreated");
@@ -3952,6 +4867,8 @@ namespace ECS.Infrastructure.Persistence.Migrations
 
                     b.Navigation("TraumaRecord");
 
+                    b.Navigation("TraumaSurgeries");
+
                     b.Navigation("UltrasoundEyes");
 
                     b.Navigation("VisualFieldTests");
@@ -3997,6 +4914,11 @@ namespace ECS.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("ECS.Domain.Entities.SubspecialtyRecords.GlaucomaRecord", b =>
                 {
                     b.Navigation("Histories");
+                });
+
+            modelBuilder.Entity("ECS.Domain.Entities.SubspecialtyRecords.TraumaRecord", b =>
+                {
+                    b.Navigation("Surgeries");
                 });
 #pragma warning restore 612, 618
         }

@@ -4060,15 +4060,15 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnName("trauma_record_id");
 
                     b.HasKey("Id")
-                        .HasName("pk_trauma_surgery");
+                        .HasName("pk_trauma_surgeries");
 
                     b.HasIndex("MedicalRecordId")
-                        .HasDatabaseName("ix_trauma_surgery_medical_record_id");
+                        .HasDatabaseName("ix_trauma_surgeries_medical_record_id");
 
                     b.HasIndex("TraumaRecordId")
-                        .HasDatabaseName("ix_trauma_surgery_trauma_record_id");
+                        .HasDatabaseName("ix_trauma_surgeries_trauma_record_id");
 
-                    b.ToTable("trauma_surgery", (string)null);
+                    b.ToTable("trauma_surgeries", (string)null);
                 });
 
             modelBuilder.Entity("ECS.Domain.Entities.Clinics.ClinicRegistrationRequest", b =>
@@ -4740,14 +4740,14 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     b.HasOne("ECS.Domain.Entities.MedicalRecords.MedicalRecord", null)
                         .WithMany("TraumaSurgeries")
                         .HasForeignKey("MedicalRecordId")
-                        .HasConstraintName("fk_trauma_surgery_medical_records_medical_record_id");
+                        .HasConstraintName("fk_trauma_surgeries_medical_records_medical_record_id");
 
                     b.HasOne("ECS.Domain.Entities.SubspecialtyRecords.TraumaRecord", "TraumaRecord")
                         .WithMany("Surgeries")
                         .HasForeignKey("TraumaRecordId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_trauma_surgery_trauma_records_trauma_record_id");
+                        .HasConstraintName("fk_trauma_surgeries_trauma_records_trauma_record_id");
 
                     b.Navigation("TraumaRecord");
                 });
