@@ -14,7 +14,7 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServi
         /// </summary>
         /// <param name="request">Filter and pagination parameters</param>
         /// <returns>API response with list of medical records and pagination metadata</returns>
-        Task<ApiResponse<List<GetMedicalRecordsResponse>>> GetMedicalRecordsAsync(
+        Task<ApiResponse<List<GetMedicalRecordsResponse>>> Process(
             GetMedicalRecordsRequest request);
     }
 }

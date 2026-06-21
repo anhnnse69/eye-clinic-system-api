@@ -3,7 +3,6 @@ using System.Security.Claims;
 using ECS.Application.Common.Response;
 using ECS.Domain.Entities.Clinics;
 using ECS.Domain.Entities.MedicalRecords;
-using ECS.Domain.Entities.Scheduling;
 using ECS.Domain.Enums;
 using ECS.Infrastructure.Persistence;
 using ECS.Infrastructure.Repositories.Interfaces;
@@ -20,38 +19,49 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServi
     public class GetMedicalRecordsService : IGetMedicalRecordsService
     {
         private readonly IRepositoryQueryBase<MedicalRecord, Guid, AppDbContext> _medicalRecordRepository;
-        private readonly IRepositoryQueryBase<Appointment, Guid, AppDbContext> _appointmentRepository;
         private readonly AppDbContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="GetMedicalRecordsService"/> with query repositories and database context.
+        /// </summary>
+        /// <param name="medicalRecordRepository">The query repository for medical record entities.</param>
+        /// <param name="context">The application database context for direct entity access.</param>
+        /// <param name="httpContextAccessor">HTTP context accessor to extract authenticated user claims.</param>
         public GetMedicalRecordsService(
             IRepositoryQueryBase<MedicalRecord, Guid, AppDbContext> medicalRecordRepository,
-            IRepositoryQueryBase<Appointment, Guid, AppDbContext> appointmentRepository,
             AppDbContext context,
             IHttpContextAccessor httpContextAccessor)
         {
             _medicalRecordRepository = medicalRecordRepository;
-            _appointmentRepository = appointmentRepository;
             _context = context;
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task<ApiResponse<List<GetMedicalRecordsResponse>>> GetMedicalRecordsAsync(
+        /// <summary>
+        /// Orchestrates the process of building criteria, executing queries, and extracting paginated medical records.
+        /// </summary>
+        /// <param name="request">The filtration and pagination arguments for the medical records query.</param>
+        /// <returns>A structured framework response wrapping final data arrays and pagination metadata.</returns>
+        public async Task<ApiResponse<List<GetMedicalRecordsResponse>>> Process(
             GetMedicalRecordsRequest request)
         {
-            bool isUserValid = true;
-            bool hasData = true;
-            var doctorProfileId = RetrieveDoctorProfileId(ref isUserValid);
+            var doctorProfileId = RetrieveDoctorProfileId(out bool isUserValid);
             var filterExpression = BuildFilterExpression(request, doctorProfileId);
-            var (records, totalRecords, hasDataFromQuery) = await ExecutePagedQueryAsync(filterExpression, request);
-            hasData = hasDataFromQuery;
-            var result = MapToResponseDto(records, doctorProfileId);
-            var meta = new MetaResponse(request.PageNumber, request.PageSize, totalRecords);
-            return CreateResponse(result, meta, isUserValid);
+            var databaseRecords = ExecutePatientsQuery(filterExpression, request, out int totalRecords);
+            var formattedList = MapToPresentationDto(databaseRecords, doctorProfileId);
+            var paginationMetadata = BuildPaginationMeta(request, totalRecords);
+            return CreateApiResponse(formattedList, paginationMetadata, isUserValid);
         }
 
-        private Guid RetrieveDoctorProfileId(ref bool isUserValid)
+        /// <summary>
+        /// Extracts the doctor profile ID from the authenticated user's JWT token.
+        /// </summary>
+        /// <param name="isUserValid">Output flag indicating whether the user validation succeeded.</param>
+        /// <returns>The doctor profile ID if found and active; otherwise, an empty GUID.</returns>
+        private Guid RetrieveDoctorProfileId(out bool isUserValid)
         {
+            isUserValid = true;
             var userIdClaim = _httpContextAccessor
                 .HttpContext?
                 .User
@@ -70,6 +80,12 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServi
             return doctorProfile?.Id ?? Guid.Empty;
         }
 
+        /// <summary>
+        /// Builds dynamic expression trees targeting medical record entities based on UI criteria parameters.
+        /// </summary>
+        /// <param name="request">The filters package from consumer query strings.</param>
+        /// <param name="doctorProfileId">The doctor profile ID to filter records by treating physician.</param>
+        /// <returns>A reusable LINQ system predicate expression lambda.</returns>
         private Expression<Func<MedicalRecord, bool>> BuildFilterExpression(
             GetMedicalRecordsRequest request,
             Guid doctorProfileId)
@@ -93,9 +109,17 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServi
                 && (filterDoctorId == null || x.DoctorId == filterDoctorId.Value);
         }
 
-        private async Task<(List<MedicalRecord> Records, int TotalCount, bool HasData)> ExecutePagedQueryAsync(
+        /// <summary>
+        /// Executes the optimized database lookup to extract a structured slice of paginated medical records.
+        /// </summary>
+        /// <param name="filterExpression">The compiled lambda filters expression.</param>
+        /// <param name="request">The current requested page pagination size parameters context.</param>
+        /// <param name="totalRecords">Output parameter tracing total matching rows before partition constraints.</param>
+        /// <returns>A list of resolved <see cref="MedicalRecord"/> data tracking fragments.</returns>
+        private List<MedicalRecord> ExecutePatientsQuery(
             Expression<Func<MedicalRecord, bool>> filterExpression,
-            GetMedicalRecordsRequest request)
+            GetMedicalRecordsRequest request,
+            out int totalRecords)
         {
             IQueryable<MedicalRecord> query = _medicalRecordRepository
                 .FindByCondition(filterExpression, trackChanges: false)
@@ -104,19 +128,22 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServi
                 .ThenInclude(d => d.User)
                 .Include(x => x.Appointment);
 
-            var totalRecords = await query.CountAsync();
-            var hasData = totalRecords > 0;
+            query = query.OrderByDescending(x => x.CreatedAt);
+            totalRecords = query.Count();
 
-            var items = query
-                .OrderByDescending(x => x.CreatedAt)
+            return query
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
                 .ToList();
-
-            return (items, totalRecords, hasData);
         }
 
-        private List<GetMedicalRecordsResponse> MapToResponseDto(
+        /// <summary>
+        /// Maps tracking database records into presentation layer DTO sequences with edit/view permission flags.
+        /// </summary>
+        /// <param name="records">The raw source list tracking database values.</param>
+        /// <param name="currentDoctorId">The current authenticated doctor profile ID for permission evaluation.</param>
+        /// <returns>The collection containing formatted <see cref="GetMedicalRecordsResponse"/> items.</returns>
+        private List<GetMedicalRecordsResponse> MapToPresentationDto(
             List<MedicalRecord> records,
             Guid currentDoctorId)
         {
@@ -165,8 +192,26 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServi
             }).ToList();
         }
 
-        private ApiResponse<List<GetMedicalRecordsResponse>> CreateResponse(
-            List<GetMedicalRecordsResponse> result,
+        /// <summary>
+        /// Computes and instantiates pagination framework structural metadata models.
+        /// </summary>
+        /// <param name="request">The current requested page pagination size parameters context.</param>
+        /// <param name="totalRecords">The total number of records matching the filter criteria.</param>
+        /// <returns>A structured pagination metadata object.</returns>
+        private MetaResponse BuildPaginationMeta(GetMedicalRecordsRequest request, int totalRecords)
+        {
+            return new MetaResponse(request.PageNumber, request.PageSize, totalRecords);
+        }
+
+        /// <summary>
+        /// Wraps the generated pagination payload elements inside standard response success framework wrappers.
+        /// </summary>
+        /// <param name="resultList">The mapped DTO list to include in the response.</param>
+        /// <param name="meta">The pagination metadata for client-side navigation.</param>
+        /// <param name="isUserValid">Flag indicating whether user authentication and authorization succeeded.</param>
+        /// <returns>A structured API response with either success data or failure code.</returns>
+        private ApiResponse<List<GetMedicalRecordsResponse>> CreateApiResponse(
+            List<GetMedicalRecordsResponse> resultList,
             MetaResponse meta,
             bool isUserValid)
         {
@@ -175,7 +220,7 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServi
 
             return !isUserValid
                 ? ApiResponse<List<GetMedicalRecordsResponse>>.Fail(errorCode!)
-                : ApiResponse<List<GetMedicalRecordsResponse>>.Success(successCode, result, meta);
+                : ApiResponse<List<GetMedicalRecordsResponse>>.Success(successCode, resultList, meta);
         }
     }
 }

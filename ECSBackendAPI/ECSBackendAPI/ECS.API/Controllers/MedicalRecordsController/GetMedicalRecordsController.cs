@@ -37,7 +37,7 @@ namespace ECS.API.Controllers.MedicalRecordsController
         [ProducesResponseType(typeof(ApiResponse<List<GetMedicalRecordsResponse>>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetMedicalRecords([FromQuery] GetMedicalRecordsRequest request)
         {
-            var result = await _getMedicalRecordsService.GetMedicalRecordsAsync(request);
+            var result = await _getMedicalRecordsService.Process(request);
             if (result.Data == null)
             {
                 return BadRequest(result);
