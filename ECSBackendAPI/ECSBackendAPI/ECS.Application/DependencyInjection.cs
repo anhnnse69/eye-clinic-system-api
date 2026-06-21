@@ -36,6 +36,7 @@ using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewDoctorSlotsServi
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ConfirmRejectAppointmentServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.CreateDoctorScheduleService;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.CreatePatientDemographicsServices;
+using ECS.Application.Services.DoctorAppointmentPatientManagementServices.DeleteDoctorScheduleServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.EditDoctorScheduleServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.GetDetailPatientDemographicsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewDoctorAppointmentsServices;
@@ -169,6 +170,7 @@ public static class DependencyInjection
 
         services.AddScoped<IDeleteMedicineCatalogService, DeleteMedicineCatalogService>();
         services.AddScoped<IGetAccountsService, GetAccountsService>();
+        services.AddScoped<IDeleteDoctorScheduleService, DeleteDoctorScheduleService>();
         services.AddScoped<ICreateAccountService, CreateAccountService>();
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());

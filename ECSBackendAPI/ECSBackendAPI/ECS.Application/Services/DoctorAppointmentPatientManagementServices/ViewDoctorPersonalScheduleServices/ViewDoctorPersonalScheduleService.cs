@@ -82,7 +82,8 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
             var query = _scheduleRepo
                 .FindByCondition(s =>
                     s.DoctorId == doctorId &&
-                    s.WorkDate.Date == targetDate.Date)
+                    s.WorkDate.Date == targetDate.Date &&
+                    !s.IsDeleted)
                 .Include(s => s.Room)
                 .Include(s => s.TimeSlots)
                     .ThenInclude(slot => slot.Appointments)

@@ -179,7 +179,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Cr
                 .FindByCondition(s =>
                     s.DoctorId == doctorId &&
                     shiftTypes.Contains(s.ShiftType) &&
-                    dateTimes.Contains(s.WorkDate))
+                    dateTimes.Contains(s.WorkDate) && !s.IsDeleted)
                 .Select(s => new { s.WorkDate, s.ShiftType })
                 .ToListAsync();
             return existing
