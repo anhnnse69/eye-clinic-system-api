@@ -176,7 +176,8 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Ed
                     s.DoctorId == doctorId &&
                     s.Id != schedule.Id &&
                     s.ShiftType == schedule.ShiftType &&
-                    s.WorkDate == newWorkDateTime)
+                    s.WorkDate == newWorkDateTime &&
+                    !s.IsDeleted)
                 .AnyAsync();
             if (duplicateExists)
                 throw new InvalidOperationException(

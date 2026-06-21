@@ -1,5 +1,4 @@
-﻿using System.Reflection;
-using ECS.Application.Services.AuthServices.ChangePasswordServices;
+﻿using ECS.Application.Services.AuthServices.ChangePasswordServices;
 using ECS.Application.Services.AuthServices.ForgotPasswordServices;
 using ECS.Application.Services.AuthServices.LoginServices;
 using ECS.Application.Services.AuthServices.RegisterServices;
@@ -7,7 +6,6 @@ using ECS.Application.Services.AuthServices.ResetPasswordServices;
 using ECS.Application.Services.AuthServices.UpdatePersonalProfileServices;
 using ECS.Application.Services.AuthServices.ViewAccountInfoServices;
 using ECS.Application.Services.AuthServices.ViewPersonalProfileServices;
-using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicAppointmentServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicDashboardServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicFeedbackServices;
@@ -35,10 +33,10 @@ using ECS.Application.Services.ClinicDoctorDiscoveryService.SearchClinicDoctorSe
 using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewClinicFeedbacksServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewClinicProfileServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewDoctorSlotsServices;
-using ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ConfirmRejectAppointmentServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.CreateDoctorScheduleService;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.CreatePatientDemographicsServices;
+using ECS.Application.Services.DoctorAppointmentPatientManagementServices.DeleteDoctorScheduleServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.EditDoctorScheduleServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.GetDetailPatientDemographicsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewDoctorAppointmentsServices;
@@ -47,6 +45,9 @@ using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewDo
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewListPatientServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDemographicsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDetailServices;
+using ECS.Application.Services.MedicalRecordsServices;
+using ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordServices;
+using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.CreateAppointmentServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.GetClinicBookingOptionsServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.GetClinicServicesForBookingServices;
@@ -75,9 +76,9 @@ using ECS.Application.Services.SystemAdminServices.ClinicManagementServices;
 using ECS.Application.Services.SystemAdminServices.ClinicRegisterServices;
 using ECS.Application.Services.SystemAdminServices.RejectClinicApplicationServices;
 using ECS.Application.Services.SystemAdminServices.ReviewClinicRegisterServices;
-using ECS.Application.Services.MedicalRecordsServices;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 
 namespace ECS.Application;
 
@@ -168,6 +169,7 @@ public static class DependencyInjection
 
         services.AddScoped<IDeleteMedicineCatalogService, DeleteMedicineCatalogService>();
         services.AddScoped<IGetAccountsService, GetAccountsService>();
+        services.AddScoped<IDeleteDoctorScheduleService, DeleteDoctorScheduleService>();
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
