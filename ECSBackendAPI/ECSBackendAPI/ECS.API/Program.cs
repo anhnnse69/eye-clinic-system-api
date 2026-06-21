@@ -1,3 +1,4 @@
+using ECS.API.BackgroundJobs;
 using ECS.API.Extensions;
 using ECS.Application;
 using ECS.Infrastructure;
@@ -34,6 +35,9 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]!))
     };
 });
+
+// ── BackgroundJobs ────────────────────────────────────────────────
+builder.Services.AddHostedService<DailyAppointmentNoShowScheduler>();
 
 // ── Build ─────────────────────────────────────────────────────
 var app = builder.Build();

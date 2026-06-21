@@ -103,8 +103,12 @@ namespace ECS.Application.Services.ReceptionistManagementServices.ReceptionistCh
             DateTime todayVn = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time")).Date;
             if (appointment.AppointmentDate.Date != todayVn)
                 return ApiResponse<ReceptionistCheckInResponse>.Fail("ERROR_NOT_TODAY");
-            if (appointment.Status != AppointmentStatus.CONFIRMED && appointment.Status != AppointmentStatus.BOOKED)
+            if (appointment.Status != AppointmentStatus.CONFIRMED &&
+        appointment.Status != AppointmentStatus.BOOKED &&
+        appointment.Status != AppointmentStatus.NOSHOW)
+            {
                 return ApiResponse<ReceptionistCheckInResponse>.Fail("INVALID_STATUS_FOR_CHECKIN");
+            }
             if (!appointment.DepositPaid)
                 return ApiResponse<ReceptionistCheckInResponse>.Fail("DEPOSIT_MUST_BE_PAID_FIRST");
             if (appointment.Slot?.Schedule?.Room == null)
