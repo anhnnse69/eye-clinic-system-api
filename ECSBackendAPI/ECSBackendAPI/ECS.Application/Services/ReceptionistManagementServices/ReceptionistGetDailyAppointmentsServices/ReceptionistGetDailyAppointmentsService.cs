@@ -64,7 +64,7 @@ namespace ECS.Application.Services.ReceptionistManagementServices.ReceptionistGe
         private List<Guid> ResolveReceptionistClinics(Guid staffUserId)
         {
             return _staffQueryRepo.FindByCondition(
-                sc => sc.UserId == staffUserId && sc.IsActive && (int)sc.Role == 3, // 3 = RECEPTIONIST Role Identifier
+                sc => sc.UserId == staffUserId && sc.IsActive && sc.Role == StaffRole.RECEPTIONIST,
                 trackChanges: false
             ).Select(sc => sc.ClinicId).ToList();
         }
