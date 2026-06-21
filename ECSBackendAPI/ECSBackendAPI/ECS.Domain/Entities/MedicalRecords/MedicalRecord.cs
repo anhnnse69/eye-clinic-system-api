@@ -79,6 +79,7 @@ namespace ECS.Domain.Entities.MedicalRecords
 
         // Subspecialty records
         public virtual TraumaRecord? TraumaRecord { get; set; }
+        public virtual ICollection<TraumaSurgery>? TraumaSurgeries { get; set; }
         public virtual GlaucomaRecord? GlaucomaRecord { get; set; }
         public virtual StrabismusPtosisRecord? StrabismusPtosisRecord { get; set; }
         public virtual PediatricEyeRecord? PediatricRecord { get; set; }

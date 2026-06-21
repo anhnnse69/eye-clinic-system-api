@@ -34,6 +34,7 @@ using ECS.Application.Services.ClinicDoctorDiscoveryService.SearchClinicDoctorSe
 using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewClinicFeedbacksServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewClinicProfileServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewDoctorSlotsServices;
+using ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ConfirmRejectAppointmentServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.CreateDoctorScheduleService;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.CreatePatientDemographicsServices;
@@ -147,6 +148,7 @@ public static class DependencyInjection
         services.AddScoped<ICreateMedicineCatalogService, CreateMedicineCatalogService>();
         services.AddScoped<IReceptionistGetDailyAppointmentsService, ReceptionistGetDailyAppointmentsService>();
         services.AddScoped<IConfirmRejectAppointmentService, ConfirmRejectAppointmentService>();
+        services.AddScoped<ICreateMedicalRecordService, CreateMedicalRecordService>();
         services.AddScoped<IGetClinicServicesForBookingService, GetClinicServicesForBookingService>();
         services.AddScoped<IGetClinicDoctorsForBookingService, GetClinicDoctorsForBookingService>();
         services.AddScoped<ICreateAppointmentService, CreateAppointmentService>();
