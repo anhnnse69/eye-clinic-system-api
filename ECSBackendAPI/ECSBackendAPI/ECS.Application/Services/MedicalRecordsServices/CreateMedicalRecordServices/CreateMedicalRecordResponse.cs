@@ -1,4 +1,4 @@
-namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.CreateMedicalRecordServices
+namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordServices
 {
     /// <summary>
     /// Response object for medical record creation.

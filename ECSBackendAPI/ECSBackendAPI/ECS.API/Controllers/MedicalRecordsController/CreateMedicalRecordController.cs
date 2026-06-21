@@ -1,5 +1,5 @@
 using ECS.Application.Common.Response;
-using ECS.Application.Services.DoctorAppointmentPatientManagementServices.CreateMedicalRecordServices;
+using ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

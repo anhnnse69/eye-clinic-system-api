@@ -1,7 +1,7 @@
 using FluentValidation;
 using ECS.Domain.Enums;
 
-namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.CreateMedicalRecordServices
+namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordServices
 {
     /// <summary>
     /// Validator for CreateMedicalRecordRequest.

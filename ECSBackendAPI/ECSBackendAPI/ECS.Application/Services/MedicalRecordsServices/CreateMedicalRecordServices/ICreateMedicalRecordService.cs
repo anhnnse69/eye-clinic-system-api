@@ -1,6 +1,6 @@
 using ECS.Application.Common.Response;
 
-namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.CreateMedicalRecordServices
+namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordServices
 {
     /// <summary>
     /// Interface for CreateMedicalRecordService.

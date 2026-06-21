@@ -1,6 +1,6 @@
 using ECS.Domain.Enums;
 
-namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.CreateMedicalRecordServices
+namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordServices
 {
     /// <summary>
     /// Request object for creating a medical record.
