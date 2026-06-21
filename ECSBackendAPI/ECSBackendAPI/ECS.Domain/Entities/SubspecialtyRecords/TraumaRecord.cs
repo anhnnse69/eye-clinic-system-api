@@ -4,28 +4,34 @@ using ECS.Domain.Entities.MedicalRecords;
 namespace ECS.Domain.Entities.SubspecialtyRecords
 {
     /// <summary>
-    /// Trauma record - MS21.
+    /// Trauma record - MS21 (Chấn thương mắt).
+    /// Contains trauma-specific information for eye injuries.
     /// </summary>
     public class TraumaRecord : EntityBase<Guid>
     {
         public Guid RecordId { get; set; }
 
+        // ===== INJURY HISTORY =====
         public string? InjuryCause { get; set; }
         public DateTime? InjuryTime { get; set; }
         public string? PriorTreatment { get; set; }
         public string? PostTreatmentCourse { get; set; }
 
-        // Summary of injuries - Right eye (JSONB)
-        public string? OdInjuries { get; set; } // [lid_laceration, canaliculus, corneal_rupture, scleral_rupture, hyphema, lens_rupture, vitreous_hemorrhage, retinal_detachment, iofb, orbital_fb]
+        // ===== INJURY SUMMARY (JSONB for flexibility) =====
+        public string? OdInjuries { get; set; } // Eye trauma summary - Right
+        public string? OsInjuries { get; set; } // Eye trauma summary - Left
 
-        // Summary of injuries - Left eye (JSONB)
-        public string? OsInjuries { get; set; }
-
-        // Injury details (JSONB)
-        public string? InjuryDetails { get; set; } // location, size, depth, sutured, etc
-
+        // ===== INJURY DETAILS =====
+        public string? InjuryDetails { get; set; }
         public string? TraumaConclusion { get; set; }
 
+        // ===== DISCHARGE SUMMARY & TREATMENT =====
+        public string? DiagnosisClinical { get; set; }
+        public string? DiagnosisCause { get; set; }
+        public string? TreatmentProcess { get; set; }
+        public string? TreatmentPlan { get; set; }
+
         public virtual MedicalRecord MedicalRecord { get; set; } = null!;
+        public virtual ICollection<TraumaSurgery>? Surgeries { get; set; }
     }
 }

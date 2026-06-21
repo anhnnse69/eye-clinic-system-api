@@ -4,13 +4,14 @@ using ECS.Domain.Entities.MedicalRecords;
 namespace ECS.Domain.Entities.SubspecialtyRecords
 {
     /// <summary>
-    /// Pediatric eye record - MS26.
+    /// Pediatric eye record - MS26 (Mắt trẻ em).
+    /// Contains comprehensive pediatric eye examination data.
     /// </summary>
     public class PediatricEyeRecord : EntityBase<Guid>
     {
         public Guid RecordId { get; set; }
 
-        // Specific history
+        // ===== HISTORY =====
         public bool Congenital { get; set; } = false;
         public bool Acquired { get; set; } = false;
         public string? AcquiredOnset { get; set; }
@@ -22,20 +23,33 @@ namespace ECS.Domain.Entities.SubspecialtyRecords
         public bool IntellectualDevelopmentNormal { get; set; } = true;
 
         // Chief symptoms (JSONB)
-        public string? ChiefSymptoms { get; set; } // blurred_vision, eye_pain, red_eye, photophobia
+        public string? ChiefSymptoms { get; set; }
 
-        // Pediatric eyelid conditions
+        // ===== EYELID CONDITIONS =====
         public bool EntropionOd { get; set; } = false;
         public bool EpicanthusOd { get; set; } = false;
         public bool PtosisOd { get; set; } = false;
+        public string? EyelidTumor { get; set; }
+        public string? EyelidTumorLocation { get; set; }
+        public string? EyelidTumorSize { get; set; }
 
-        // Eyeball & amblyopia
+        // ===== EYEBALL STATUS =====
         public string? EyeballOdStatus { get; set; }
-        public string? AmblyopiaStatus { get; set; }
+        public string? EyeballOsStatus { get; set; }
+        public string? EyeballTexture { get; set; } // Mềm, Căng, To, Nhỏ, Teo
 
-        // Fundus summary (difficult to examine in children)
+        // ===== AMBLYOPIA (Nhược thị) =====
+        public string? AmblyopiaStatus { get; set; }
+        public string? FixationPreferenceOd { get; set; } // Trung tâm, Cạnh tâm, Ngoại tâm
+        public string? FixationPreferenceOs { get; set; }
+
+        // ===== FUNDUS SUMMARY =====
         public string? FundusSummaryOd { get; set; }
         public string? FundusSummaryOs { get; set; }
+
+        // ===== DEVELOPMENTAL STATUS =====
+        public string? IntellectualDevelopmentStatus { get; set; }
+        public string? GeneralHealthStatus { get; set; }
 
         public virtual MedicalRecord MedicalRecord { get; set; } = null!;
     }
