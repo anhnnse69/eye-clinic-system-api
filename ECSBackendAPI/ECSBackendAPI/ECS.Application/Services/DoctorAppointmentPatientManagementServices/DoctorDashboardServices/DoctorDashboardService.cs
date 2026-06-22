@@ -189,7 +189,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Do
             return new AppointmentStatusSummary
             {
                 Total = appointments.Count,
-                ActiveTotal = appointments.Count - cancelledCount - noShowCount, // ← thêm
+                ActiveTotal = appointments.Count - cancelledCount - noShowCount,
                 Pending = appointments.Count(s => s == AppointmentStatus.PENDING),
                 DepositPaid = appointments.Count(s => s == AppointmentStatus.DEPOSIT_PAID),
                 Booked = appointments.Count(s => s == AppointmentStatus.BOOKED),
