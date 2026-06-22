@@ -40,6 +40,7 @@ using ECS.Application.Services.DoctorAppointmentPatientManagementServices.Confir
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.CreateDoctorScheduleService;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.CreatePatientDemographicsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.DeleteDoctorScheduleServices;
+using ECS.Application.Services.DoctorAppointmentPatientManagementServices.DoctorDashboardServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.EditDoctorScheduleServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.GetDetailPatientDemographicsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewDoctorAppointmentsServices;
@@ -180,6 +181,7 @@ public static class DependencyInjection
         services.AddScoped<IDeleteDoctorScheduleService, DeleteDoctorScheduleService>();
         services.AddScoped<ICreateAccountService, CreateAccountService>();
         services.AddScoped<IGetAppointmentHistoryService, GetAppointmentHistoryService>();
+        services.AddScoped<IDoctorDashboardService, DoctorDashboardService>();
         services.AddScoped<IEditAccountService, EditAccountService>();
         services.AddScoped<ICancelAppointmentService, CancelAppointmentService>();
         // ── FluentValidation ──────────────────────────────────
