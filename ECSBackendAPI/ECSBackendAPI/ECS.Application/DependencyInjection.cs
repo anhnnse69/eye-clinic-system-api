@@ -69,6 +69,7 @@ using ECS.Application.Services.ReceptionistManagementServices.ReceptionistPayDep
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistSearchAccountServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistUpdatePatientProfileServices;
 using ECS.Application.Services.SystemAdminServices.AccountServices.Create;
+using ECS.Application.Services.SystemAdminServices.AccountServices.Edit;
 using ECS.Application.Services.SystemAdminServices.AccountServices.View;
 using ECS.Application.Services.SystemAdminServices.AdminSystemDeleteClinicServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemGetClinicDetailsServices;
@@ -176,6 +177,7 @@ public static class DependencyInjection
         services.AddScoped<IDeleteDoctorScheduleService, DeleteDoctorScheduleService>();
         services.AddScoped<ICreateAccountService, CreateAccountService>();
         services.AddScoped<IGetAppointmentHistoryService, GetAppointmentHistoryService>();
+        services.AddScoped<IEditAccountService, EditAccountService>();
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
