@@ -62,6 +62,14 @@
         APP_MESSAGE_4042, // Password and confirm password do not match
         APP_MESSAGE_4044, // Specified service not found or does not belong to this clinic
         APP_MESSAGE_4045, // Clinic Not Found or Inactive
+        APP_MESSAGE_4046, // Appointment not found in the system
+        APP_MESSAGE_4047, // Appointment already cancelled
+        APP_MESSAGE_4048, // Cannot cancel completed appointment
+        APP_MESSAGE_4049, // Cannot cancel appointment in progress
+        APP_MESSAGE_4050, // Cannot cancel appointment within 24 hours of appointment time
+        APP_MESSAGE_4051, // Appointment cannot be cancelled in current status
+        APP_MESSAGE_4052, // Slot not found
+        APP_MESSAGE_4053, // Patient does not have permission to cancel this appointment
         APP_MESSAGE_4099, // Demographics record already exists for this patient (UC36 EX-01)
         // Server error codes (5xxx series)
         APP_MESSAGE_5000, // General internal server error (unexpected exception)

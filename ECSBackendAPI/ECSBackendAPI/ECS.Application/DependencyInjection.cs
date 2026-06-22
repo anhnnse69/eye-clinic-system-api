@@ -1,4 +1,5 @@
-﻿using ECS.Application.Services.AuthServices.ChangePasswordServices;
+﻿using System.Reflection;
+using ECS.Application.Services.AuthServices.ChangePasswordServices;
 using ECS.Application.Services.AuthServices.ForgotPasswordServices;
 using ECS.Application.Services.AuthServices.LoginServices;
 using ECS.Application.Services.AuthServices.RegisterServices;
@@ -45,9 +46,9 @@ using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewDo
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewListPatientServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDemographicsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDetailServices;
-using ECS.Application.Services.MedicalRecordsServices;
 using ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordServices;
 using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServices;
+using ECS.Application.Services.PatientAppointmentManagementServices.CancelAppointmentServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.CreateAppointmentServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.GetAppointmentHistoryServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.GetClinicBookingOptionsServices;
@@ -82,7 +83,6 @@ using ECS.Application.Services.SystemAdminServices.RejectClinicApplicationServic
 using ECS.Application.Services.SystemAdminServices.ReviewClinicRegisterServices;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
 
 namespace ECS.Application;
 
@@ -178,6 +178,7 @@ public static class DependencyInjection
         services.AddScoped<ICreateAccountService, CreateAccountService>();
         services.AddScoped<IGetAppointmentHistoryService, GetAppointmentHistoryService>();
         services.AddScoped<IEditAccountService, EditAccountService>();
+        services.AddScoped<ICancelAppointmentService, CancelAppointmentService>();
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
