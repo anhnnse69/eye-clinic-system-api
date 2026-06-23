@@ -1,5 +1,4 @@
-﻿using System.Reflection;
-using ECS.Application.Services.AuthServices.ChangePasswordServices;
+﻿using ECS.Application.Services.AuthServices.ChangePasswordServices;
 using ECS.Application.Services.AuthServices.ForgotPasswordServices;
 using ECS.Application.Services.AuthServices.LoginServices;
 using ECS.Application.Services.AuthServices.RegisterServices;
@@ -50,6 +49,7 @@ using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPa
 using ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordServices;
 using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordDetailServices;
 using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServices;
+using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.CancelAppointmentServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.CreateAppointmentServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.GetAppointmentDetailServices;
@@ -74,6 +74,7 @@ using ECS.Application.Services.ReceptionistManagementServices.ReceptionistPayDep
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistSearchAccountServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistUpdatePatientProfileServices;
 using ECS.Application.Services.SystemAdminServices.AccountServices.Create;
+using ECS.Application.Services.SystemAdminServices.AccountServices.Delete;
 using ECS.Application.Services.SystemAdminServices.AccountServices.Edit;
 using ECS.Application.Services.SystemAdminServices.AccountServices.View;
 using ECS.Application.Services.SystemAdminServices.AdminSystemDeleteClinicServices;
@@ -87,6 +88,7 @@ using ECS.Application.Services.SystemAdminServices.RejectClinicApplicationServic
 using ECS.Application.Services.SystemAdminServices.ReviewClinicRegisterServices;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 
 namespace ECS.Application;
 
@@ -186,6 +188,7 @@ public static class DependencyInjection
         services.AddScoped<IDoctorDashboardService, DoctorDashboardService>();
         services.AddScoped<IEditAccountService, EditAccountService>();
         services.AddScoped<ICancelAppointmentService, CancelAppointmentService>();
+        services.AddScoped<IDeleteAccountService, DeleteAccountService>();
         services.AddScoped<IGetAppointmentDetailService, GetAppointmentDetailService>();
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
