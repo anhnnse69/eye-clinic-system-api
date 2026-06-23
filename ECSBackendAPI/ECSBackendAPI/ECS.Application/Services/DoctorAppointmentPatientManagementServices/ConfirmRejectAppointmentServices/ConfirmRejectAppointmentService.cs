@@ -1,13 +1,14 @@
 ﻿using ECS.Application.Common.Response;
+using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewNotificationListServices;
 using ECS.Domain.Entities.Clinics;
+using ECS.Domain.Entities.Patient;
 using ECS.Domain.Entities.Scheduling;
 using ECS.Domain.Enums;
 using ECS.Infrastructure.Persistence;
 using ECS.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices
-    .ConfirmRejectAppointmentServices
+namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.ConfirmRejectAppointmentServices
 {
     /// <summary>
     /// Handles confirming or rejecting appointments for the authenticated doctor.
@@ -18,6 +19,8 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices
         private readonly IRepositoryBaseAsync<Appointment, Guid, AppDbContext> _appointmentCommandRepo;
         private readonly IRepositoryQueryBase<Appointment, Guid, AppDbContext> _appointmentQueryRepo;
         private readonly IRepositoryBaseAsync<TimeSlot, Guid, AppDbContext> _slotCommandRepo;
+        private readonly INotificationCreationService _notificationService;
+        AppDbContext _dbContext;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConfirmRejectAppointmentService"/>.
@@ -26,12 +29,16 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices
             IRepositoryQueryBase<DoctorProfile, Guid, AppDbContext> doctorRepo,
             IRepositoryBaseAsync<Appointment, Guid, AppDbContext> appointmentCommandRepo,
             IRepositoryQueryBase<Appointment, Guid, AppDbContext> appointmentQueryRepo,
-            IRepositoryBaseAsync<TimeSlot, Guid, AppDbContext> slotCommandRepo)
+            IRepositoryBaseAsync<TimeSlot, Guid, AppDbContext> slotCommandRepo,
+            INotificationCreationService notificationService,
+            AppDbContext dbContext)
         {
             _doctorRepo = doctorRepo;
             _appointmentCommandRepo = appointmentCommandRepo;
             _appointmentQueryRepo = appointmentQueryRepo;
             _slotCommandRepo = slotCommandRepo;
+            _notificationService = notificationService;
+            _dbContext = dbContext;
         }
 
         /// <summary>
@@ -50,6 +57,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices
             var appointment = await ResolveAppointmentAsync(appointmentId, doctor.Id);
             await ApplyDecisionAsync(appointment, request);
             await PersistAppointmentAsync(appointment);
+            await NotifyPatientAsync(appointment, doctor, request.Decision);
             var response = BuildResponse(appointment);
             return CreateSuccessResponse(response);
         }
@@ -75,6 +83,10 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices
             var appointment = await _appointmentQueryRepo
                 .FindByCondition(a => a.Id == appointmentId && a.DoctorId == doctorId)
                 .Include(a => a.Slot)
+                .Include(a => a.Patient)
+                    .ThenInclude(p => p.User)
+                .Include(a => a.Doctor)
+                    .ThenInclude(d => d.User)
                 .FirstOrDefaultAsync();
             if (appointment is null)
                 throw new KeyNotFoundException(GeneralCode.APP_MESSAGE_4004.ToString());
@@ -104,7 +116,6 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices
         private static void ApplyConfirmDecision(Appointment appointment, string? noteReason)
         {
             appointment.Status = AppointmentStatus.BOOKED;
-
             if (!string.IsNullOrWhiteSpace(noteReason))
                 appointment.NoteReason = noteReason.Trim();
         }
@@ -140,6 +151,40 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices
         {
             await _appointmentCommandRepo.UpdateAsync(appointment);
             await _appointmentCommandRepo.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Sends a notification to the patient about the doctor's decision.
+        /// Silently skipped if the patient has no linked user account
+        /// (e.g. created by a receptionist without registering an account).
+        /// </summary>
+        private async Task NotifyPatientAsync(
+            Appointment appointment,
+            DoctorProfile doctor,
+            AppointmentDecision decision)
+        {
+            var patientUserId = appointment.Patient?.User?.Id;
+            if (patientUserId is null || patientUserId == Guid.Empty)
+            {
+                patientUserId = await _dbContext.Set<UserPatient>()
+                    .Where(up => up.PatientId == appointment.PatientId)
+                    .Select(up => (Guid?)up.UserId)
+                    .FirstOrDefaultAsync();
+            }
+            if (patientUserId is null || patientUserId == Guid.Empty)
+                return;
+            string templateKey = decision == AppointmentDecision.CONFIRM
+                ? "APPOINTMENT_CONFIRMED"
+                : "APPOINTMENT_REJECTED";
+            var payload = new Dictionary<string, string>
+             {
+                     { "DoctorName", doctor.User?.FullName ?? "" },
+                     { "PatientName", appointment.Patient?.FullName ?? "" },
+                     { "AppointmentTime", appointment.AppointmentDate.ToString("yyyy-MM-ddTHH:mm:ssZ") },
+                     { "RejectReason", appointment.NoteReason ?? string.Empty }
+             };
+            string payloadJson = System.Text.Json.JsonSerializer.Serialize(payload);
+            await _notificationService.CreateAsync(patientUserId.Value, templateKey, payloadJson);
         }
 
         /// <summary>
