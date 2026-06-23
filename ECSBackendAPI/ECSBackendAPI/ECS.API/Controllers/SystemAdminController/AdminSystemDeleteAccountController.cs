@@ -1,11 +1,11 @@
 ﻿using ECS.Application.Common.Response;
-using ECS.Application.Services.SystemAdminServices.AccountServices.Delete;
+using ECS.Application.Services.SystemAdminServices.AdminSystemDeleteAccountServices;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ECS.API.Controllers.SystemAdminController.AccountController
+namespace ECS.API.Controllers.SystemAdminController
 {
     /// <summary>
     /// Handles user account soft-deletion, locking, and status activation management.

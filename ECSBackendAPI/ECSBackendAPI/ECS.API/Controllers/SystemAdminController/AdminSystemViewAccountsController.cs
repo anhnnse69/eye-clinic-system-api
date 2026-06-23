@@ -1,9 +1,9 @@
 ﻿using ECS.Application.Common.Response;
-using ECS.Application.Services.SystemAdminServices.AccountServices.View;
+using ECS.Application.Services.SystemAdminServices.AdminSystemListAccountServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ECS.API.Controllers.SystemAdminController.AccountController
+namespace ECS.API.Controllers.SystemAdminController
 {
     /// <summary>
     /// Handles system level authentication accounts view control administration workflow endpoint interfaces.
@@ -11,7 +11,7 @@ namespace ECS.API.Controllers.SystemAdminController.AccountController
     [ApiController]
     [Route("api/v1/system-admin/accounts")]
     [Authorize(Roles = "SYSTEM_ADMIN")]
-    public class ViewAccountsController : ControllerBase
+    public class AdminSystemViewAccountsController : ControllerBase
     {
         private readonly IGetAccountsService _getAccountsService;
 
@@ -19,7 +19,7 @@ namespace ECS.API.Controllers.SystemAdminController.AccountController
         /// Initializes a new instance of <see cref="AccountsController"/> mapping infrastructure application services.
         /// </summary>
         /// <param name="getAccountsService">The targeted logic operation processing service initialization provider asset.</param>
-        public ViewAccountsController(IGetAccountsService getAccountsService)
+        public AdminSystemViewAccountsController(IGetAccountsService getAccountsService)
         {
             _getAccountsService = getAccountsService;
         }

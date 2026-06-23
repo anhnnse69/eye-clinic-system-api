@@ -1,5 +1,5 @@
 ﻿using ECS.Application.Common.Response;
-using ECS.Application.Services.ClinicAdminManagementServices.MedicineCatalogServices.ViewList;
+using ECS.Application.Services.ClinicAdminManagementServices.ClinicViewListMedicineServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -12,7 +12,7 @@ namespace ECS.API.Controllers.ClinicAdminManagementController
     [ApiController]
     [Route("api/v1/clinic-admin/medicine-catalog")]
     [Authorize(Roles = "CLINIC_ADMIN")]
-    public class ClinicViewListController : ControllerBase
+    public class ClinicViewListMedicineController : ControllerBase
     {
         private readonly IGetMedicineCatalogService _getMedicineCatalogService;
 
@@ -20,7 +20,7 @@ namespace ECS.API.Controllers.ClinicAdminManagementController
         /// Initializes a new instance of the <see cref="MedicineCatalogController"/> layout component structure.
         /// </summary>
         /// <param name="getMedicineCatalogService">The service logic coordinator manipulating medicine inventory definitions.</param>
-        public ClinicViewListController(IGetMedicineCatalogService getMedicineCatalogService)
+        public ClinicViewListMedicineController(IGetMedicineCatalogService getMedicineCatalogService)
         {
             _getMedicineCatalogService = getMedicineCatalogService;
         }

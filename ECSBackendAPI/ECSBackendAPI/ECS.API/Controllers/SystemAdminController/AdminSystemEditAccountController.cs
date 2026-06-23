@@ -1,10 +1,10 @@
 ﻿using ECS.Application.Common.Response;
-using ECS.Application.Services.SystemAdminServices.AccountServices.Edit;
+using ECS.Application.Services.SystemAdminServices.AdminSystemEditAccountServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ECS.API.Controllers.SystemAdminController.AccountController
+namespace ECS.API.Controllers.SystemAdminController
 {
     /// <summary>
     /// Coordinates system management account properties modification endpoint routes processing vectors.
@@ -12,7 +12,7 @@ namespace ECS.API.Controllers.SystemAdminController.AccountController
     [ApiController]
     [Route("api/v1/system-admin/account")]
     [Authorize(Roles = "SYSTEM_ADMIN")]
-    public class EditAccountController : ControllerBase
+    public class AdminSystemEditAccountController : ControllerBase
     {
         private readonly IEditAccountService _editAccountService;
 
@@ -20,7 +20,7 @@ namespace ECS.API.Controllers.SystemAdminController.AccountController
         /// Initializes a new instance of <see cref="AccountManagementController"/> parsing relevant logic endpoints actions.
         /// </summary>
         /// <param name="editAccountService">The target core workflow implementation handler injection pointer.</param>
-        public EditAccountController(IEditAccountService editAccountService)
+        public AdminSystemEditAccountController(IEditAccountService editAccountService)
         {
             _editAccountService = editAccountService;
         }
