@@ -7,8 +7,6 @@ using ECS.Application.Services.AuthServices.ResetPasswordServices;
 using ECS.Application.Services.AuthServices.UpdatePersonalProfileServices;
 using ECS.Application.Services.AuthServices.ViewAccountInfoServices;
 using ECS.Application.Services.AuthServices.ViewPersonalProfileServices;
-using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordDetailServices;
-using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicAppointmentServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicDashboardServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicFeedbackServices;
@@ -50,9 +48,11 @@ using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewLi
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDemographicsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDetailServices;
 using ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordServices;
+using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordDetailServices;
 using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.CancelAppointmentServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.CreateAppointmentServices;
+using ECS.Application.Services.PatientAppointmentManagementServices.GetAppointmentDetailServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.GetAppointmentHistoryServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.GetClinicBookingOptionsServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.GetClinicServicesForBookingServices;
@@ -184,6 +184,7 @@ public static class DependencyInjection
         services.AddScoped<IDoctorDashboardService, DoctorDashboardService>();
         services.AddScoped<IEditAccountService, EditAccountService>();
         services.AddScoped<ICancelAppointmentService, CancelAppointmentService>();
+        services.AddScoped<IGetAppointmentDetailService, GetAppointmentDetailService>();
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
