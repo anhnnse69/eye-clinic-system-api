@@ -65,6 +65,7 @@ using ECS.Application.Services.PatientProfileManagementServices.ViewPatientProfi
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistCancelAppointmentsServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistCheckInServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistCreatePatientProfileServices;
+using ECS.Application.Services.ReceptionistManagementServices.ReceptionistCreateWalkinAppointmentServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetAvailableSlotsServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetDailyAppointmentsServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetPatientDetailsServices;
@@ -181,6 +182,7 @@ public static class DependencyInjection
         services.AddScoped<IDeleteDoctorScheduleService, DeleteDoctorScheduleService>();
         services.AddScoped<ICreateAccountService, CreateAccountService>();
         services.AddScoped<IGetAppointmentHistoryService, GetAppointmentHistoryService>();
+        services.AddScoped<IReceptionistCreateWalkinAppointmentService, ReceptionistCreateWalkinAppointmentService>();
         services.AddScoped<IDoctorDashboardService, DoctorDashboardService>();
         services.AddScoped<IEditAccountService, EditAccountService>();
         services.AddScoped<ICancelAppointmentService, CancelAppointmentService>();
