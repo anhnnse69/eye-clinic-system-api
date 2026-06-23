@@ -27,15 +27,15 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Cr
             _slotCommandRepo;
         private readonly AppDbContext _dbContext;
 
-        private static readonly Dictionary<ShiftType, (int StartHour, int EndHour)>
-            ShiftHourRanges = new()
+        private static readonly Dictionary<ShiftType, (int StartHour, int StartMinute, int TotalSlots)>
+            ShiftConfig = new()
             {
-                [ShiftType.MORNING] = (8, 12),
-                [ShiftType.AFTERNOON] = (12, 17),
-                [ShiftType.EVENING] = (17, 20),
+                [ShiftType.MORNING] = (8, 0, 8),  
+                [ShiftType.AFTERNOON] = (12, 0, 10),  
+                [ShiftType.EVENING] = (17, 0, 6),   
             };
 
-        private const int DefaultMaxPatientsPerSlot = 8;
+        private const int DefaultMaxPatientsPerSlot = 1;
 
         /// <summary>
         /// Initializes a new instance of <see cref="CreateDoctorScheduleService"/>.
@@ -252,7 +252,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Cr
             _dbContext.Entry(schedule).Property("RoomId").CurrentValue = roomId;
                 await _scheduleCommandRepo.CreateAsync(schedule);
                 await _scheduleCommandRepo.SaveChangesAsync();
-            var slots = GenerateHourlySlots(schedule.Id, workDate, shiftType);
+            var slots = GenerateThirtyMinuteSlots(schedule.Id, workDate, shiftType);
             foreach (var slot in slots)
                 await _slotCommandRepo.CreateAsync(slot);
                 await _slotCommandRepo.SaveChangesAsync();
@@ -261,20 +261,21 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Cr
         }
 
         /// <summary>
-        /// Generates 1-hour <see cref="TimeSlot"/> entries spanning
-        /// the configured hour range of the given shift type.
+        /// Generates 30-minute TimeSlot entries matching the frontend timeline
         /// </summary>
-        private static List<TimeSlot> GenerateHourlySlots(
-            Guid scheduleId,
-            DateOnly workDate,
-            ShiftType shiftType)
+        private static List<TimeSlot> GenerateThirtyMinuteSlots(
+            Guid scheduleId, DateOnly workDate, ShiftType shiftType)
         {
-            var (startHour, endHour) = ShiftHourRanges[shiftType];
+            var (startHour, startMinute, totalSlots) = ShiftConfig[shiftType];
             var slots = new List<TimeSlot>();
-            for (var hour = startHour; hour < endHour; hour++)
+
+            var current = new TimeOnly(startHour, startMinute);
+
+            for (int i = 0; i < totalSlots; i++)
             {
-                var start = workDate.ToDateTime(new TimeOnly(hour, 0));
-                var end = start.AddHours(1);
+                var start = workDate.ToDateTime(current);
+                var end = start.AddMinutes(30);
+
                 slots.Add(new TimeSlot
                 {
                     Id = Guid.NewGuid(),
@@ -285,7 +286,10 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Cr
                     CurrentPatients = 0,
                     Status = SlotStatus.AVAILABLE,
                 });
+
+                current = current.AddMinutes(30);
             }
+
             return slots;
         }
 
