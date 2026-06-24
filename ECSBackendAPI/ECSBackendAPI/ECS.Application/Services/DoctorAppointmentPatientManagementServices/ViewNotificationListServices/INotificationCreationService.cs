@@ -1,4 +1,6 @@
-﻿namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewNotificationListServices
+﻿using ECS.Application.Common.Response;
+
+namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewNotificationListServices
 {
     /// <summary>
     /// Defines operations for creating notifications.
@@ -11,6 +13,6 @@
         /// <param name="userId">User ID.</param>
         /// <param name="title">Notification title.</param>
         /// <param name="content">Notification content.</param>
-        Task CreateAsync(Guid userId, string title, string content);
+        Task<ApiResponse<string>> Process(Guid userId, string title, string content);
     }
 }

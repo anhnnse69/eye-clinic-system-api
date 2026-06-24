@@ -14,19 +14,15 @@ namespace ECS.API.Controllers.DoctorAppointmentPatientManagementController
     public class PatientNotificationController : ControllerBase
     {
         private readonly IViewNotificationListService _listService;
-        private readonly IMarkNotificationReadService _markReadService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PatientNotificationController"/> class.
         /// </summary>
         /// <param name="listService">Service for retrieving patient notifications.</param>
-        /// <param name="markReadService">Service for marking notifications as read.</param>
         public PatientNotificationController(
-            IViewNotificationListService listService,
-            IMarkNotificationReadService markReadService)
+            IViewNotificationListService listService)
         {
             _listService = listService;
-            _markReadService = markReadService;
         }
 
         /// <summary>
@@ -51,20 +47,6 @@ namespace ECS.API.Controllers.DoctorAppointmentPatientManagementController
             };
 
             var result = await _listService.Process(id, request);
-            return Ok(result);
-        }
-
-        /// <summary>
-        /// Marks a notification as read.
-        /// </summary>
-        /// <param name="id">Patient ID.</param>
-        /// <param name="notificationId">Notification ID.</param>
-        [HttpPatch("{id:guid}/notifications/{notificationId:guid}/read")]
-        public async Task<IActionResult> MarkAsRead(
-            Guid id,
-            Guid notificationId)
-        {
-            var result = await _markReadService.Process(id, notificationId);
             return Ok(result);
         }
     }

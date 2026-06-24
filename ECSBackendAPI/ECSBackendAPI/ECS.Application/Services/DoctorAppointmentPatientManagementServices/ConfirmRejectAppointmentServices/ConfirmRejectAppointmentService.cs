@@ -184,7 +184,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Co
                      { "RejectReason", appointment.NoteReason ?? string.Empty }
              };
             string payloadJson = System.Text.Json.JsonSerializer.Serialize(payload);
-            await _notificationService.CreateAsync(patientUserId.Value, templateKey, payloadJson);
+            await _notificationService.Process(patientUserId.Value, templateKey, payloadJson);
         }
 
         /// <summary>
