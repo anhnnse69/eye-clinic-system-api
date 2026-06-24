@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using System.Security.Claims;
 using ECS.Application.Common.Response;
 using ECS.Domain.Entities.Auth;
@@ -8,7 +6,7 @@ using ECS.Domain.Enums;
 using ECS.Infrastructure.Persistence;
 using ECS.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore; 
+using Microsoft.EntityFrameworkCore;
 
 namespace ECS.Application.Services.SystemAdminServices.AccountServices.View
 {
@@ -124,6 +122,7 @@ namespace ECS.Application.Services.SystemAdminServices.AccountServices.View
 
             return x =>
                 (!request.Role.HasValue || x.Role == request.Role.Value)
+                && (!request.IsActive.HasValue || x.IsActive == request.IsActive.Value)
                 && (string.IsNullOrEmpty(searchTerm)
                     || x.FullName.ToLower().Contains(searchTerm)
                     || x.Phone.ToLower().Contains(searchTerm));

@@ -15,6 +15,7 @@
         APP_MESSAGE_2006, // Patient information updated successfully
         APP_MESSAGE_2007, // Appointment status updated successfully
         APP_MESSAGE_2008, // Password changed successfully
+        APP_MESSAGE_2009, // Feedback submitted successfully
 
         // Client error codes (4xxx series)
         APP_MESSAGE_4000, // General client error (considered ambiguous, use APP_MESSAGE_4019 for validation errors)
@@ -70,6 +71,9 @@
         APP_MESSAGE_4051, // Appointment cannot be cancelled in current status
         APP_MESSAGE_4052, // Slot not found
         APP_MESSAGE_4053, // Patient does not have permission to cancel this appointment
+        APP_MESSAGE_4055, // Only completed appointments can be rated
+        APP_MESSAGE_4056, // Feedback already exists for this appointment
+        APP_MESSAGE_4057, // Rating must be between 1 and 5
         APP_MESSAGE_4099, // Demographics record already exists for this patient (UC36 EX-01)
         // Server error codes (5xxx series)
         APP_MESSAGE_5000, // General internal server error (unexpected exception)

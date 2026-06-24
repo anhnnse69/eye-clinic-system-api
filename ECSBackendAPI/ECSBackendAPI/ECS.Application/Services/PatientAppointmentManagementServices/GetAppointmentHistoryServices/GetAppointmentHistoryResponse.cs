@@ -54,5 +54,10 @@
         /// Gets or sets the presentation string layout evaluating raw financial charges tied to system procedures.
         /// </summary>
         public string ServicePrice { get; set; } = null!;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the appointment has been rated/feedback.
+        /// </summary>
+        public bool HasFeedback { get; set; }
     }
 }

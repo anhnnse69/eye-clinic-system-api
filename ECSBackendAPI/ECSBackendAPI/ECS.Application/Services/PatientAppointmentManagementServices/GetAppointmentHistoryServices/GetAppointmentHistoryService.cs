@@ -215,7 +215,8 @@ namespace ECS.Application.Services.PatientAppointmentManagementServices.GetAppoi
                 .Include(x => x.Slot)
                 .Include(x => x.Service)
                 .Include(x => x.Doctor).ThenInclude(d => d.Clinic)
-                .Include(x => x.Doctor).ThenInclude(d => d.User);
+                .Include(x => x.Doctor).ThenInclude(d => d.User)
+                .Include(x => x.Feedback);
 
             // Step 2: Query historical database clusters to safely aggregate absolute total tracking record dimensions
             var totalRecords = await query.CountAsync();
@@ -263,7 +264,8 @@ namespace ECS.Application.Services.PatientAppointmentManagementServices.GetAppoi
                     PatientName = appointment.Patient?.FullName ?? "N/A",
                     DoctorName = doctorName,
                     ServiceName = appointment.Service != null ? appointment.Service.ServiceName : "Khám mắt tổng quát",
-                    ServicePrice = appointment.Service?.Price != null ? appointment.Service.Price.Value.ToString("N0") + " VND" : "Miễn phí"
+                    ServicePrice = appointment.Service?.Price != null ? appointment.Service.Price.Value.ToString("N0") + " VND" : "Miễn phí",
+                    HasFeedback = appointment.Feedback != null
                 };
             })
             .ToList();

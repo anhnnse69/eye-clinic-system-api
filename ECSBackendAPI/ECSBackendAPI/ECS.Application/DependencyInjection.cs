@@ -53,10 +53,12 @@ using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServices;
 using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.CancelAppointmentServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.CreateAppointmentServices;
+using ECS.Application.Services.PatientAppointmentManagementServices.GetAppointmentDetailServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.GetAppointmentHistoryServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.GetClinicBookingOptionsServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.GetClinicServicesForBookingServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.GetPatientProfilesForBookingServices;
+using ECS.Application.Services.PatientAppointmentManagementServices.SubmitFeedbackServices;
 using ECS.Application.Services.PatientProfileManagementServices.CreatePatientProfileServices;
 using ECS.Application.Services.PatientProfileManagementServices.GetPatientProfilesServices;
 using ECS.Application.Services.PatientProfileManagementServices.UpdatePatientProfileServices;
@@ -65,6 +67,7 @@ using ECS.Application.Services.PatientProfileManagementServices.ViewPatientProfi
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistCancelAppointmentsServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistCheckInServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistCreatePatientProfileServices;
+using ECS.Application.Services.ReceptionistManagementServices.ReceptionistCreateWalkinAppointmentServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetAvailableSlotsServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetDailyAppointmentsServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetPatientDetailsServices;
@@ -73,6 +76,7 @@ using ECS.Application.Services.ReceptionistManagementServices.ReceptionistPayDep
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistSearchAccountServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistUpdatePatientProfileServices;
 using ECS.Application.Services.SystemAdminServices.AccountServices.Create;
+using ECS.Application.Services.SystemAdminServices.AccountServices.Delete;
 using ECS.Application.Services.SystemAdminServices.AccountServices.Edit;
 using ECS.Application.Services.SystemAdminServices.AccountServices.View;
 using ECS.Application.Services.SystemAdminServices.AdminSystemDeleteClinicServices;
@@ -182,12 +186,16 @@ public static class DependencyInjection
         services.AddScoped<IDeleteDoctorScheduleService, DeleteDoctorScheduleService>();
         services.AddScoped<ICreateAccountService, CreateAccountService>();
         services.AddScoped<IGetAppointmentHistoryService, GetAppointmentHistoryService>();
+        services.AddScoped<IReceptionistCreateWalkinAppointmentService, ReceptionistCreateWalkinAppointmentService>();
         services.AddScoped<IDoctorDashboardService, DoctorDashboardService>();
         services.AddScoped<IEditAccountService, EditAccountService>();
         services.AddScoped<ICancelAppointmentService, CancelAppointmentService>();
         services.AddScoped<INotificationCreationService, NotificationCreationService>();
         services.AddScoped<IViewNotificationListService, ViewNotificationListService>();
         services.AddScoped<IMarkNotificationReadService, MarkNotificationReadService>();
+        services.AddScoped<IDeleteAccountService, DeleteAccountService>();
+        services.AddScoped<IGetAppointmentDetailService, GetAppointmentDetailService>();
+        services.AddScoped<ISubmitFeedbackService, SubmitFeedbackService>();
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
