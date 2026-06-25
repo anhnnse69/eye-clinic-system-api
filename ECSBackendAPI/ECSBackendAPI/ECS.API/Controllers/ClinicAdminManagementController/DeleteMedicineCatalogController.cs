@@ -1,10 +1,9 @@
 ﻿using ECS.Application.Common.Response;
 using ECS.Application.Services.ClinicAdminManagementServices.MedicineCatalogServices.Delete;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ECS.API.Controllers.ClinicAdminManagementController.MedicineCatalogController
+namespace ECS.API.Controllers.ClinicAdminManagementController
 {
     /// <summary>
     /// Handles inventory management endpoints for catalog control operations.

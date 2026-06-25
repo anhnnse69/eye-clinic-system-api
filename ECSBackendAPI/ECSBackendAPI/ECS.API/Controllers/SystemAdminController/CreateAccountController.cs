@@ -2,10 +2,9 @@
 using ECS.Application.Services.SystemAdminServices.AccountServices.Create;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ECS.API.Controllers.SystemAdminController.AccountController
+namespace ECS.API.Controllers.SystemAdminController
 {
     /// <summary>
     /// Handles user profile initialization and system access creations for system administrators.

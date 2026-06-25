@@ -2,10 +2,9 @@
 using ECS.Application.Services.ClinicAdminManagementServices.MedicineCatalogServices.Edit;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ECS.API.Controllers.ClinicAdminManagementController.MedicineCatalogController
+namespace ECS.API.Controllers.ClinicAdminManagementController
 {
     /// <summary>
     /// Handles medicine catalog data management endpoints rules for clinic administrators.

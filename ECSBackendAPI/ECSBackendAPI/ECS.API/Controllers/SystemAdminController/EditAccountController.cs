@@ -1,10 +1,9 @@
 ﻿using ECS.Application.Common.Response;
 using ECS.Application.Services.SystemAdminServices.AccountServices.Edit;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ECS.API.Controllers.SystemAdminController.AccountController
+namespace ECS.API.Controllers.SystemAdminController
 {
     /// <summary>
     /// Coordinates system management account properties modification endpoint routes processing vectors.

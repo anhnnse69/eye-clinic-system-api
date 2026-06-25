@@ -35,10 +35,18 @@ namespace ECS.Domain.Entities.EyeExaminations
         public string? MaculaHoleDegree { get; set; }
         public bool MaculaScar { get; set; } = false;
         public bool MaculaSerousDetachment { get; set; } = false;
+        public bool MaculaHemorrhage { get; set; } = false;
 
-        // ===== CHOROID (Hắc mạc) - MS24 =====
+        // ===== CHORIORETINITIS (Ổ viêm hắc mạc) - MS23 =====
+        public bool ChorioretinitisActive { get; set; } = false;
+        public bool ChorioretinitisScar { get; set; } = false;
+        public int? ChorioretinitisCount { get; set; }
+        public string? ChorioretinitisLocation { get; set; } // Vị trí
+
+        // ===== CHOROID (Hắc mạc) =====
         public bool ChoroidalNormal { get; set; } = true;
         public string? ChoroidalFindings { get; set; }
+        public bool ChoroidalNeovascularization { get; set; } = false; // CNV
 
         // ===== SUPPLEMENTARY FINDINGS =====
         public string? DiscMaculaExtras { get; set; } // JSONB

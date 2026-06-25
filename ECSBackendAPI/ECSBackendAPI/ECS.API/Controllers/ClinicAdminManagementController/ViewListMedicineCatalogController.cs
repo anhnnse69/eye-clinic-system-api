@@ -1,10 +1,9 @@
 ﻿using ECS.Application.Common.Response;
 using ECS.Application.Services.ClinicAdminManagementServices.MedicineCatalogServices.ViewList;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ECS.API.Controllers.ClinicAdminManagementController.MedicineCatalogController
+namespace ECS.API.Controllers.ClinicAdminManagementController
 {
     /// <summary>
     /// Manages the operational endpoints handling catalog and generic items distribution rules inside active segments.
@@ -12,7 +11,7 @@ namespace ECS.API.Controllers.ClinicAdminManagementController.MedicineCatalogCon
     [ApiController]
     [Route("api/v1/clinic-admin/medicine-catalog")]
     [Authorize(Roles = "CLINIC_ADMIN")]
-    public class ViewListController : ControllerBase
+    public class ViewListMedicineCatalogController : ControllerBase
     {
         private readonly IGetMedicineCatalogService _getMedicineCatalogService;
 
@@ -20,7 +19,7 @@ namespace ECS.API.Controllers.ClinicAdminManagementController.MedicineCatalogCon
         /// Initializes a new instance of the <see cref="MedicineCatalogController"/> layout component structure.
         /// </summary>
         /// <param name="getMedicineCatalogService">The service logic coordinator manipulating medicine inventory definitions.</param>
-        public ViewListController(IGetMedicineCatalogService getMedicineCatalogService)
+        public ViewListMedicineCatalogController(IGetMedicineCatalogService getMedicineCatalogService)
         {
             _getMedicineCatalogService = getMedicineCatalogService;
         }

@@ -22,6 +22,16 @@ namespace ECS.Domain.Entities.SubspecialtyRecords
         public string? PregnancyIllnessDetail { get; set; }
         public bool IntellectualDevelopmentNormal { get; set; } = true;
 
+        // MS26 Specific History Fields
+        /// <summary>
+        /// Pathological pregnancy history.
+        /// </summary>
+        public string? PediatricPregnancyHistory { get; set; }
+        /// <summary>
+        /// Intellectual development status.
+        /// </summary>
+        public string? PediatricDevelopment { get; set; }
+
         // Chief symptoms (JSONB)
         public string? ChiefSymptoms { get; set; }
 

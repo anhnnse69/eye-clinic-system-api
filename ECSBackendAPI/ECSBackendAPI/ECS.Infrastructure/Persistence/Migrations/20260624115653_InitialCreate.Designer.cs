@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ECS.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260621131927_AddSoftDeleteToDoctorSchedule")]
-    partial class AddSoftDeleteToDoctorSchedule
+    [Migration("20260624115653_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -658,13 +658,29 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("decimal(5,2)")
                         .HasColumnName("ac_depth_mm");
 
+                    b.Property<bool>("AcExudate")
+                        .HasColumnType("bit")
+                        .HasColumnName("ac_exudate");
+
+                    b.Property<string>("AcExudateDescription")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ac_exudate_description");
+
                     b.Property<bool>("AcFlat")
                         .HasColumnType("bit")
                         .HasColumnName("ac_flat");
 
+                    b.Property<bool>("AcForeignBody")
+                        .HasColumnType("bit")
+                        .HasColumnName("ac_foreign_body");
+
                     b.Property<bool>("AcHemorrhage")
                         .HasColumnType("bit")
                         .HasColumnName("ac_hemorrhage");
+
+                    b.Property<string>("AcHemorrhageLevel")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ac_hemorrhage_level");
 
                     b.Property<string>("AcIrisExtras")
                         .HasColumnType("nvarchar(max)")
@@ -677,6 +693,10 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     b.Property<string>("AcOtherFindings")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("ac_other_findings");
+
+                    b.Property<bool>("AcPus")
+                        .HasColumnType("bit")
+                        .HasColumnName("ac_pus");
 
                     b.Property<decimal?>("AcPusMm")
                         .HasPrecision(5, 2)
@@ -1418,9 +1438,29 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("id");
 
+                    b.Property<bool>("ChorioretinitisActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("chorioretinitis_active");
+
+                    b.Property<int?>("ChorioretinitisCount")
+                        .HasColumnType("int")
+                        .HasColumnName("chorioretinitis_count");
+
+                    b.Property<string>("ChorioretinitisLocation")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("chorioretinitis_location");
+
+                    b.Property<bool>("ChorioretinitisScar")
+                        .HasColumnType("bit")
+                        .HasColumnName("chorioretinitis_scar");
+
                     b.Property<string>("ChoroidalFindings")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("choroidal_findings");
+
+                    b.Property<bool>("ChoroidalNeovascularization")
+                        .HasColumnType("bit")
+                        .HasColumnName("choroidal_neovascularization");
 
                     b.Property<bool>("ChoroidalNormal")
                         .HasColumnType("bit")
@@ -1437,6 +1477,10 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     b.Property<string>("MaculaEdemaType")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("macula_edema_type");
+
+                    b.Property<bool>("MaculaHemorrhage")
+                        .HasColumnType("bit")
+                        .HasColumnName("macula_hemorrhage");
 
                     b.Property<string>("MaculaHoleDegree")
                         .HasColumnType("nvarchar(max)")
@@ -1688,6 +1732,10 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(true)
                         .HasColumnName("vessel_normal");
 
+                    b.Property<string>("VesselStatus")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("vessel_status");
+
                     b.HasKey("Id")
                         .HasName("pk_eye_fundus_retina_vessel");
 
@@ -1805,6 +1853,58 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_eye_lens_vitreous_record_id");
 
                     b.ToTable("eye_lens_vitreous", (string)null);
+                });
+
+            modelBuilder.Entity("ECS.Domain.Entities.EyeExaminations.EyeOrbit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("id");
+
+                    b.Property<string>("EomFindings")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("eom_findings");
+
+                    b.Property<string>("EomStatus")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("eom_status");
+
+                    b.Property<string>("EyeballStatus")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("eyeball_status");
+
+                    b.Property<string>("EyeballTexture")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("eyeball_texture");
+
+                    b.Property<Guid>("MedicalRecordId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("medical_record_id");
+
+                    b.Property<string>("OrbitalForeignBodyDescription")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("orbital_foreign_body_description");
+
+                    b.Property<string>("OrbitalStatus")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("orbital_status");
+
+                    b.Property<Guid>("RecordId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("record_id");
+
+                    b.Property<int>("Side")
+                        .HasColumnType("int")
+                        .HasColumnName("side");
+
+                    b.HasKey("Id")
+                        .HasName("pk_eye_orbits");
+
+                    b.HasIndex("MedicalRecordId")
+                        .HasDatabaseName("ix_eye_orbits_medical_record_id");
+
+                    b.ToTable("eye_orbits", (string)null);
                 });
 
             modelBuilder.Entity("ECS.Domain.Entities.EyeExaminations.EyeSclera", b =>
@@ -2244,9 +2344,49 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("id");
 
+                    b.Property<int?>("Age")
+                        .HasColumnType("int")
+                        .HasColumnName("age");
+
+                    b.Property<string>("CarePlan")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("care_plan");
+
+                    b.Property<string>("DietPlan")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("diet_plan");
+
+                    b.Property<string>("DischargeIopOd")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("discharge_iop_od");
+
+                    b.Property<string>("DischargeIopOs")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("discharge_iop_os");
+
                     b.Property<string>("DischargeSummary")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("discharge_summary");
+
+                    b.Property<string>("DischargeVaOd")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("discharge_va_od");
+
+                    b.Property<string>("DischargeVaOs")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("discharge_va_os");
+
+                    b.Property<string>("FinalDiagnosisCause")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("final_diagnosis_cause");
+
+                    b.Property<string>("FinalDiagnosisClinical")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("final_diagnosis_clinical");
+
+                    b.Property<string>("FollowUpPlan")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("follow_up_plan");
 
                     b.Property<string>("GlaucomaSummary")
                         .HasColumnType("nvarchar(max)")
@@ -2260,6 +2400,10 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("lab_orders");
 
+                    b.Property<string>("MaYeuTo")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ma_yeu_to");
+
                     b.Property<string>("PediatricSummary")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("pediatric_summary");
@@ -2267,6 +2411,18 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("RecordId")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("record_id");
+
+                    b.Property<string>("RequiredTests")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("required_tests");
+
+                    b.Property<string>("Summary")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("summary");
+
+                    b.Property<string>("SurgerySummary")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("surgery_summary");
 
                     b.Property<string>("TraumaSummary")
                         .HasColumnType("nvarchar(max)")
@@ -3292,9 +3448,29 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("fundus_retina_findings");
 
+                    b.Property<string>("GlaucomaFamilyHistory")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("glaucoma_family_history");
+
+                    b.Property<string>("GlaucomaHistoryEye")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("glaucoma_history_eye");
+
                     b.Property<string>("GlaucomaMedications")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("glaucoma_medications");
+
+                    b.Property<string>("GlaucomaPriorFacility")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("glaucoma_prior_facility");
+
+                    b.Property<string>("GlaucomaPriorTreatment")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("glaucoma_prior_treatment");
+
+                    b.Property<string>("GlaucomaSymptomDuration")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("glaucoma_symptom_duration");
 
                     b.Property<string>("GlaucomaType")
                         .HasMaxLength(100)
@@ -3659,6 +3835,14 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     b.Property<string>("IntellectualDevelopmentStatus")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("intellectual_development_status");
+
+                    b.Property<string>("PediatricDevelopment")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("pediatric_development");
+
+                    b.Property<string>("PediatricPregnancyHistory")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("pediatric_pregnancy_history");
 
                     b.Property<bool>("PregnancyIllness")
                         .ValueGeneratedOnAdd()
@@ -4274,6 +4458,18 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     b.Navigation("MedicalRecord");
                 });
 
+            modelBuilder.Entity("ECS.Domain.Entities.EyeExaminations.EyeOrbit", b =>
+                {
+                    b.HasOne("ECS.Domain.Entities.MedicalRecords.MedicalRecord", "MedicalRecord")
+                        .WithMany("EyeOrbits")
+                        .HasForeignKey("MedicalRecordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_eye_orbits_medical_records_medical_record_id");
+
+                    b.Navigation("MedicalRecord");
+                });
+
             modelBuilder.Entity("ECS.Domain.Entities.EyeExaminations.EyeSclera", b =>
                 {
                     b.HasOne("ECS.Domain.Entities.MedicalRecords.MedicalRecord", "MedicalRecord")
@@ -4856,6 +5052,8 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     b.Navigation("EyeFundusRetinaVessels");
 
                     b.Navigation("EyeLensVitreouses");
+
+                    b.Navigation("EyeOrbits");
 
                     b.Navigation("EyeScleras");
 

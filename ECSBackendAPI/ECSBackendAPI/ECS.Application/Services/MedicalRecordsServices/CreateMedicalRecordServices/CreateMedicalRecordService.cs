@@ -240,6 +240,33 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
                 Enum.TryParse<RecordType>(request.RecordType, true, out var recordType);
                 var medicalRecord = new MedicalRecord { Id = Guid.NewGuid(), AppointmentId = state.AppointmentId, PatientId = state.Appointment.PatientId, DoctorId = state.DoctorProfile.Id, RecordType = recordType, ChiefComplaint = request.ChiefComplaint, IllnessDayNumber = request.IllnessDayNumber, MedicalHistory = request.MedicalHistory, PersonalHistoryEye = request.PersonalHistoryEye, PersonalHistorySystemic = request.PersonalHistorySystemic, FamilyHistory = request.FamilyHistory, VitalPulse = request.VitalPulse, VitalTemperature = request.VitalTemperature, VitalBloodPressure = request.VitalBloodPressure, VitalRespiratoryRate = request.VitalRespiratoryRate, VitalWeightKg = request.VitalWeightKg, SystemicExam = request.SystemicExam != null ? System.Text.Json.JsonSerializer.Serialize(request.SystemicExam) : null, DiagnosisMain = request.DiagnosisMain, DiagnosisComorbid = request.DiagnosisComorbid, DiagnosisDifferential = request.DiagnosisDifferential, Prognosis = request.Prognosis, TreatmentPlan = request.TreatmentPlan, Notes = request.Notes, IsLocked = false, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
                 _context.MedicalRecords.Add(medicalRecord);
+
+                // Create MedicalRecordExtras for additional fields
+                var extras = new MedicalRecordExtras
+                {
+                    Id = Guid.NewGuid(),
+                    RecordId = medicalRecord.Id,
+                    MaYeuTo = request.MaYeuTo,
+                    Age = request.Age,
+                    RequiredTests = request.RequiredTests,
+                    Summary = request.Summary,
+                    DietPlan = request.DietPlan,
+                    CarePlan = request.CarePlan,
+                    FinalDiagnosisClinical = request.FinalDiagnosisClinical,
+                    FinalDiagnosisCause = request.FinalDiagnosisCause,
+                    SurgerySummary = request.SurgerySummary,
+                    DischargeSummary = request.DischargeConditionSummary,
+                    TreatmentProcess = request.TreatmentProcessSummary,
+                    DischargeVaOd = request.DischargeVaOd,
+                    DischargeVaOs = request.DischargeVaOs,
+                    DischargeIopOd = request.DischargeIopOd,
+                    DischargeIopOs = request.DischargeIopOs,
+                    FollowUpPlan = request.FollowUpPlan,
+                    UpdatedAt = DateTime.UtcNow,
+                    UpdatedBy = state.DoctorProfile.Id
+                };
+                _context.MedicalRecordExtras.Add(extras);
+
                 await CreateEyeExaminationsAsync(_context, medicalRecord.Id, request);
                 await CreateSubspecialtyRecordsAsync(_context, medicalRecord.Id, request, recordType);
                 await CreatePrescriptionAsync(_context, medicalRecord.Id, state.DoctorProfile.Id, request);
@@ -403,6 +430,18 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
             {
                 context.EyeFundusRetinaVessels.Add(new EyeFundusRetinaVessel { Id = Guid.NewGuid(), RecordId = recordId, Side = EyeSide.LEFT });
             }
+
+            // Eye Orbit - Right
+            if (request.RightEyeOrbit != null)
+            {
+                context.EyeOrbits.Add(MapEyeOrbit(request.RightEyeOrbit, recordId, EyeSide.RIGHT));
+            }
+
+            // Eye Orbit - Left
+            if (request.LeftEyeOrbit != null)
+            {
+                context.EyeOrbits.Add(MapEyeOrbit(request.LeftEyeOrbit, recordId, EyeSide.LEFT));
+            }
         }
 
         /// <summary>
@@ -418,41 +457,41 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
             {
                 case RecordType.MS21_TRAUMA:
                     // Trauma Record
-                    if (request.TraumaRecord != null)
+                    // Map from top-level trauma history fields AND nested TraumaRecord
+                    var traumaRecord = new TraumaRecord
                     {
-                        var traumaRecord = new TraumaRecord
-                        {
-                            Id = Guid.NewGuid(),
-                            RecordId = recordId,
-                            InjuryCause = request.TraumaRecord.InjuryCause,
-                            InjuryTime = request.TraumaRecord.InjuryTime,
-                            PriorTreatment = request.TraumaRecord.PriorTreatment,
-                            PostTreatmentCourse = request.TraumaRecord.PostTreatmentCourse,
-                            OdInjuries = request.TraumaRecord.OdInjuries,
-                            OsInjuries = request.TraumaRecord.OsInjuries,
-                            InjuryDetails = request.TraumaRecord.InjuryDetails,
-                            TraumaConclusion = request.TraumaRecord.TraumaConclusion
-                        };
-                        context.TraumaRecords.Add(traumaRecord);
+                        Id = Guid.NewGuid(),
+                        RecordId = recordId,
+                        // Top-level Trauma History Fields
+                        InjuryCause = request.TraumaCause ?? request.TraumaRecord?.InjuryCause,
+                        InjuryTime = request.TraumaTime ?? request.TraumaRecord?.InjuryTime,
+                        PriorTreatment = request.TraumaPriorTreatment ?? request.TraumaRecord?.PriorTreatment,
+                        PostTreatmentCourse = request.TraumaPostTreatmentCourse ?? request.TraumaRecord?.PostTreatmentCourse,
+                        // Nested TraumaRecord fields
+                        OdInjuries = request.TraumaRecord?.OdInjuries,
+                        OsInjuries = request.TraumaRecord?.OsInjuries,
+                        InjuryDetails = request.TraumaRecord?.InjuryDetails,
+                        TraumaConclusion = request.TraumaRecord?.TraumaConclusion
+                    };
+                    context.TraumaRecords.Add(traumaRecord);
 
-                        // Trauma Surgeries
-                        if (request.TraumaSurgeries != null && request.TraumaSurgeries.Count > 0)
+                    // Trauma Surgeries
+                    if (request.TraumaSurgeries != null && request.TraumaSurgeries.Count > 0)
+                    {
+                        foreach (var surgery in request.TraumaSurgeries)
                         {
-                            foreach (var surgery in request.TraumaSurgeries)
+                            context.TraumaSurgeries.Add(new TraumaSurgery
                             {
-                                context.TraumaSurgeries.Add(new TraumaSurgery
-                                {
-                                    Id = Guid.NewGuid(),
-                                    TraumaRecordId = traumaRecord.Id,
-                                    SurgeryDate = surgery.SurgeryDate,
-                                    SurgeryType = surgery.SurgeryType,
-                                    SurgeryDescription = surgery.SurgeryDescription,
-                                    SurgeonName = surgery.SurgeonName,
-                                    AnesthesiaType = surgery.AnesthesiaType,
-                                    PostSurgeryCondition = surgery.PostSurgeryCondition,
-                                    Notes = surgery.Notes
-                                });
-                            }
+                                Id = Guid.NewGuid(),
+                                TraumaRecordId = traumaRecord.Id,
+                                SurgeryDate = surgery.SurgeryDate,
+                                SurgeryType = surgery.SurgeryType,
+                                SurgeryDescription = surgery.SurgeryDescription,
+                                SurgeonName = surgery.SurgeonName,
+                                AnesthesiaType = surgery.AnesthesiaType,
+                                PostSurgeryCondition = surgery.PostSurgeryCondition,
+                                Notes = surgery.Notes
+                            });
                         }
                     }
                     break;
@@ -514,6 +553,13 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
                             PriorEyeSurgeryDetails = request.GlaucomaRecord.PriorEyeSurgeryDetails,
                             SteroidUse = request.GlaucomaRecord.SteroidUse,
                             SteroidPrescribed = request.GlaucomaRecord.SteroidPrescribed,
+
+                            // MS24 Top-level History Fields
+                            GlaucomaSymptomDuration = request.GlaucomaSymptomDuration,
+                            GlaucomaPriorFacility = request.GlaucomaPriorFacility,
+                            GlaucomaPriorTreatment = request.GlaucomaPriorTreatment,
+                            GlaucomaHistoryEye = request.GlaucomaHistoryEye,
+                            GlaucomaFamilyHistory = request.GlaucomaFamilyHistory,
 
                             // Systemic history
                             HasCardiovascularDisease = request.GlaucomaRecord.HasCardiovascularDisease,
@@ -612,15 +658,15 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
                             Id = Guid.NewGuid(),
                             RecordId = recordId,
 
-                            // Chief complaint & cause
+                            // Chief complaint & cause (from nested object AND top-level fields)
                             ChiefStrabismus = request.StrabismusPtosisRecord.ChiefStrabismus,
                             ChiefPtosis = request.StrabismusPtosisRecord.ChiefPtosis,
-                            Congenital = request.StrabismusPtosisRecord.Congenital,
-                            Acquired = request.StrabismusPtosisRecord.Acquired,
-                            AcquiredOnset = request.StrabismusPtosisRecord.AcquiredOnset,
+                            Congenital = request.StrabismusCongenital ?? request.StrabismusPtosisRecord.Congenital,
+                            Acquired = request.StrabismusAcquired ?? request.StrabismusPtosisRecord.Acquired,
+                            AcquiredOnset = request.StrabismusOnsetTime ?? request.StrabismusPtosisRecord.AcquiredOnset,
 
-                            // Strabismus type
-                            StrabismusType = request.StrabismusPtosisRecord.StrabismusType,
+                            // Strabismus type (from nested object AND top-level field)
+                            StrabismusType = request.StrabismusMainSymptom ?? request.StrabismusPtosisRecord.StrabismusType,
 
                             // Nystagmus
                             Nystagmus = request.StrabismusPtosisRecord.Nystagmus,
@@ -725,6 +771,10 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
                             PregnancyIllnessDetail = request.PediatricRecord.PregnancyIllnessDetail,
                             IntellectualDevelopmentNormal = request.PediatricRecord.IntellectualDevelopmentNormal,
                             ChiefSymptoms = request.PediatricRecord.ChiefSymptoms,
+
+                            // MS26 Top-level History Fields
+                            PediatricPregnancyHistory = request.PediatricPregnancyHistory,
+                            PediatricDevelopment = request.PediatricDevelopment,
 
                             // Eyelid conditions
                             EntropionOd = request.PediatricRecord.EntropionOd,
@@ -1182,6 +1232,29 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
 
                 // CNV
                 ChoroidalNeovascularization = !string.IsNullOrEmpty(data.HemorrhageType) && data.HemorrhageType.Contains("Hắc mạc")
+            };
+        }
+
+        /// <summary>
+        /// Maps orbit exam data to EyeOrbit entity.
+        /// </summary>
+        /// <param name="data">Orbit exam data from request.</param>
+        /// <param name="recordId">Parent medical record ID.</param>
+        /// <param name="side">Eye side (RIGHT or LEFT).</param>
+        /// <returns>Mapped EyeOrbit entity.</returns>
+        private static EyeOrbit MapEyeOrbit(EyeOrbitData data, Guid recordId, EyeSide side)
+        {
+            return new EyeOrbit
+            {
+                Id = Guid.NewGuid(),
+                RecordId = recordId,
+                Side = side,
+                OrbitalStatus = data.Status,
+                OrbitalForeignBodyDescription = data.ForeignBodyDescription,
+                EomStatus = data.EomStatus,
+                EomFindings = data.EomFindings,
+                EyeballStatus = data.EyeballStatus,
+                EyeballTexture = data.EyeballTexture
             };
         }
 

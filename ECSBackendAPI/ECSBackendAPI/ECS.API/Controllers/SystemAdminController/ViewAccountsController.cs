@@ -3,7 +3,7 @@ using ECS.Application.Services.SystemAdminServices.AccountServices.View;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ECS.API.Controllers.SystemAdminController.AccountController
+namespace ECS.API.Controllers.SystemAdminController
 {
     /// <summary>
     /// Handles system level authentication accounts view control administration workflow endpoint interfaces.

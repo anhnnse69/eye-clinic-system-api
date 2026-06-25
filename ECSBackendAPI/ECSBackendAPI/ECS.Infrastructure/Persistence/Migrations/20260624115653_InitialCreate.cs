@@ -342,6 +342,8 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     work_date = table.Column<DateTime>(type: "date", nullable: false),
                     shift_type = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
                     note = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    is_deleted = table.Column<bool>(type: "bit", nullable: false),
+                    deleted_at = table.Column<DateTime>(type: "datetime2", nullable: true),
                     created_at = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
                     updated_at = table.Column<DateTime>(type: "datetime2", nullable: false),
                     room_id = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
@@ -683,9 +685,14 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     ac_depth_herick = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
                     ac_flat = table.Column<bool>(type: "bit", nullable: false),
                     ac_lens_material = table.Column<bool>(type: "bit", nullable: false),
+                    ac_pus = table.Column<bool>(type: "bit", nullable: false),
                     ac_pus_mm = table.Column<decimal>(type: "decimal(5,2)", precision: 5, scale: 2, nullable: true),
-                    ac_tyndall = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ac_exudate = table.Column<bool>(type: "bit", nullable: false),
+                    ac_exudate_description = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ac_hemorrhage = table.Column<bool>(type: "bit", nullable: false),
+                    ac_hemorrhage_level = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ac_foreign_body = table.Column<bool>(type: "bit", nullable: false),
+                    ac_tyndall = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ac_other_findings = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     angle_synechiae = table.Column<bool>(type: "bit", nullable: false),
                     angle_pigment = table.Column<bool>(type: "bit", nullable: false),
@@ -933,8 +940,14 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     macula_hole_degree = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     macula_scar = table.Column<bool>(type: "bit", nullable: false),
                     macula_serous_detachment = table.Column<bool>(type: "bit", nullable: false),
+                    macula_hemorrhage = table.Column<bool>(type: "bit", nullable: false),
+                    chorioretinitis_active = table.Column<bool>(type: "bit", nullable: false),
+                    chorioretinitis_scar = table.Column<bool>(type: "bit", nullable: false),
+                    chorioretinitis_count = table.Column<int>(type: "int", nullable: true),
+                    chorioretinitis_location = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     choroidal_normal = table.Column<bool>(type: "bit", nullable: false),
                     choroidal_findings = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    choroidal_neovascularization = table.Column<bool>(type: "bit", nullable: false),
                     disc_macula_extras = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
@@ -956,6 +969,7 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     record_id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     side = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
                     vessel_normal = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
+                    vessel_status = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     artery_occlusion_type = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     vein_occlusion_type = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     occlusion_type = table.Column<string>(type: "nvarchar(max)", nullable: true),
@@ -1037,6 +1051,32 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     table.ForeignKey(
                         name: "fk_eye_lens_vitreous_medical_records_record_id",
                         column: x => x.record_id,
+                        principalTable: "medical_record",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "eye_orbits",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    record_id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    side = table.Column<int>(type: "int", nullable: false),
+                    orbital_status = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    orbital_foreign_body_description = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    eom_status = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    eom_findings = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    eyeball_status = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    eyeball_texture = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    medical_record_id = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_eye_orbits", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_eye_orbits_medical_records_medical_record_id",
+                        column: x => x.medical_record_id,
                         principalTable: "medical_record",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
@@ -1138,6 +1178,11 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     prior_eye_surgery_details = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     steroid_use = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
                     steroid_prescribed = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    glaucoma_symptom_duration = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    glaucoma_prior_facility = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    glaucoma_prior_treatment = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    glaucoma_history_eye = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    glaucoma_family_history = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     has_cardiovascular_disease = table.Column<bool>(type: "bit", nullable: false),
                     has_hypertension = table.Column<bool>(type: "bit", nullable: false),
                     has_diabetes = table.Column<bool>(type: "bit", nullable: false),
@@ -1233,13 +1278,27 @@ namespace ECS.Infrastructure.Persistence.Migrations
                 {
                     id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     record_id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ma_yeu_to = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    age = table.Column<int>(type: "int", nullable: true),
+                    required_tests = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    summary = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     trauma_summary = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     glaucoma_summary = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     pediatric_summary = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    diet_plan = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    care_plan = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    final_diagnosis_clinical = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    final_diagnosis_cause = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    surgery_summary = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     lab_orders = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     imaging_orders = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     discharge_summary = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     treatment_process = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    discharge_va_od = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    discharge_va_os = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    discharge_iop_od = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    discharge_iop_os = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    follow_up_plan = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     updated_by = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     updated_at = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
@@ -1303,6 +1362,8 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     pregnancy_illness = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
                     pregnancy_illness_detail = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     intellectual_development_normal = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
+                    pediatric_pregnancy_history = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    pediatric_development = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     chief_symptoms = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     entropion_od = table.Column<bool>(type: "bit", nullable: false),
                     epicanthus_od = table.Column<bool>(type: "bit", nullable: false),
@@ -1725,6 +1786,11 @@ namespace ECS.Infrastructure.Persistence.Migrations
                 column: "record_id");
 
             migrationBuilder.CreateIndex(
+                name: "ix_eye_orbits_medical_record_id",
+                table: "eye_orbits",
+                column: "medical_record_id");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_eye_sclera_record_id",
                 table: "eye_sclera",
                 column: "record_id");
@@ -1977,6 +2043,9 @@ namespace ECS.Infrastructure.Persistence.Migrations
 
             migrationBuilder.DropTable(
                 name: "eye_lens_vitreous");
+
+            migrationBuilder.DropTable(
+                name: "eye_orbits");
 
             migrationBuilder.DropTable(
                 name: "eye_sclera");
