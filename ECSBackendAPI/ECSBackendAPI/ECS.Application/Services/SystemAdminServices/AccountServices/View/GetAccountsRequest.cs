@@ -21,6 +21,11 @@ namespace ECS.Application.Services.SystemAdminServices.AccountServices.View
         public UserRole? Role { get; set; }
 
         /// <summary>
+        /// Optional status filter tracking active/inactive user flags.
+        /// </summary>
+        public bool? IsActive { get; set; }
+
+        /// <summary>
         /// The active index page position mapping boundary indicator.
         /// </summary>
         public int PageNumber { get; set; } = 1;
