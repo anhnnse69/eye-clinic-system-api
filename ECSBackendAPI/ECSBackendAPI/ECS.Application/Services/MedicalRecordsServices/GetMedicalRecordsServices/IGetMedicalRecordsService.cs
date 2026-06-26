@@ -1,5 +1,4 @@
 using ECS.Application.Common.Response;
-using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServices;
 
 namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServices
 {

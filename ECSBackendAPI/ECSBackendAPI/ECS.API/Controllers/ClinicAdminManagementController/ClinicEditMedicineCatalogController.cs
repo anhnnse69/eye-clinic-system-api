@@ -2,7 +2,6 @@
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicEditMedicineServices;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ECS.API.Controllers.ClinicAdminManagementController

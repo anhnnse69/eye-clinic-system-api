@@ -15,6 +15,7 @@ namespace ECS.Domain.Entities.EyeExaminations
 
         // ===== BLOOD VESSELS (Hệ mạch máu) =====
         public bool VesselNormal { get; set; } = true;
+        public string? VesselStatus { get; set; } // Tình trạng mạch: Bình thường, Tắc động mạch, Tắc tĩnh mạch
         public string? ArteryOcclusionType { get; set; } // trung tâm, nhánh, mi võng mạc
         public string? VeinOcclusionType { get; set; } // trung tâm, nhánh
         public string? OcclusionType { get; set; } // phù, thiếu máu, hỗn hợp

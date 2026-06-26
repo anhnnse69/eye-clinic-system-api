@@ -56,6 +56,7 @@ namespace ECS.Infrastructure.Persistence
         public DbSet<EyeSclera> EyeScleras => Set<EyeSclera>();
         public DbSet<EyeFundusDiscMacula> EyeFundusDiscMaculas => Set<EyeFundusDiscMacula>();
         public DbSet<EyeFundusRetinaVessel> EyeFundusRetinaVessels => Set<EyeFundusRetinaVessel>();
+        public DbSet<EyeOrbit> EyeOrbits => Set<EyeOrbit>();
         public DbSet<LacrimalRecord> LacrimalRecords => Set<LacrimalRecord>();
 
         // Paraclinical

@@ -39,6 +39,28 @@ namespace ECS.Domain.Entities.SubspecialtyRecords
         public string? SteroidUse { get; set; } // Tên thuốc, thời gian, đường dùng
         public string? SteroidPrescribed { get; set; } // Theo chỉ định BS hoặc tự dùng
 
+        // MS24 Specific History Fields (top-level DTO)
+        /// <summary>
+        /// Duration of glaucoma symptoms.
+        /// </summary>
+        public string? GlaucomaSymptomDuration { get; set; }
+        /// <summary>
+        /// Previously visited healthcare facilities.
+        /// </summary>
+        public string? GlaucomaPriorFacility { get; set; }
+        /// <summary>
+        /// Prior treatment methods.
+        /// </summary>
+        public string? GlaucomaPriorTreatment { get; set; }
+        /// <summary>
+        /// Other eye disease history.
+        /// </summary>
+        public string? GlaucomaHistoryEye { get; set; }
+        /// <summary>
+        /// Family history of glaucoma.
+        /// </summary>
+        public string? GlaucomaFamilyHistory { get; set; }
+
         // Systemic history
         public bool HasCardiovascularDisease { get; set; } = false;
         public bool HasHypertension { get; set; } = false;

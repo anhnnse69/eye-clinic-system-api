@@ -18,9 +18,14 @@ namespace ECS.Domain.Entities.EyeExaminations
         public string? AcDepthHerick { get; set; } // <1/4, 1/4-1/2, ≥1/2 GM
         public bool AcFlat { get; set; } = false;
         public bool AcLensMaterial { get; set; } = false;
+        public bool AcPus { get; set; } = false;
         public decimal? AcPusMm { get; set; }
-        public string? AcTyndall { get; set; }
+        public bool AcExudate { get; set; } = false;
+        public string? AcExudateDescription { get; set; }
         public bool AcHemorrhage { get; set; } = false;
+        public string? AcHemorrhageLevel { get; set; }
+        public bool AcForeignBody { get; set; } = false;
+        public string? AcTyndall { get; set; }
         public string? AcOtherFindings { get; set; } // Chất thể thủy tinh, Mủ, Xuất tiết
 
         // ===== ANGLE (Góc tiền phòng) - MS22, MS24 =====

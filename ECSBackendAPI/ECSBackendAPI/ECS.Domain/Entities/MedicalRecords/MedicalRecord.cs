@@ -67,6 +67,7 @@ namespace ECS.Domain.Entities.MedicalRecords
         public virtual ICollection<EyeSclera>? EyeScleras { get; set; }
         public virtual ICollection<EyeFundusDiscMacula>? EyeFundusDiscMaculas { get; set; }
         public virtual ICollection<EyeFundusRetinaVessel>? EyeFundusRetinaVessels { get; set; }
+        public virtual ICollection<EyeOrbit>? EyeOrbits { get; set; }
         public virtual ICollection<LacrimalRecord>? LacrimalRecords { get; set; }
 
         // Extras

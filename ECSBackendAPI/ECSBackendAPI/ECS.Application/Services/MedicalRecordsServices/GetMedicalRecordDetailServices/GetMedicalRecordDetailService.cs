@@ -77,7 +77,30 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordDetail
             (profileId, isStaff, isValidationPassed, validationErrorCode) = await ResolveUserProfileAsync(activeUserId, userRole, isValidationPassed, validationErrorCode);
             (record, isValidationPassed, validationErrorCode) = await FetchMedicalRecordAsync(request.Id, isValidationPassed, validationErrorCode);
             ValidateRecordAccess(record, userRole, profileId, isStaff, ref isAuthorized, ref isValidationPassed, ref validationErrorCode);
-            return CreateResponse(record, isValidationPassed, isAuthorized, validationErrorCode);
+
+            // Determine edit permissions
+            bool canEdit = false;
+            bool canViewOnly = true;
+            string? editRestrictionReason = null;
+            if (isValidationPassed && record != null)
+            {
+                // Staff can edit
+                if (isStaff)
+                {
+                    canEdit = true;
+                    canViewOnly = false;
+                    editRestrictionReason = null;
+                }
+                // Doctor owner can edit
+                else if (userRole == nameof(UserRole.DOCTOR) && record.DoctorId == profileId)
+                {
+                    canEdit = !record.IsLocked;
+                    canViewOnly = record.IsLocked;
+                    editRestrictionReason = record.IsLocked ? "Hồ sơ đã bị khóa" : null;
+                }
+            }
+
+            return CreateResponse(record, isValidationPassed, isAuthorized, validationErrorCode, canEdit, canViewOnly, editRestrictionReason);
         }
 
         /// <summary>
@@ -279,14 +302,17 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordDetail
             MedicalRecord? record,
             bool isValidationPassed,
             bool isAuthorized,
-            string? validationErrorCode)
+            string? validationErrorCode,
+            bool canEdit = false,
+            bool canViewOnly = true,
+            string? editRestrictionReason = null)
         {
             var errorResponse = CreateErrorResponse(isValidationPassed, isAuthorized, validationErrorCode);
             if (errorResponse != null)
             {
                 return errorResponse;
             }
-            return CreateSuccessResponse(record!);
+            return CreateSuccessResponse(record!, canEdit, canViewOnly, editRestrictionReason);
         }
 
         /// <summary>
@@ -321,6 +347,20 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordDetail
         private ApiResponse<GetMedicalRecordDetailResponse> CreateSuccessResponse(MedicalRecord record)
         {
             var response = MapToDetailDto(record);
+            return ApiResponse<GetMedicalRecordDetailResponse>.Success(
+                GeneralCode.APP_MESSAGE_2000.ToString(),
+                response);
+        }
+
+        /// <summary>
+        /// Creates a success response containing the medical record details with permission flags.
+        /// </summary>
+        private ApiResponse<GetMedicalRecordDetailResponse> CreateSuccessResponse(MedicalRecord record, bool canEdit, bool canViewOnly, string? editRestrictionReason = null)
+        {
+            var response = MapToDetailDto(record);
+            response.CanEdit = canEdit;
+            response.CanViewOnly = canViewOnly;
+            response.EditRestrictionReason = editRestrictionReason;
             return ApiResponse<GetMedicalRecordDetailResponse>.Success(
                 GeneralCode.APP_MESSAGE_2000.ToString(),
                 response);
@@ -571,14 +611,14 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordDetail
             DepthMm = e.AcDepthMm,
             HerickClassification = e.AcDepthHerick,
             VitreousInAC = e.AcLensMaterial,
-            Pus = e.AcPusMm.HasValue,
+            Pus = e.AcPus,
             PusMm = e.AcPusMm,
             Tyndall = e.AcTyndall,
-            Exudate = e.AcTyndall != null,
-            ExudateDescription = e.AcTyndall,
+            Exudate = e.AcExudate,
+            ExudateDescription = e.AcExudateDescription,
             Hemorrhage = e.AcHemorrhage,
-            HemorrhageLevel = e.AcHemorrhage ? "Có" : null,
-            ForeignBody = e.AcIrisExtras?.Contains("foreign_body") == true,
+            HemorrhageLevel = e.AcHemorrhageLevel,
+            ForeignBody = e.AcForeignBody,
             OtherFindings = e.AcOtherFindings,
             IrisColor = e.IrisColor,
             IrisCondition = e.IrisCondition,
@@ -676,15 +716,15 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordDetail
             MaculaEdemaType = e.MaculaEdemaType,
             MaculaHoleDegree = e.MaculaHoleDegree,
             MaculaScar = e.MaculaScar,
+            MaculaHemorrhage = e.MaculaHemorrhage,
             SerousDetachment = e.MaculaSerousDetachment,
-            MaculaHemorrhage = e.DiscMaculaExtras?.Contains("hemorrhage") == true,
             ChoroidStatus = e.ChoroidalNormal ? "Bình thường" : e.ChoroidalFindings,
             ChoroidalFindings = e.ChoroidalFindings,
-            CNV = e.DiscMaculaExtras?.Contains("cnv") == true,
-            ChorioretinitisActive = e.DiscMaculaExtras?.Contains("chorioretinitis_active") == true,
-            ChorioretinitisScar = e.DiscMaculaExtras?.Contains("chorioretinitis_scar") == true,
-            ChorioretinitisCount = e.DiscMaculaExtras?.Contains("chorioretinitis") == true ? 1 : null,
-            ChorioretinitisLocation = e.DiscMaculaExtras?.Contains("chorioretinitis") == true ? "Nhiều vị trí" : null
+            ChorioretinitisActive = e.ChorioretinitisActive,
+            ChorioretinitisScar = e.ChorioretinitisScar,
+            ChorioretinitisCount = e.ChorioretinitisCount,
+            ChorioretinitisLocation = e.ChorioretinitisLocation,
+            CNV = e.ChoroidalNeovascularization
         };
 
         /// <summary>
@@ -696,7 +736,7 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordDetail
         {
             Id = e.Id,
             Side = e.Side.ToString(),
-            VesselStatus = e.VesselNormal ? "Bình thường" : "Bất thường",
+            VesselStatus = e.VesselStatus ?? (e.VesselNormal ? "Bình thường" : "Bất thường"),
             ArteryOcclusion = e.ArteryOcclusionType,
             VeinOcclusion = e.VeinOcclusionType,
             OcclusionType = e.OcclusionType,
@@ -708,9 +748,9 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordDetail
             RetinalCondition = e.RetinalCondition,
             RetinalEdema = e.RetinaEdema,
             EdemaType = e.OcclusionEdema ? "Phù nề" : null,
-            Hemorrhage = e.HemorrhageLocation != null,
+            Hemorrhage = e.RetinaHemorrhageSuperficial || e.RetinaHemorrhageDeep,
             HemorrhageType = e.HemorrhageLocation,
-            Degeneration = e.DegenerativeDescription != null,
+            Degeneration = e.RetinaDegenerationPeripheral || e.RetinaDegenerationCentral,
             DegenerationType = e.DegenerativeType,
             DegenerationDescription = e.DegenerativeDescription,
             Detachment = e.RetinalDetachment,

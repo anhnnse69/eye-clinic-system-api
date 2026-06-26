@@ -13,9 +13,28 @@ using ECS.Domain.Entities.SubspecialtyRecords;
 using ECS.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace ECS.Infrastructure.Persistence.Configurations
 {
+    public class EyeSideValueConverter : ValueConverter<EyeSide, string>
+    {
+        public EyeSideValueConverter() : base(v => v.ToString(), v => FromProvider(v)) { }
+
+        private static EyeSide FromProvider(string value)
+        {
+            // Handle DB values: OD/OS/RIGHT/LEFT/BOTH
+            if (string.Equals(value, "OD", StringComparison.OrdinalIgnoreCase) || 
+                string.Equals(value, "RIGHT", StringComparison.OrdinalIgnoreCase))
+                return EyeSide.RIGHT;
+            if (string.Equals(value, "OS", StringComparison.OrdinalIgnoreCase) || 
+                string.Equals(value, "LEFT", StringComparison.OrdinalIgnoreCase))
+                return EyeSide.LEFT;
+            if (string.Equals(value, "BOTH", StringComparison.OrdinalIgnoreCase))
+                return EyeSide.BOTH;
+            throw new InvalidOperationException($"Cannot convert '{value}' to EyeSide.");
+        }
+    }
     // ==============================
     // 1. AUTH
     // ==============================
@@ -429,7 +448,7 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.ToTable("eye_exam_basic");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.Side).HasConversion<string>().HasMaxLength(10);
+            entity.Property(e => e.Side).HasConversion(new EyeSideValueConverter()).HasMaxLength(10);
 
             entity.Property(e => e.VaUncorrected).HasPrecision(5, 2);
             entity.Property(e => e.VaCorrected).HasPrecision(5, 2);
@@ -459,7 +478,7 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.ToTable("eye_eyelid_conjunctiva");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.Side).HasConversion<string>().HasMaxLength(10);
+            entity.Property(e => e.Side).HasConversion(new EyeSideValueConverter()).HasMaxLength(10);
 
             entity.Property(e => e.EyelidOther).HasColumnType("nvarchar(max)"); // JSONB
             entity.Property(e => e.ConjunctivaOther).HasColumnType("nvarchar(max)"); // JSONB
@@ -477,7 +496,7 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.ToTable("eye_cornea");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.Side).HasConversion<string>().HasMaxLength(10);
+            entity.Property(e => e.Side).HasConversion(new EyeSideValueConverter()).HasMaxLength(10);
 
             entity.Property(e => e.DiameterMm).HasPrecision(5, 2);
             entity.Property(e => e.PerforationDiameterMm).HasPrecision(5, 2);
@@ -495,7 +514,7 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.ToTable("eye_ac_iris");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.Side).HasConversion<string>().HasMaxLength(10);
+            entity.Property(e => e.Side).HasConversion(new EyeSideValueConverter()).HasMaxLength(10);
 
             entity.Property(e => e.AcDepthMm).HasPrecision(5, 2);
             entity.Property(e => e.AcDepthHerick).HasMaxLength(20);
@@ -514,7 +533,7 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.ToTable("eye_lens_vitreous");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.Side).HasConversion<string>().HasMaxLength(10);
+            entity.Property(e => e.Side).HasConversion(new EyeSideValueConverter()).HasMaxLength(10);
 
             entity.Property(e => e.LensVitreousExtras).HasColumnType("nvarchar(max)"); // JSONB
 
@@ -529,7 +548,7 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.ToTable("eye_sclera");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.Side).HasConversion<string>().HasMaxLength(10);
+            entity.Property(e => e.Side).HasConversion(new EyeSideValueConverter()).HasMaxLength(10);
 
             entity.Property(e => e.ScleraNormal).HasDefaultValue(true);
             entity.Property(e => e.ScleraExtras).HasColumnType("nvarchar(max)"); // JSONB
@@ -545,7 +564,7 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.ToTable("eye_fundus_disc_macula");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.Side).HasConversion<string>().HasMaxLength(10);
+            entity.Property(e => e.Side).HasConversion(new EyeSideValueConverter()).HasMaxLength(10);
 
             entity.Property(e => e.OpticDiscNormal).HasDefaultValue(true);
             entity.Property(e => e.MaculaNormal).HasDefaultValue(true);
@@ -562,7 +581,7 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.ToTable("eye_fundus_retina_vessel");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.Side).HasConversion<string>().HasMaxLength(10);
+            entity.Property(e => e.Side).HasConversion(new EyeSideValueConverter()).HasMaxLength(10);
 
             entity.Property(e => e.VesselNormal).HasDefaultValue(true);
             entity.Property(e => e.RetinaVesselExtras).HasColumnType("nvarchar(max)"); // JSONB
@@ -578,7 +597,7 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.ToTable("lacrimal_record");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.Side).HasConversion<string>().HasMaxLength(10);
+            entity.Property(e => e.Side).HasConversion(new EyeSideValueConverter()).HasMaxLength(10);
 
             entity.Property(e => e.IrrigationFree).HasDefaultValue(true);
 
@@ -620,7 +639,7 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.ToTable("visual_field_test");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.Side).HasConversion<string>().HasMaxLength(10);
+            entity.Property(e => e.Side).HasConversion(new EyeSideValueConverter()).HasMaxLength(10);
             entity.Property(e => e.Machine).HasMaxLength(100);
             entity.Property(e => e.Strategy).HasMaxLength(100);
             entity.Property(e => e.MdValue).HasPrecision(6, 2);
@@ -643,7 +662,7 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.ToTable("ultrasound_eye");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            entity.Property(e => e.Side).HasConversion<string>().HasMaxLength(10);
+            entity.Property(e => e.Side).HasConversion(new EyeSideValueConverter()).HasMaxLength(10);
             entity.Property(e => e.UltrasoundType).HasMaxLength(50);
             entity.Property(e => e.AxialLengthMm).HasPrecision(6, 2);
             entity.Property(e => e.AcDepthMm).HasPrecision(5, 2);
@@ -770,7 +789,7 @@ namespace ECS.Infrastructure.Persistence.Configurations
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
             entity.Property(e => e.HistoryType).IsRequired().HasMaxLength(20);
-            entity.Property(e => e.Side).HasConversion<string>().HasMaxLength(10);
+            entity.Property(e => e.Side).HasConversion(new EyeSideValueConverter()).HasMaxLength(10);
             entity.Property(e => e.ProcedureType).HasMaxLength(100);
             entity.Property(e => e.ProcedureDate).HasColumnType("date");
             entity.Property(e => e.FacilityLevel).HasMaxLength(100);

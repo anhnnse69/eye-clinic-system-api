@@ -1,7 +1,6 @@
 ﻿using ECS.Application.Common.Response;
 using ECS.Application.Services.SystemAdminServices.AdminSystemEditAccountServices;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ECS.API.Controllers.SystemAdminController

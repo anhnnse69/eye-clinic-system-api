@@ -1,8 +1,7 @@
 using FluentValidation;
 using ECS.Domain.Enums;
-using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServices;
 
-namespace ECS.Application.Services.MedicalRecordsServices
+namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServices
 {
     /// <summary>
     /// Validator for GetMedicalRecordsRequest
