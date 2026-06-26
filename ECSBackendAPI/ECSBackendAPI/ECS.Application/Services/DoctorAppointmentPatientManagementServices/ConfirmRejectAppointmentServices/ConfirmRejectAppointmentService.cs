@@ -1,5 +1,5 @@
 ﻿using ECS.Application.Common.Response;
-using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewNotificationListServices;
+using ECS.Application.Services.PatientAppointmentManagementServices.ViewNotificationListServices;
 using ECS.Domain.Entities.Clinics;
 using ECS.Domain.Entities.Patient;
 using ECS.Domain.Entities.Scheduling;
