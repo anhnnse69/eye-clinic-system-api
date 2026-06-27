@@ -1,4 +1,4 @@
-﻿﻿using System.Reflection;
+﻿using System.Reflection;
 using ECS.Application.Services.AuthServices.ChangePasswordServices;
 using ECS.Application.Services.AuthServices.ForgotPasswordServices;
 using ECS.Application.Services.AuthServices.LoginServices;
@@ -50,7 +50,9 @@ using ECS.Application.Services.DoctorScheduleManagementServices.DoctorDashboardS
 using ECS.Application.Services.DoctorScheduleManagementServices.EditDoctorScheduleServices;
 using ECS.Application.Services.DoctorScheduleManagementServices.ViewDoctorPersonalScheduleServices;
 using ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordServices;
+using ECS.Application.Services.MedicalRecordsServices.PreliminaryDiagnosisServices;
 using ECS.Application.Services.MedicalRecordsServices.UpdateMedicalRecordServices;
+using ECS.Application.Services.DoctorAppointmentPatientManagementServices.CompleteQueueServices;
 using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordDetailServices;
 using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.CancelAppointmentServices;
@@ -167,6 +169,7 @@ public static class DependencyInjection
         services.AddScoped<IReceptionistGetDailyAppointmentsService, ReceptionistGetDailyAppointmentsService>();
         services.AddScoped<IConfirmRejectAppointmentService, ConfirmRejectAppointmentService>();
         services.AddScoped<ICreateMedicalRecordService, CreateMedicalRecordService>();
+        services.AddScoped<IPreliminaryDiagnosisService, PreliminaryDiagnosisService>();
         services.AddScoped<IUpdateMedicalRecordService, UpdateMedicalRecordService>();
         services.AddScoped<IGetClinicServicesForBookingService, GetClinicServicesForBookingService>();
         services.AddScoped<IGetClinicDoctorsForBookingService, GetClinicDoctorsForBookingService>();
@@ -195,6 +198,7 @@ public static class DependencyInjection
         services.AddScoped<ICancelAppointmentService, CancelAppointmentService>();
         services.AddScoped<IGetMyQueueListService, GetMyQueueListService>();
         services.AddScoped<IGetQueueListByIdService, GetQueueListByIdService>();
+        services.AddScoped<ICompleteQueueService, CompleteQueueService>();
         services.AddScoped<INotificationCreationService, NotificationCreationService>();
         services.AddScoped<IViewNotificationListService, ViewNotificationListService>();
         services.AddScoped<IMarkNotificationReadService, MarkNotificationReadService>();

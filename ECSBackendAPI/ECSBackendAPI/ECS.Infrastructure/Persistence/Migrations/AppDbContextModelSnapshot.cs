@@ -2450,6 +2450,113 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     b.ToTable("medical_record_extras", (string)null);
                 });
 
+            modelBuilder.Entity("ECS.Domain.Entities.MedicalRecords.PreliminaryDiagnosis", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AppointmentId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("appointment_id");
+
+                    b.Property<DateTime?>("CheckInTime")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("check_in_time");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("DoctorId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("doctor_id");
+
+                    b.Property<string>("FollowUpInstructions")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("follow_up_instructions");
+
+                    b.Property<bool>("HasEyeDischarge")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_eye_discharge");
+
+                    b.Property<bool>("HasEyePain")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_eye_pain");
+
+                    b.Property<bool>("HasEyeRedness")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_eye_redness");
+
+                    b.Property<bool>("HasForeignBody")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_foreign_body");
+
+                    b.Property<bool>("HasHeadache")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_headache");
+
+                    b.Property<bool>("HasLightSensitivity")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_light_sensitivity");
+
+                    b.Property<bool>("HasVisionChange")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_vision_change");
+
+                    b.Property<bool>("IsReferralNeeded")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_referral_needed");
+
+                    b.Property<int?>("PainLevel")
+                        .HasColumnType("int")
+                        .HasColumnName("pain_level");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("patient_id");
+
+                    b.Property<string>("QuickVisualAssessment")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("quick_visual_assessment");
+
+                    b.Property<string>("RecommendedAction")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("recommended_action");
+
+                    b.Property<string>("ReferralTo")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("referral_to");
+
+                    b.Property<DateTime?>("TriageCompletedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("triage_completed_at");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("UrgencyLevel")
+                        .HasColumnType("int")
+                        .HasColumnName("urgency_level");
+
+                    b.HasKey("Id")
+                        .HasName("pk_preliminary_diagnoses");
+
+                    b.HasIndex("AppointmentId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_preliminary_diagnoses_appointment_id");
+
+                    b.HasIndex("DoctorId")
+                        .HasDatabaseName("ix_preliminary_diagnoses_doctor_id");
+
+                    b.HasIndex("PatientId")
+                        .HasDatabaseName("ix_preliminary_diagnoses_patient_id");
+
+                    b.ToTable("preliminary_diagnoses", (string)null);
+                });
+
             modelBuilder.Entity("ECS.Domain.Entities.Notifications.Notification", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4631,6 +4738,36 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     b.Navigation("UpdatedByUser");
                 });
 
+            modelBuilder.Entity("ECS.Domain.Entities.MedicalRecords.PreliminaryDiagnosis", b =>
+                {
+                    b.HasOne("ECS.Domain.Entities.Scheduling.Appointment", "Appointment")
+                        .WithOne("PreliminaryDiagnosis")
+                        .HasForeignKey("ECS.Domain.Entities.MedicalRecords.PreliminaryDiagnosis", "AppointmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_preliminary_diagnoses_appointments_appointment_id");
+
+                    b.HasOne("ECS.Domain.Entities.Clinics.DoctorProfile", "Doctor")
+                        .WithMany()
+                        .HasForeignKey("DoctorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_preliminary_diagnoses_doctor_profiles_doctor_id");
+
+                    b.HasOne("ECS.Domain.Entities.Patient.PatientProfile", "Patient")
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_preliminary_diagnoses_patient_profiles_patient_id");
+
+                    b.Navigation("Appointment");
+
+                    b.Navigation("Doctor");
+
+                    b.Navigation("Patient");
+                });
+
             modelBuilder.Entity("ECS.Domain.Entities.Notifications.Notification", b =>
                 {
                     b.HasOne("ECS.Domain.Entities.Auth.User", "User")
@@ -5100,6 +5237,8 @@ namespace ECS.Infrastructure.Persistence.Migrations
                     b.Navigation("FollowUpAppointments");
 
                     b.Navigation("MedicalRecord");
+
+                    b.Navigation("PreliminaryDiagnosis");
 
                     b.Navigation("Queue");
                 });

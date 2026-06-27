@@ -250,14 +250,6 @@ namespace ECS.Application.Services.MedicalRecordsServices.UpdateMedicalRecordSer
                 state.RecordTypeLabel = GetRecordTypeLabel(recordType);
             }
 
-            // Update chief complaint and history
-            if (request.ChiefComplaint != null) record.ChiefComplaint = request.ChiefComplaint;
-            if (request.IllnessDayNumber.HasValue) record.IllnessDayNumber = request.IllnessDayNumber;
-            if (request.MedicalHistory != null) record.MedicalHistory = request.MedicalHistory;
-            if (request.PersonalHistoryEye != null) record.PersonalHistoryEye = request.PersonalHistoryEye;
-            if (request.PersonalHistorySystemic != null) record.PersonalHistorySystemic = request.PersonalHistorySystemic;
-            if (request.FamilyHistory != null) record.FamilyHistory = request.FamilyHistory;
-
             // Update vital signs
             if (request.VitalPulse.HasValue) record.VitalPulse = request.VitalPulse;
             if (request.VitalTemperature.HasValue) record.VitalTemperature = request.VitalTemperature;
@@ -385,12 +377,6 @@ namespace ECS.Application.Services.MedicalRecordsServices.UpdateMedicalRecordSer
                 if (request.TraumaRecord.PriorTreatment != null) trauma.PriorTreatment = request.TraumaRecord.PriorTreatment;
                 if (request.TraumaRecord.PostTreatmentCourse != null) trauma.PostTreatmentCourse = request.TraumaRecord.PostTreatmentCourse;
 
-                // Injury History (from top-level TraumaHistory fields)
-                if (request.TraumaCause != null) trauma.InjuryCause = request.TraumaCause;
-                if (request.TraumaTime.HasValue) trauma.InjuryTime = request.TraumaTime;
-                if (request.TraumaPriorTreatment != null) trauma.PriorTreatment = request.TraumaPriorTreatment;
-                if (request.TraumaPostTreatmentCourse != null) trauma.PostTreatmentCourse = request.TraumaPostTreatmentCourse;
-
                 // Injury Summary
                 if (request.TraumaRecord.OdInjuries != null) trauma.OdInjuries = request.TraumaRecord.OdInjuries;
                 if (request.TraumaRecord.OsInjuries != null) trauma.OsInjuries = request.TraumaRecord.OsInjuries;
@@ -509,13 +495,6 @@ namespace ECS.Application.Services.MedicalRecordsServices.UpdateMedicalRecordSer
                 glaucoma.IopTargetOs = ParseDecimal(g.IopTargetOs);
 
                 // ===== History =====
-                // Top-level Glaucoma history fields (from request, not from GlaucomaRecord nested object)
-                if (request.GlaucomaSymptomDuration != null) glaucoma.HistoryEye = request.GlaucomaSymptomDuration;
-                if (request.GlaucomaPriorFacility != null) glaucoma.HistoryEyeSurgery = request.GlaucomaPriorFacility;
-                if (request.GlaucomaPriorTreatment != null) glaucoma.PriorEyeSurgeryDetails = request.GlaucomaPriorTreatment;
-                if (request.GlaucomaHistoryEye != null) glaucoma.GlaucomaMedications = request.GlaucomaHistoryEye;
-                if (request.GlaucomaFamilyHistory != null) glaucoma.FamilyGlaucomaRelation = request.GlaucomaFamilyHistory;
-
                 // Nested GlaucomaRecord history fields
                 if (g.HistoryEye != null) glaucoma.HistoryEye = g.HistoryEye;
                 if (g.HistoryEyeSurgery != null) glaucoma.HistoryEyeSurgery = g.HistoryEyeSurgery;
@@ -635,22 +614,15 @@ namespace ECS.Application.Services.MedicalRecordsServices.UpdateMedicalRecordSer
 
                 var s = request.StrabismusPtosisRecord;
 
-                // ===== Chief Complaint & Cause (from nested object AND top-level fields) =====
+                // ===== Chief Complaint & Cause =====
                 stra.ChiefStrabismus = s.ChiefStrabismus;
                 stra.ChiefPtosis = s.ChiefPtosis;
-                stra.Congenital = request.StrabismusCongenital ?? s.Congenital;
-                stra.Acquired = request.StrabismusAcquired ?? s.Acquired;
-                stra.AcquiredOnset = request.StrabismusOnsetTime ?? s.AcquiredOnset;
-
-                // ===== Strabismus type (from nested object AND top-level field) =====
-                stra.StrabismusType = request.StrabismusMainSymptom ?? s.StrabismusType;
-
-                // Top-level Strabismus history fields
-                if (request.StrabismusOnsetTime != null) stra.AcquiredOnset = request.StrabismusOnsetTime;
-                if (request.StrabismusMainSymptom != null) stra.StrabismusType = request.StrabismusMainSymptom;
+                stra.Congenital = s.Congenital;
+                stra.Acquired = s.Acquired;
+                stra.AcquiredOnset = s.AcquiredOnset;
 
                 // ===== Strabismus Type =====
-                if (s.StrabismusType != null) stra.StrabismusType = s.StrabismusType;
+                stra.StrabismusType = s.StrabismusType;
 
                 // ===== Nystagmus =====
                 stra.Nystagmus = s.Nystagmus;

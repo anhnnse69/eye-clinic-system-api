@@ -44,6 +44,7 @@ namespace ECS.Infrastructure.Persistence
         // Medical Records
         public DbSet<MedicalRecord> MedicalRecords => Set<MedicalRecord>();
         public DbSet<MedicalRecordExtras> MedicalRecordExtras => Set<MedicalRecordExtras>();
+        public DbSet<PreliminaryDiagnosis> PreliminaryDiagnoses => Set<PreliminaryDiagnosis>();
         public DbSet<DocumentAccessPermission> DocumentAccessPermissions => Set<DocumentAccessPermission>();
         public DbSet<EmrExportLog> EmrExportLogs => Set<EmrExportLog>();
 
