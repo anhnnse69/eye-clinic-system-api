@@ -238,7 +238,7 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
             try
             {
                 Enum.TryParse<RecordType>(request.RecordType, true, out var recordType);
-                var medicalRecord = new MedicalRecord { Id = Guid.NewGuid(), AppointmentId = state.AppointmentId, PatientId = state.Appointment.PatientId, DoctorId = state.DoctorProfile.Id, RecordType = recordType, ChiefComplaint = request.ChiefComplaint, IllnessDayNumber = request.IllnessDayNumber, MedicalHistory = request.MedicalHistory, PersonalHistoryEye = request.PersonalHistoryEye, PersonalHistorySystemic = request.PersonalHistorySystemic, FamilyHistory = request.FamilyHistory, VitalPulse = request.VitalPulse, VitalTemperature = request.VitalTemperature, VitalBloodPressure = request.VitalBloodPressure, VitalRespiratoryRate = request.VitalRespiratoryRate, VitalWeightKg = request.VitalWeightKg, SystemicExam = request.SystemicExam != null ? System.Text.Json.JsonSerializer.Serialize(request.SystemicExam) : null, DiagnosisMain = request.DiagnosisMain, DiagnosisComorbid = request.DiagnosisComorbid, DiagnosisDifferential = request.DiagnosisDifferential, Prognosis = request.Prognosis, TreatmentPlan = request.TreatmentPlan, Notes = request.Notes, IsLocked = false, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+                var medicalRecord = new MedicalRecord { Id = Guid.NewGuid(), AppointmentId = state.AppointmentId, PatientId = state.Appointment.PatientId, DoctorId = state.DoctorProfile.Id, RecordType = recordType, IsLocked = false, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
                 _context.MedicalRecords.Add(medicalRecord);
 
                 // Create MedicalRecordExtras for additional fields
@@ -263,7 +263,7 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
                     DischargeIopOs = request.DischargeIopOs,
                     FollowUpPlan = request.FollowUpPlan,
                     UpdatedAt = DateTime.UtcNow,
-                    UpdatedBy = state.DoctorProfile.Id
+                    UpdatedBy = state.DoctorProfile.UserId
                 };
                 _context.MedicalRecordExtras.Add(extras);
 
@@ -457,17 +457,14 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
             {
                 case RecordType.MS21_TRAUMA:
                     // Trauma Record
-                    // Map from top-level trauma history fields AND nested TraumaRecord
                     var traumaRecord = new TraumaRecord
                     {
                         Id = Guid.NewGuid(),
                         RecordId = recordId,
-                        // Top-level Trauma History Fields
-                        InjuryCause = request.TraumaCause ?? request.TraumaRecord?.InjuryCause,
-                        InjuryTime = request.TraumaTime ?? request.TraumaRecord?.InjuryTime,
-                        PriorTreatment = request.TraumaPriorTreatment ?? request.TraumaRecord?.PriorTreatment,
-                        PostTreatmentCourse = request.TraumaPostTreatmentCourse ?? request.TraumaRecord?.PostTreatmentCourse,
-                        // Nested TraumaRecord fields
+                        InjuryCause = request.TraumaRecord?.InjuryCause,
+                        InjuryTime = request.TraumaRecord?.InjuryTime,
+                        PriorTreatment = request.TraumaRecord?.PriorTreatment,
+                        PostTreatmentCourse = request.TraumaRecord?.PostTreatmentCourse,
                         OdInjuries = request.TraumaRecord?.OdInjuries,
                         OsInjuries = request.TraumaRecord?.OsInjuries,
                         InjuryDetails = request.TraumaRecord?.InjuryDetails,
@@ -553,13 +550,6 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
                             PriorEyeSurgeryDetails = request.GlaucomaRecord.PriorEyeSurgeryDetails,
                             SteroidUse = request.GlaucomaRecord.SteroidUse,
                             SteroidPrescribed = request.GlaucomaRecord.SteroidPrescribed,
-
-                            // MS24 Top-level History Fields
-                            GlaucomaSymptomDuration = request.GlaucomaSymptomDuration,
-                            GlaucomaPriorFacility = request.GlaucomaPriorFacility,
-                            GlaucomaPriorTreatment = request.GlaucomaPriorTreatment,
-                            GlaucomaHistoryEye = request.GlaucomaHistoryEye,
-                            GlaucomaFamilyHistory = request.GlaucomaFamilyHistory,
 
                             // Systemic history
                             HasCardiovascularDisease = request.GlaucomaRecord.HasCardiovascularDisease,
@@ -658,15 +648,13 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
                             Id = Guid.NewGuid(),
                             RecordId = recordId,
 
-                            // Chief complaint & cause (from nested object AND top-level fields)
                             ChiefStrabismus = request.StrabismusPtosisRecord.ChiefStrabismus,
                             ChiefPtosis = request.StrabismusPtosisRecord.ChiefPtosis,
-                            Congenital = request.StrabismusCongenital ?? request.StrabismusPtosisRecord.Congenital,
-                            Acquired = request.StrabismusAcquired ?? request.StrabismusPtosisRecord.Acquired,
-                            AcquiredOnset = request.StrabismusOnsetTime ?? request.StrabismusPtosisRecord.AcquiredOnset,
+                            Congenital = request.StrabismusPtosisRecord.Congenital,
+                            Acquired = request.StrabismusPtosisRecord.Acquired,
+                            AcquiredOnset = request.StrabismusPtosisRecord.AcquiredOnset,
 
-                            // Strabismus type (from nested object AND top-level field)
-                            StrabismusType = request.StrabismusMainSymptom ?? request.StrabismusPtosisRecord.StrabismusType,
+                            StrabismusType = request.StrabismusPtosisRecord.StrabismusType,
 
                             // Nystagmus
                             Nystagmus = request.StrabismusPtosisRecord.Nystagmus,
@@ -771,10 +759,6 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
                             PregnancyIllnessDetail = request.PediatricRecord.PregnancyIllnessDetail,
                             IntellectualDevelopmentNormal = request.PediatricRecord.IntellectualDevelopmentNormal,
                             ChiefSymptoms = request.PediatricRecord.ChiefSymptoms,
-
-                            // MS26 Top-level History Fields
-                            PediatricPregnancyHistory = request.PediatricPregnancyHistory,
-                            PediatricDevelopment = request.PediatricDevelopment,
 
                             // Eyelid conditions
                             EntropionOd = request.PediatricRecord.EntropionOd,

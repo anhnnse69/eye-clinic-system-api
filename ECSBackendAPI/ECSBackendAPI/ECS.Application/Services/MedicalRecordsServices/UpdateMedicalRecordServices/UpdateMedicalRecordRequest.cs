@@ -20,34 +20,6 @@ namespace ECS.Application.Services.MedicalRecordsServices.UpdateMedicalRecordSer
         /// </summary>
         public string? RecordType { get; set; }
 
-        // ==================== A. BỆNH ÁN - I. LÝ DO VÀO VIỆN ====================
-        /// <summary>
-        /// Chief complaint - reason for hospital visit.
-        /// </summary>
-        public string? ChiefComplaint { get; set; }
-        /// <summary>
-        /// Number of days the patient has been ill.
-        /// </summary>
-        public int? IllnessDayNumber { get; set; }
-
-        // ==================== A. BỆNH ÁN - II. HỎI BỆNH (History) ====================
-        /// <summary>
-        /// Medical history - disease progression.
-        /// </summary>
-        public string? MedicalHistory { get; set; }
-        /// <summary>
-        /// Personal eye disease history.
-        /// </summary>
-        public string? PersonalHistoryEye { get; set; }
-        /// <summary>
-        /// Personal systemic medical history.
-        /// </summary>
-        public string? PersonalHistorySystemic { get; set; }
-        /// <summary>
-        /// Family medical history.
-        /// </summary>
-        public string? FamilyHistory { get; set; }
-
         // ==================== E. MS21/MS24/MS25 Specific History Fields ====================
 
         // MS21 - Trauma History

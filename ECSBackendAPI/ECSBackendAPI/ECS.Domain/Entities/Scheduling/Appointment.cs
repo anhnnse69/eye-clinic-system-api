@@ -38,6 +38,7 @@ namespace ECS.Domain.Entities.Scheduling
         public virtual ICollection<Appointment>? FollowUpAppointments { get; set; }
         public virtual Queue? Queue { get; set; }
         public virtual MedicalRecord? MedicalRecord { get; set; }
+        public virtual PreliminaryDiagnosis? PreliminaryDiagnosis { get; set; }
         public virtual Feedback? Feedback { get; set; }
     }
 }

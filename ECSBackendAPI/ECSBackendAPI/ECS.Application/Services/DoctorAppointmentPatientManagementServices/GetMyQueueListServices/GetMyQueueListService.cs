@@ -145,6 +145,10 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Ge
                     .ThenInclude(a => a!.Patient)
                 .Include(q => q.Appointment)
                     .ThenInclude(a => a!.Service)
+                .Include(q => q.Appointment)
+                    .ThenInclude(a => a!.MedicalRecord)
+                .Include(q => q.Appointment)
+                    .ThenInclude(a => a!.PreliminaryDiagnosis)
                 .Include(q => q.Room)
                 .Where(q => q.Appointment != null &&
                            q.Appointment.DoctorId == doctorId &&
@@ -246,6 +250,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Ge
                 CalledAt = queue.CalledAt,
                 CompletedAt = queue.CompletedAt,
                 HasMedicalRecord = appointment?.MedicalRecord != null,
+                HasPreliminaryDiagnosis = appointment?.PreliminaryDiagnosis != null,
                 ServiceName = service?.ServiceName,
                 BookingSource = DefaultString(appointment?.BookingSource, "UNKNOWN")
             };

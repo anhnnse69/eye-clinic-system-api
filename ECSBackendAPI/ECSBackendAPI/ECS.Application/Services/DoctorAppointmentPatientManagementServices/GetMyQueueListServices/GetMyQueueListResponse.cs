@@ -38,6 +38,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Ge
         public DateTime? CalledAt { get; set; }
         public DateTime? CompletedAt { get; set; }
         public bool HasMedicalRecord { get; set; }
+        public bool HasPreliminaryDiagnosis { get; set; }
         public string? ServiceName { get; set; }
         public string BookingSource { get; set; } = string.Empty;
     }

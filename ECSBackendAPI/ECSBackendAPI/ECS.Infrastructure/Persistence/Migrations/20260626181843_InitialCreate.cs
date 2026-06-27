@@ -574,6 +574,56 @@ namespace ECS.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "preliminary_diagnoses",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    appointment_id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    patient_id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    doctor_id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    urgency_level = table.Column<int>(type: "int", nullable: false),
+                    pain_level = table.Column<int>(type: "int", nullable: true),
+                    quick_visual_assessment = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    has_vision_change = table.Column<bool>(type: "bit", nullable: false),
+                    has_eye_redness = table.Column<bool>(type: "bit", nullable: false),
+                    has_eye_discharge = table.Column<bool>(type: "bit", nullable: false),
+                    has_light_sensitivity = table.Column<bool>(type: "bit", nullable: false),
+                    has_eye_pain = table.Column<bool>(type: "bit", nullable: false),
+                    has_headache = table.Column<bool>(type: "bit", nullable: false),
+                    has_foreign_body = table.Column<bool>(type: "bit", nullable: false),
+                    recommended_action = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    is_referral_needed = table.Column<bool>(type: "bit", nullable: false),
+                    referral_to = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    follow_up_instructions = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    check_in_time = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    triage_completed_at = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    created_at = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_preliminary_diagnoses", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_preliminary_diagnoses_appointments_appointment_id",
+                        column: x => x.appointment_id,
+                        principalTable: "appointment",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "fk_preliminary_diagnoses_doctor_profiles_doctor_id",
+                        column: x => x.doctor_id,
+                        principalTable: "doctor_profile",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "fk_preliminary_diagnoses_patient_profiles_patient_id",
+                        column: x => x.patient_id,
+                        principalTable: "patient_profile",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "queue",
                 columns: table => new
                 {
@@ -1907,6 +1957,22 @@ namespace ECS.Infrastructure.Persistence.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_preliminary_diagnoses_appointment_id",
+                table: "preliminary_diagnoses",
+                column: "appointment_id",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_preliminary_diagnoses_doctor_id",
+                table: "preliminary_diagnoses",
+                column: "doctor_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_preliminary_diagnoses_patient_id",
+                table: "preliminary_diagnoses",
+                column: "patient_id");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_prescription_doctor_id",
                 table: "prescription",
                 column: "doctor_id");
@@ -2079,6 +2145,9 @@ namespace ECS.Infrastructure.Persistence.Migrations
 
             migrationBuilder.DropTable(
                 name: "platform_config");
+
+            migrationBuilder.DropTable(
+                name: "preliminary_diagnoses");
 
             migrationBuilder.DropTable(
                 name: "prescription_item");
