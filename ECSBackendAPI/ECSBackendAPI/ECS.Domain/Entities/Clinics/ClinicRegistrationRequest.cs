@@ -19,7 +19,9 @@ namespace ECS.Domain.Entities.Clinics
         public string? ReviewNote { get; set; }
         public DateTime RequestedAt { get; set; } = DateTime.UtcNow;
         public DateTime? ReviewedAt { get; set; }
+        public Guid? ProvisionedClinicId { get; set; }
 
         public virtual User? Reviewer { get; set; }
+        public virtual Clinic? ProvisionedClinic { get; set; }
     }
 }
