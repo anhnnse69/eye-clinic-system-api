@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Security.Claims;
-using System.Text;
+﻿using System.Security.Claims;
 using ECS.Application.Common.Response;
 using ECS.Domain.Entities.Clinics;
 using ECS.Domain.Enums;
 using ECS.Infrastructure.Persistence;
-using ECS.Infrastructure.Repositories;
 using ECS.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -211,6 +207,8 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.EditClinicProfi
             clinic.Email = request.Email;
             clinic.LogoUrl = request.LogoUrl;
             clinic.Description = request.Description;
+            clinic.OpenTime = request.OpenTime;
+            clinic.CloseTime = request.CloseTime;
             clinic.UpdatedAt = DateTime.UtcNow;
         }
 
