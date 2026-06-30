@@ -1,4 +1,3 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using ECS.Application.Common.Response;
 using ECS.Domain.Entities.Clinics;
@@ -192,7 +191,9 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ClinicProfileSe
                 Description = clinic.Description,
                 IsActive = clinic.IsActive,
                 RatingAvg = clinic.RatingAvg,
-                ReviewCount = clinic.ReviewCount
+                ReviewCount = clinic.ReviewCount,
+                OpenTime = clinic.OpenTime,
+                CloseTime = clinic.CloseTime
             };
         }
     }

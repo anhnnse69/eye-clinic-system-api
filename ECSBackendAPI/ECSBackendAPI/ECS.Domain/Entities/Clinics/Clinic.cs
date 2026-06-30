@@ -18,6 +18,8 @@ namespace ECS.Domain.Entities.Clinics
         public bool IsActive { get; set; } = true;
         public decimal? RatingAvg { get; set; } = 0;
         public int? ReviewCount { get; set; } = 0;
+        public TimeOnly OpenTime { get; set; }
+        public TimeOnly CloseTime { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; }
 

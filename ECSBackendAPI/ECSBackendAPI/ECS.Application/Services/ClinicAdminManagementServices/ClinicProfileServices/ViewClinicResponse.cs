@@ -15,5 +15,7 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ClinicProfileSe
         public bool IsActive { get; set; }
         public decimal? RatingAvg { get; set; }
         public int? ReviewCount { get; set; }
+        public TimeOnly OpenTime { get; set; }
+        public TimeOnly CloseTime { get; set; }
     }
 }

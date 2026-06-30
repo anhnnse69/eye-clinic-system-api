@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace ECS.Application.Services.ClinicAdminManagementServices.EditClinicProfileServices
+﻿namespace ECS.Application.Services.ClinicAdminManagementServices.EditClinicProfileServices
 {
     /// <summary>
     /// Request object containing clinic profile update information.
@@ -20,5 +16,9 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.EditClinicProfi
         public string? LogoUrl { get; set; }
 
         public string? Description { get; set; }
+
+        public TimeOnly OpenTime { get; set; }
+
+        public TimeOnly CloseTime { get; set; }
     }
 }
