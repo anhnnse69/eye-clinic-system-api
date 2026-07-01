@@ -58,6 +58,8 @@ using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServices;
 using ECS.Application.Services.MedicalRecordsServices.PreliminaryDiagnosisServices;
 using ECS.Application.Services.MedicalRecordsServices.UpdateMedicalRecordServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.CancelAppointmentServices;
+using ECS.Application.Services.PatientAppointmentManagementServices.ClinicSlotServices;
+using ECS.Application.Services.PatientAppointmentManagementServices.CreateAppointmentByClinicServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.CreateAppointmentServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.GetAppointmentDetailServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.GetAppointmentHistoryServices;
@@ -210,6 +212,8 @@ public static class DependencyInjection
         services.AddScoped<IDeleteAccountService, DeleteAccountService>();
         services.AddScoped<IGetAppointmentDetailService, GetAppointmentDetailService>();
         services.AddScoped<ISubmitFeedbackService, SubmitFeedbackService>();
+        services.AddScoped<ICreateAppointmentByClinicService, CreateAppointmentByClinicService>();
+        services.AddScoped<IClinicSlotService, ClinicSlotService>();
         services.AddScoped<IGetActiveDoctorsService, GetActiveDoctorsService>();
         services.AddScoped<IGetActiveRoomsService, GetActiveRoomsService>();
         services.AddScoped<ICreateClinicAdminService, CreateClinicAdminService>();
