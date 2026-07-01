@@ -34,28 +34,30 @@ using ECS.Application.Services.ClinicDoctorDiscoveryService.SearchClinicDoctorSe
 using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewClinicFeedbacksServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewClinicProfileServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewDoctorSlotsServices;
+using ECS.Application.Services.DoctorAppointmentPatientManagementServices.CompleteQueueServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ConfirmRejectAppointmentServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.CreatePatientDemographicsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.GetDetailPatientDemographicsServices;
+using ECS.Application.Services.DoctorAppointmentPatientManagementServices.GetMyQueueListServices;
+using ECS.Application.Services.DoctorAppointmentPatientManagementServices.GetQueueListByIdServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewDoctorAppointmentsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewDoctorClinicRoomsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewListPatientServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDemographicsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDetailServices;
-using ECS.Application.Services.DoctorAppointmentPatientManagementServices.GetMyQueueListServices;
-using ECS.Application.Services.DoctorAppointmentPatientManagementServices.GetQueueListByIdServices;
 using ECS.Application.Services.DoctorScheduleManagementServices.CreateDoctorScheduleService;
 using ECS.Application.Services.DoctorScheduleManagementServices.DeleteDoctorScheduleServices;
 using ECS.Application.Services.DoctorScheduleManagementServices.DoctorDashboardServices;
 using ECS.Application.Services.DoctorScheduleManagementServices.EditDoctorScheduleServices;
 using ECS.Application.Services.DoctorScheduleManagementServices.ViewDoctorPersonalScheduleServices;
 using ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordServices;
-using ECS.Application.Services.MedicalRecordsServices.PreliminaryDiagnosisServices;
-using ECS.Application.Services.MedicalRecordsServices.UpdateMedicalRecordServices;
-using ECS.Application.Services.DoctorAppointmentPatientManagementServices.CompleteQueueServices;
 using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordDetailServices;
 using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServices;
+using ECS.Application.Services.MedicalRecordsServices.PreliminaryDiagnosisServices;
+using ECS.Application.Services.MedicalRecordsServices.UpdateMedicalRecordServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.CancelAppointmentServices;
+using ECS.Application.Services.PatientAppointmentManagementServices.ClinicSlotServices;
+using ECS.Application.Services.PatientAppointmentManagementServices.CreateAppointmentByClinicServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.CreateAppointmentServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.GetAppointmentDetailServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.GetAppointmentHistoryServices;
@@ -205,6 +207,8 @@ public static class DependencyInjection
         services.AddScoped<IDeleteAccountService, DeleteAccountService>();
         services.AddScoped<IGetAppointmentDetailService, GetAppointmentDetailService>();
         services.AddScoped<ISubmitFeedbackService, SubmitFeedbackService>();
+        services.AddScoped<ICreateAppointmentByClinicService, CreateAppointmentByClinicService>();
+        services.AddScoped<IClinicSlotService, ClinicSlotService>();
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
