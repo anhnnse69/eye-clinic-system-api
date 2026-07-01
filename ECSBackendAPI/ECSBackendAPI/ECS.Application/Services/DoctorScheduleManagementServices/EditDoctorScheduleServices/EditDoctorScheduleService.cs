@@ -9,185 +9,179 @@ using Microsoft.EntityFrameworkCore;
 namespace ECS.Application.Services.DoctorScheduleManagementServices.EditDoctorScheduleServices
 {
     /// <summary>
-    /// Handles editing an existing doctor schedule: changing the work date
-    /// (moving the shift and its slots) and/or the assigned room.
-    /// Blocked entirely if any slot in the schedule is already booked.
+    /// Service responsible for modifying an existing doctor's work schedule.
+    /// handles business validations such as clinic boundaries, booked slot locks, and duplicate detection.
     /// </summary>
     public class EditDoctorScheduleService : IEditDoctorScheduleService
     {
-        private readonly IRepositoryQueryBase<DoctorProfile, Guid, AppDbContext>
-            _doctorRepo;
-        private readonly IRepositoryQueryBase<FacilityRoom, Guid, AppDbContext>
-            _roomRepo;
-        private readonly IRepositoryQueryBase<DoctorSchedule, Guid, AppDbContext>
-            _scheduleQueryRepo;
-        private readonly IRepositoryBaseAsync<DoctorSchedule, Guid, AppDbContext>
-            _scheduleCommandRepo;
-        private readonly IRepositoryBaseAsync<TimeSlot, Guid, AppDbContext>
-            _slotCommandRepo;
+        private readonly IRepositoryQueryBase<DoctorProfile, Guid, AppDbContext> _doctorRepo;
+        private readonly IRepositoryQueryBase<FacilityRoom, Guid, AppDbContext> _roomRepo;
+        private readonly IRepositoryQueryBase<StaffClinic, Guid, AppDbContext> _staffClinicRepo;
+        private readonly IRepositoryQueryBase<DoctorSchedule, Guid, AppDbContext> _scheduleQueryRepo;
         private readonly AppDbContext _dbContext;
 
         /// <summary>
-        /// Initializes a new instance of the service.
+        /// Initializes a new instance of the <see cref="EditDoctorScheduleService"/> class.
+        /// Injecting required read-only repositories and the primary database context via Dependency Injection (DI).
         /// </summary>
+        /// <param name="doctorRepo">Repository interface to query and validate active doctor profiles.</param>
+        /// <param name="roomRepo">Repository interface to lookup and validate clinic room availability.</param>
+        /// <param name="staffClinicRepo">Repository interface to verify receptionist identities and clinic mapping boundaries.</param>
+        /// <param name="scheduleQueryRepo">Repository interface specialized in verifying existing schedules to prevent duplicate conflicts.</param>
+        /// <param name="dbContext">The primary Entity Framework database context used to track changes, handle shadow properties, and commit transactions.</param>
         public EditDoctorScheduleService(
             IRepositoryQueryBase<DoctorProfile, Guid, AppDbContext> doctorRepo,
             IRepositoryQueryBase<FacilityRoom, Guid, AppDbContext> roomRepo,
+            IRepositoryQueryBase<StaffClinic, Guid, AppDbContext> staffClinicRepo,
             IRepositoryQueryBase<DoctorSchedule, Guid, AppDbContext> scheduleQueryRepo,
-            IRepositoryBaseAsync<DoctorSchedule, Guid, AppDbContext> scheduleCommandRepo,
-            IRepositoryBaseAsync<TimeSlot, Guid, AppDbContext> slotCommandRepo,
             AppDbContext dbContext)
         {
             _doctorRepo = doctorRepo;
             _roomRepo = roomRepo;
+            _staffClinicRepo = staffClinicRepo;
             _scheduleQueryRepo = scheduleQueryRepo;
-            _scheduleCommandRepo = scheduleCommandRepo;
-            _slotCommandRepo = slotCommandRepo;
             _dbContext = dbContext;
         }
 
         /// <summary>
-        /// Edits a doctor's schedule (work date and/or room).
+        /// Orchestrates the business workflow to edit a doctor's schedule.
         /// </summary>
-        /// <param name="userId">
-        /// Identifier of the user account linked to the doctor profile.
-        /// </param>
-        /// <param name="scheduleId">Identifier of the schedule to edit.</param>
-        /// <param name="request">Fields to update; null fields are left unchanged.</param>
-        /// <returns>A successful response containing the updated schedule.</returns>
         public async Task<ApiResponse<EditDoctorScheduleResponse>> Process(
-            Guid userId,
+            Guid receptionistUserId,
+            Guid doctorId,
             Guid scheduleId,
             EditDoctorScheduleRequest request)
         {
-            var doctorProfile = await ResolveActiveDoctorProfileAsync(userId);
+            var receptionistClinicId = await ResolveReceptionistClinicIdAsync(receptionistUserId);
+            var doctorProfile = await ResolveActiveDoctorProfileAsync(doctorId);
+            EnsureSameClinic(receptionistClinicId, doctorProfile.ClinicId);
             var schedule = await ResolveOwnedScheduleAsync(doctorProfile.Id, scheduleId);
             EnsureNoBookedSlots(schedule);
-            var room = await ResolveTargetRoomAsync(schedule, request.RoomId);
+            var room = await ResolveTargetRoomAsync(schedule, request.RoomId, receptionistClinicId);
             await EnsureNoDuplicateOnNewDateAsync(doctorProfile.Id, schedule, request.WorkDate);
             ApplyChanges(schedule, room, request);
-            await PersistChangesAsync(schedule);
+            await _dbContext.SaveChangesAsync();
             var response = BuildResponse(schedule, room);
             return CreateSuccessResponse(response);
         }
 
         /// <summary>
-        /// Resolves the active doctor profile for the specified user.
-        /// Throws when not found.
+        /// Resolves the Clinic ID associated with the operating receptionist.
         /// </summary>
-        private async Task<DoctorProfile> ResolveActiveDoctorProfileAsync(
-            Guid userId)
+        private async Task<Guid> ResolveReceptionistClinicIdAsync(Guid receptionistUserId)
+        {
+            var staffClinic = await _staffClinicRepo
+                .FindByCondition(sc => sc.UserId == receptionistUserId && sc.IsActive)
+                .FirstOrDefaultAsync();
+            if (staffClinic is null)
+                throw new KeyNotFoundException(GeneralCode.APP_MESSAGE_4008.ToString());
+            return staffClinic.ClinicId;
+        }
+
+        /// <summary>
+        /// Retrieves the doctor profile and ensures the doctor is currently active.
+        /// </summary>
+        private async Task<DoctorProfile> ResolveActiveDoctorProfileAsync(Guid doctorId)
         {
             var doctorProfile = await _doctorRepo
-                .FindByCondition(d =>
-                    d.UserId == userId &&
-                    d.IsActive)
+                .FindByCondition(d => d.Id == doctorId && d.IsActive)
                 .FirstOrDefaultAsync();
             if (doctorProfile is null)
-                throw new KeyNotFoundException(
-                    GeneralCode.APP_MESSAGE_4011.ToString());
+                throw new KeyNotFoundException(GeneralCode.APP_MESSAGE_4011.ToString());
             return doctorProfile;
         }
 
         /// <summary>
-        /// Resolves the schedule, ensuring it belongs to the given doctor,
-        /// including its time slots. Throws when not found.
+        /// Ensures that the receptionist and the doctor belong to the exact same clinic boundary.
         /// </summary>
-        private async Task<DoctorSchedule> ResolveOwnedScheduleAsync(
-            Guid doctorId,
-            Guid scheduleId)
+        private static void EnsureSameClinic(Guid receptionistClinicId, Guid doctorClinicId)
         {
-            var schedule = await _scheduleQueryRepo
-                .FindByCondition(s =>
-                    s.Id == scheduleId &&
-                    s.DoctorId == doctorId)
+            if (receptionistClinicId != doctorClinicId)
+                throw new UnauthorizedAccessException(GeneralCode.APP_MESSAGE_4008.ToString());
+        }
+
+        /// <summary>
+        /// Fetches the target schedule including its related time slots, filtering out logically deleted records.
+        /// </summary>
+        private async Task<DoctorSchedule> ResolveOwnedScheduleAsync(Guid doctorId, Guid scheduleId)
+        {
+            var schedule = await _dbContext.Set<DoctorSchedule>()
                 .Include(s => s.TimeSlots)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(s =>
+                    s.Id == scheduleId &&
+                    s.DoctorId == doctorId &&
+                    !s.IsDeleted);
             if (schedule is null)
-                throw new KeyNotFoundException(
-                    GeneralCode.APP_MESSAGE_4012.ToString());
+                throw new KeyNotFoundException(GeneralCode.APP_MESSAGE_4012.ToString());
             return schedule;
         }
 
         /// <summary>
-        /// Throws if any slot in the schedule is currently booked,
-        /// since edits are not allowed once a patient has booked.
+        /// Blocks any modifications if a patient has already reserved/booked a time slot within this schedule.
         /// </summary>
         private static void EnsureNoBookedSlots(DoctorSchedule schedule)
         {
             var hasBookedSlot = (schedule.TimeSlots ?? [])
                 .Any(slot => slot.Status == SlotStatus.BOOKED);
             if (hasBookedSlot)
-                throw new InvalidOperationException(
-                    GeneralCode.APP_MESSAGE_4013.ToString());
+                throw new InvalidOperationException(GeneralCode.APP_MESSAGE_4013.ToString());
         }
 
         /// <summary>
-        /// Resolves the target room for the update. Returns the schedule's
-        /// current room when no new room id is provided.
+        /// Resolves the valid room instance for the update, falling back to the existing room if no new RoomId is provided.
         /// </summary>
         private async Task<FacilityRoom> ResolveTargetRoomAsync(
             DoctorSchedule schedule,
-            Guid? newRoomId)
+            Guid? newRoomId,
+            Guid clinicId)
         {
-            var roomId = newRoomId ?? GetCurrentRoomId(schedule);
-
-            if (roomId is null)
-                throw new InvalidOperationException(
-                    GeneralCode.APP_MESSAGE_4008.ToString());
+            var targetRoomId = newRoomId ?? GetCurrentRoomId(schedule);
+            if (targetRoomId is null)
+                throw new InvalidOperationException(GeneralCode.APP_MESSAGE_4008.ToString());
             var room = await _roomRepo
                 .FindByCondition(r =>
-                    r.Id == roomId.Value &&
-                    r.IsActive)
+                    r.Id == targetRoomId.Value &&
+                    r.IsActive &&
+                    r.ClinicId == clinicId)
                 .FirstOrDefaultAsync();
             if (room is null)
-                throw new KeyNotFoundException(
-                    GeneralCode.APP_MESSAGE_4019.ToString());
+                throw new KeyNotFoundException(GeneralCode.APP_MESSAGE_4019.ToString());
             return room;
         }
 
         /// <summary>
-        /// Reads the current room id via the shadow FK property.
-        /// Returns null if the schedule currently has no room assigned.
+        /// Extracts the current shadow-property or regular property value of 'RoomId' from the EF Core tracking entry.
         /// </summary>
         private Guid? GetCurrentRoomId(DoctorSchedule schedule)
         {
-            return (Guid?)_dbContext
-                .Entry(schedule)
-                .Property("RoomId")
-                .CurrentValue;
+            return (Guid?)_dbContext.Entry(schedule).Property("RoomId").CurrentValue;
         }
 
         /// <summary>
-        /// Throws if the doctor already has a schedule with the same shift
-        /// type on the target work date (excluding the current schedule).
-        /// Does nothing when no new work date is requested.
+        /// Validates that changing the date does not create a overlapping shift type clash for the same doctor.
         /// </summary>
         private async Task EnsureNoDuplicateOnNewDateAsync(
             Guid doctorId,
             DoctorSchedule schedule,
             DateOnly? newWorkDate)
         {
-            if (!newWorkDate.HasValue)
-                return;
+            if (!newWorkDate.HasValue) return;
             var newWorkDateTime = newWorkDate.Value.ToDateTime(TimeOnly.MinValue);
             var duplicateExists = await _scheduleQueryRepo
                 .FindByCondition(s =>
                     s.DoctorId == doctorId &&
-                    s.Id != schedule.Id &&
+                    s.Id != schedule.Id && // Exclude the current schedule being edited
                     s.ShiftType == schedule.ShiftType &&
                     s.WorkDate == newWorkDateTime &&
                     !s.IsDeleted)
                 .AnyAsync();
+
             if (duplicateExists)
-                throw new InvalidOperationException(
-                    GeneralCode.APP_MESSAGE_4015.ToString());
+                throw new InvalidOperationException(GeneralCode.APP_MESSAGE_4015.ToString());
         }
 
         /// <summary>
-        /// Applies the requested changes to the schedule entity and,
-        /// when the work date changes, shifts every slot's start/end
-        /// time onto the new date while preserving the original hours.
+        /// Updates the entity state and updates internal time slots to reflect a new date structure if required.
         /// </summary>
         private void ApplyChanges(
             DoctorSchedule schedule,
@@ -204,41 +198,23 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.EditDoctorSc
         }
 
         /// <summary>
-        /// Recomputes each slot's start/end time onto the new work date,
-        /// preserving the original hour-of-day for each slot.
+        /// Recalculates and updates the StartTime and EndTime of all children slots to align with the new calendar date.
         /// </summary>
-        private static void ShiftSlotsToNewDate(
-            DoctorSchedule schedule,
-            DateOnly newWorkDate)
+        private static void ShiftSlotsToNewDate(DoctorSchedule schedule, DateOnly newWorkDate)
         {
             foreach (var slot in schedule.TimeSlots ?? [])
             {
                 var duration = slot.EndTime - slot.StartTime;
-                var newStart = newWorkDate.ToDateTime(TimeOnly.FromTimeSpan(
-                    slot.StartTime.TimeOfDay));
+                var newStart = newWorkDate.ToDateTime(TimeOnly.FromTimeSpan(slot.StartTime.TimeOfDay));
                 slot.StartTime = newStart;
                 slot.EndTime = newStart.Add(duration);
             }
         }
 
         /// <summary>
-        /// Persists the schedule and its time slot changes.
+        /// Constructs a data transfer object output mapping data out from updated schemas.
         /// </summary>
-        private async Task PersistChangesAsync(DoctorSchedule schedule)
-        {
-            await _scheduleCommandRepo.UpdateAsync(schedule);
-            await _scheduleCommandRepo.SaveChangesAsync();
-            foreach (var slot in schedule.TimeSlots ?? [])
-                await _slotCommandRepo.UpdateAsync(slot);
-            await _slotCommandRepo.SaveChangesAsync();
-        }
-
-        /// <summary>
-        /// Builds the response DTO from the updated schedule and room.
-        /// </summary>
-        private static EditDoctorScheduleResponse BuildResponse(
-            DoctorSchedule schedule,
-            FacilityRoom room)
+        private static EditDoctorScheduleResponse BuildResponse(DoctorSchedule schedule, FacilityRoom room)
         {
             return new EditDoctorScheduleResponse
             {
@@ -251,14 +227,13 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.EditDoctorSc
         }
 
         /// <summary>
-        /// Creates a successful API response.
+        /// Standardizes a successful operations layer payload wrap template response wrapper.
         /// </summary>
         private static ApiResponse<EditDoctorScheduleResponse> CreateSuccessResponse(
             EditDoctorScheduleResponse response)
         {
             return ApiResponse<EditDoctorScheduleResponse>.Success(
-                GeneralCode.APP_MESSAGE_2000.ToString(),
-                response);
+                GeneralCode.APP_MESSAGE_2000.ToString(), response);
         }
     }
 }

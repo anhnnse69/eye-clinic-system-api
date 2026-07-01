@@ -1,4 +1,4 @@
-﻿namespace ECS.Application.Services.DoctorScheduleManagementServices.EditDoctorScheduleServices
+﻿namespace ECS.Application.Services.DoctorScheduleManagementServices.BlockUnblockSlotServices
 {
     /// <summary>
     /// Request to block or unblock a doctor's time slot.
