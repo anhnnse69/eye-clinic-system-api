@@ -1,5 +1,4 @@
-﻿using System.Reflection;
-using ECS.Application.Services.AuthServices.ChangePasswordServices;
+﻿using ECS.Application.Services.AuthServices.ChangePasswordServices;
 using ECS.Application.Services.AuthServices.ForgotPasswordServices;
 using ECS.Application.Services.AuthServices.LoginServices;
 using ECS.Application.Services.AuthServices.RegisterServices;
@@ -45,10 +44,13 @@ using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewDo
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewListPatientServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDemographicsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDetailServices;
+using ECS.Application.Services.DoctorScheduleManagementServices.BlockUnblockSlotServices;
 using ECS.Application.Services.DoctorScheduleManagementServices.CreateDoctorScheduleService;
 using ECS.Application.Services.DoctorScheduleManagementServices.DeleteDoctorScheduleServices;
 using ECS.Application.Services.DoctorScheduleManagementServices.DoctorDashboardServices;
 using ECS.Application.Services.DoctorScheduleManagementServices.EditDoctorScheduleServices;
+using ECS.Application.Services.DoctorScheduleManagementServices.GetActiveDoctorsServices;
+using ECS.Application.Services.DoctorScheduleManagementServices.GetActiveRoomsServices;
 using ECS.Application.Services.DoctorScheduleManagementServices.ViewDoctorPersonalScheduleServices;
 using ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordServices;
 using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordDetailServices;
@@ -83,6 +85,7 @@ using ECS.Application.Services.ReceptionistManagementServices.ReceptionistPayDep
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistSearchAccountServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistUpdatePatientProfileServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemCreateAccountServices;
+using ECS.Application.Services.SystemAdminServices.AdminSystemCreateClinicAdminServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemDeleteAccountServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemDeleteClinicServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemEditAccountServices;
@@ -93,10 +96,12 @@ using ECS.Application.Services.SystemAdminServices.AdminSystemUpdateClinicServic
 using ECS.Application.Services.SystemAdminServices.ApproveClinicApplicationServices;
 using ECS.Application.Services.SystemAdminServices.ClinicManagementServices;
 using ECS.Application.Services.SystemAdminServices.ClinicRegisterServices;
+using ECS.Application.Services.SystemAdminServices.GetClinicLookupServices;
 using ECS.Application.Services.SystemAdminServices.RejectClinicApplicationServices;
 using ECS.Application.Services.SystemAdminServices.ReviewClinicRegisterServices;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 
 namespace ECS.Application;
 
@@ -209,6 +214,11 @@ public static class DependencyInjection
         services.AddScoped<ISubmitFeedbackService, SubmitFeedbackService>();
         services.AddScoped<ICreateAppointmentByClinicService, CreateAppointmentByClinicService>();
         services.AddScoped<IClinicSlotService, ClinicSlotService>();
+        services.AddScoped<IGetActiveDoctorsService, GetActiveDoctorsService>();
+        services.AddScoped<IGetActiveRoomsService, GetActiveRoomsService>();
+        services.AddScoped<ICreateClinicAdminService, CreateClinicAdminService>();
+        services.AddScoped<IGetClinicLookupService, GetClinicLookupService>();
+        services.AddTransient<IEmailService, SmtpEmailService>();
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 

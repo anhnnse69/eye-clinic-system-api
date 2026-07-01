@@ -6,26 +6,25 @@ using ECS.Infrastructure.Persistence;
 using ECS.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace ECS.Application.Services.DoctorScheduleManagementServices.DeleteDoctorScheduleServices
+namespace ECS.Application.Services.DoctorScheduleManagementServices.BlockUnblockSlotServices
 {
     /// <summary>
-    /// Service responsible for soft-deleting an entire doctor schedule. 
-    /// Enforces cross-clinic boundary validation and completely blocks the deletion 
-    /// if any individual time slot within the target schedule has already been booked by a patient.
+    /// Service responsible for toggling a specific doctor schedule time slot between AVAILABLE and BLOCKED states.
+    /// Enforces clinic cross-boundaries and locks adjustments if a slot is already booked by a patient.
     /// </summary>
-    public class DeleteDoctorScheduleService : IDeleteDoctorScheduleService
+    public class BlockUnblockSlotService : IBlockUnblockSlotService
     {
         private readonly IRepositoryQueryBase<StaffClinic, Guid, AppDbContext> _staffClinicRepo;
         private readonly IRepositoryQueryBase<DoctorProfile, Guid, AppDbContext> _doctorRepo;
         private readonly AppDbContext _dbContext;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DeleteDoctorScheduleService"/> class.
+        /// Initializes a new instance of the <see cref="BlockUnblockSlotService"/> class.
         /// </summary>
         /// <param name="staffClinicRepo">Repository interface to verify receptionist identities and clinic mapping boundaries.</param>
         /// <param name="doctorRepo">Repository interface to query and validate active doctor profiles.</param>
         /// <param name="dbContext">The primary Entity Framework database context used to track and save changes.</param>
-        public DeleteDoctorScheduleService(
+        public BlockUnblockSlotService(
             IRepositoryQueryBase<StaffClinic, Guid, AppDbContext> staffClinicRepo,
             IRepositoryQueryBase<DoctorProfile, Guid, AppDbContext> doctorRepo,
             AppDbContext dbContext)
@@ -36,24 +35,27 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.DeleteDoctor
         }
 
         /// <summary>
-        /// Processes the request to soft-delete a doctor's schedule after performing necessary cross-clinic and booking checks.
+        /// Processes the request to block or unblock an individual doctor's schedule time slot.
         /// </summary>
         /// <param name="receptionistUserId">The unique identifier of the performing receptionist.</param>
         /// <param name="doctorId">The unique identifier of the target doctor profile.</param>
-        /// <param name="scheduleId">The unique identifier of the specific schedule to delete.</param>
-        /// <returns>An API standard template response wrapping the structured schedule deletion response payload.</returns>
-        public async Task<ApiResponse<DeleteDoctorScheduleResponse>> Process(
+        /// <param name="slotId">The unique identifier of the specific time slot to modify.</param>
+        /// <param name="request">The request body payload containing the targeted boolean block status flag.</param>
+        /// <returns>An API standard template response wrapping the updated status string descriptor.</returns>
+        public async Task<ApiResponse<string>> Process(
             Guid receptionistUserId,
             Guid doctorId,
-            Guid scheduleId)
+            Guid slotId,
+            BlockUnblockSlotRequest request)
         {
-            var clinicId = await ResolveReceptionistClinicIdAsync(receptionistUserId);
+            var receptionistClinicId = await ResolveReceptionistClinicIdAsync(receptionistUserId);
             var doctorProfile = await ResolveActiveDoctorProfileAsync(doctorId);
-            EnsureSameClinic(clinicId, doctorProfile.ClinicId);
-            var schedule = await ResolveOwnedScheduleAsync(doctorProfile.Id, scheduleId);
-            EnsureNoBookedSlots(schedule);
-            await ApplySoftDeleteAndSaveAsync(schedule);
-            return CreateSuccessResponse(BuildResponse(schedule));
+            EnsureSameClinic(receptionistClinicId, doctorProfile.ClinicId);
+            var slot = await ResolveDoctorTimeSlotAsync(slotId, doctorProfile.Id);
+            EnsureSlotNotBooked(slot);
+            UpdateSlotStatus(slot, request.Block);
+            await _dbContext.SaveChangesAsync();
+            return CreateSuccessResponse(slot.Status);
         }
 
         /// <summary>
@@ -84,7 +86,7 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.DeleteDoctor
                 .FindByCondition(d => d.Id == doctorId && d.IsActive)
                 .FirstOrDefaultAsync();
             if (doctorProfile is null)
-                throw new KeyNotFoundException(GeneralCode.APP_MESSAGE_4008.ToString());
+                throw new KeyNotFoundException(GeneralCode.APP_MESSAGE_4011.ToString());
             return doctorProfile;
         }
 
@@ -101,75 +103,56 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.DeleteDoctor
         }
 
         /// <summary>
-        /// Resolves and fetches the targeted schedule ensuring it belongs strictly to the requested doctor and is not already deleted.
+        /// Resolves and fetches the targeted time slot ensuring it belongs strictly to the requested doctor's schedule.
         /// </summary>
+        /// <param name="slotId">The unique identifier of the target time slot.</param>
         /// <param name="doctorId">The unique identifier of the specific doctor profile.</param>
-        /// <param name="scheduleId">The unique identifier of the target schedule.</param>
-        /// <returns>The tracked doctor schedule entity with all its related time slots pre-loaded.</returns>
-        /// <exception cref="KeyNotFoundException">Thrown when the schedule cannot be found for the specified doctor.</exception>
-        private async Task<DoctorSchedule> ResolveOwnedScheduleAsync(Guid doctorId, Guid scheduleId)
+        /// <returns>The tracked time slot entity with its parent schedule context pre-loaded.</returns>
+        /// <exception cref="KeyNotFoundException">Thrown when the time slot cannot be found for the specified doctor.</exception>
+        private async Task<TimeSlot> ResolveDoctorTimeSlotAsync(Guid slotId, Guid doctorId)
         {
-            var schedule = await _dbContext.Set<DoctorSchedule>()
-                .Include(s => s.TimeSlots)
+            var slot = await _dbContext.Set<TimeSlot>()
+                .Include(s => s.Schedule)
                 .FirstOrDefaultAsync(s =>
-                    s.Id == scheduleId &&
-                    s.DoctorId == doctorId &&
-                    !s.IsDeleted);
-            if (schedule is null)
+                    s.Id == slotId &&
+                    s.Schedule.DoctorId == doctorId);
+            if (slot is null)
                 throw new KeyNotFoundException(GeneralCode.APP_MESSAGE_4004.ToString());
-            return schedule;
+            return slot;
         }
 
         /// <summary>
-        /// Validates that none of the time slots tied to the target schedule have been booked by a patient.
+        /// Validates that the requested time slot has not already been booked by a patient.
         /// </summary>
-        /// <param name="schedule">The doctor schedule entity holding the time slots to check.</param>
-        /// <exception cref="InvalidOperationException">Thrown when trying to delete a schedule containing at least one booked slot.</exception>
-        private static void EnsureNoBookedSlots(DoctorSchedule schedule)
+        /// <param name="slot">The target time slot entity to check.</param>
+        /// <exception cref="InvalidOperationException">Thrown when trying to modify a slot that is already booked.</exception>
+        private static void EnsureSlotNotBooked(TimeSlot slot)
         {
-            var hasBookedSlot = (schedule.TimeSlots ?? [])
-                .Any(slot => slot.Status == SlotStatus.BOOKED);
-            if (hasBookedSlot)
+            if (slot.Status == SlotStatus.BOOKED)
                 throw new InvalidOperationException(GeneralCode.APP_MESSAGE_4009.ToString());
         }
 
         /// <summary>
-        /// Applies the soft-delete tracking flags and updates audit timestamps on the target schedule.
+        /// Updates the status state of the slot based on the block or unblock instruction flag.
         /// </summary>
-        /// <param name="schedule">The target doctor schedule entity to be soft-deleted.</param>
-        private async Task ApplySoftDeleteAndSaveAsync(DoctorSchedule schedule)
+        /// <param name="slot">The reference target time slot entity.</param>
+        /// <param name="blockRequested">Determines whether to toggle the state to BLOCKED (true) or AVAILABLE (false).</param>
+        private static void UpdateSlotStatus(TimeSlot slot, bool blockRequested)
         {
-            schedule.IsDeleted = true;
-            schedule.DeletedAt = DateTime.UtcNow;
-            schedule.UpdatedAt = DateTime.UtcNow;
-            await _dbContext.SaveChangesAsync();
+            slot.Status = blockRequested ? SlotStatus.BLOCKED : SlotStatus.AVAILABLE;
         }
 
         /// <summary>
-        /// Maps the soft-deleted schedule entity state into a specific structured response payload.
+        /// Wraps the newly updated slot status into a standardized API success template response wrapper.
         /// </summary>
-        /// <param name="schedule">The modified doctor schedule entity reference.</param>
-        /// <returns>A new populated instance of <see cref="DeleteDoctorScheduleResponse"/>.</returns>
-        private static DeleteDoctorScheduleResponse BuildResponse(DoctorSchedule schedule)
+        /// <param name="status">The updated slot status value descriptor.</param>
+        /// <returns>The API standard outcome object encapsulating the updated state as a string descriptor.</returns>
+        private static ApiResponse<string> CreateSuccessResponse(SlotStatus status)
         {
-            return new DeleteDoctorScheduleResponse
-            {
-                ScheduleId = schedule.Id,
-                DeletedAt = schedule.DeletedAt!.Value
-            };
-        }
-
-        /// <summary>
-        /// Wraps the deletion response data into a standardized API success template response wrapper.
-        /// </summary>
-        /// <param name="response">The structured response payload containing schedule deletion metadata.</param>
-        /// <returns>The API standard outcome object encapsulating the deletion details.</returns>
-        private static ApiResponse<DeleteDoctorScheduleResponse> CreateSuccessResponse(
-            DeleteDoctorScheduleResponse response)
-        {
-            return ApiResponse<DeleteDoctorScheduleResponse>.Success(
+            return ApiResponse<string>.Success(
                 GeneralCode.APP_MESSAGE_2000.ToString(),
-                response);
+                status.ToString());
         }
     }
 }
+    

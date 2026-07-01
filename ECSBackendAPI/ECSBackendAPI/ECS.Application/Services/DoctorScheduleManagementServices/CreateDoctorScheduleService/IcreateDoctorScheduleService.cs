@@ -22,7 +22,8 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.CreateDoctor
         /// A response containing created schedules and skipped schedules.
         /// </returns>
         Task<ApiResponse<CreateDoctorScheduleResponse>> Process(
-            Guid userId,
+            Guid receptionistUserId,    
+            Guid doctorId,
             CreateDoctorScheduleRequest request);
     }
 }

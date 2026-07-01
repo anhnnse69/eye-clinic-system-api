@@ -15,7 +15,8 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.EditDoctorSc
         /// <param name="request">Updated schedule information.</param>
         /// <returns>The updated schedule.</returns>
         Task<ApiResponse<EditDoctorScheduleResponse>> Process(
-            Guid userId,
+            Guid receptionistUserId,
+            Guid doctorId,
             Guid scheduleId,
             EditDoctorScheduleRequest request);
     }

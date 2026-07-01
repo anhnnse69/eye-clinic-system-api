@@ -1,15 +1,16 @@
-﻿using ECS.Application.Services.DoctorScheduleManagementServices.EditDoctorScheduleServices;
+﻿using ECS.Application.Services.DoctorScheduleManagementServices.BlockUnblockSlotServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
-namespace ECS.API.Controllers.PatientAppointmentManagementController
+namespace ECS.API.Controllers.DoctorScheduleManagementController
 {
     /// <summary>
     /// Manages doctor slot blocking operations.
     /// </summary>
     [ApiController]
-    [Route("api/v1/doctors")]
-    [Authorize(Roles = "DOCTOR")]
+    [Route("api/v1/receptionist/doctors")]
+    [Authorize(Roles = "RECEPTIONIST")]
     public class BlockUnblockSlotController : ControllerBase
     {
         private readonly IBlockUnblockSlotService _service;
@@ -30,19 +31,25 @@ namespace ECS.API.Controllers.PatientAppointmentManagementController
         /// <param name="request">Block/unblock request.</param>
         /// <returns>The updated slot status.</returns>
         [HttpPatch("{id:guid}/schedule/slots/{slotId:guid}/block")]
-        public async Task<IActionResult> ToggleBlock(
+        public async Task<IActionResult> ToggleSlotBlock(
             Guid id,
             Guid slotId,
             [FromBody] BlockUnblockSlotRequest request)
         {
+            var receptionistUserId = Guid.Parse(
+                User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             try
             {
-                var result = await _service.Process(id, slotId, request);
+                var result = await _service.Process(receptionistUserId, id, slotId, request);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
             {
                 return NotFound(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
             }
             catch (InvalidOperationException ex)
             {
