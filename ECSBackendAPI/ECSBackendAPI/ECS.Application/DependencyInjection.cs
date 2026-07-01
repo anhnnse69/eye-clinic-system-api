@@ -83,6 +83,7 @@ using ECS.Application.Services.ReceptionistManagementServices.ReceptionistPayDep
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistSearchAccountServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistUpdatePatientProfileServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemCreateAccountServices;
+using ECS.Application.Services.SystemAdminServices.AdminSystemCreateClinicAdminServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemDeleteAccountServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemDeleteClinicServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemEditAccountServices;
@@ -93,6 +94,7 @@ using ECS.Application.Services.SystemAdminServices.AdminSystemUpdateClinicServic
 using ECS.Application.Services.SystemAdminServices.ApproveClinicApplicationServices;
 using ECS.Application.Services.SystemAdminServices.ClinicManagementServices;
 using ECS.Application.Services.SystemAdminServices.ClinicRegisterServices;
+using ECS.Application.Services.SystemAdminServices.GetClinicLookupServices;
 using ECS.Application.Services.SystemAdminServices.RejectClinicApplicationServices;
 using ECS.Application.Services.SystemAdminServices.ReviewClinicRegisterServices;
 using FluentValidation;
@@ -210,6 +212,9 @@ public static class DependencyInjection
         services.AddScoped<ISubmitFeedbackService, SubmitFeedbackService>();
         services.AddScoped<IGetActiveDoctorsService, GetActiveDoctorsService>();
         services.AddScoped<IGetActiveRoomsService, GetActiveRoomsService>();
+        services.AddScoped<ICreateClinicAdminService, CreateClinicAdminService>();
+        services.AddScoped<IGetClinicLookupService, GetClinicLookupService>();
+        services.AddTransient<IEmailService, SmtpEmailService>();
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
