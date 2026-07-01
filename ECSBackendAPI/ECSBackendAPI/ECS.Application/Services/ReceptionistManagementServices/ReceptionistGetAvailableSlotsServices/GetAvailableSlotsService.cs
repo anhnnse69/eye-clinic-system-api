@@ -85,8 +85,12 @@ namespace ECS.Application.Services.ReceptionistManagementServices.ReceptionistGe
             var workDateProp = Expression.Property(parameter, "WorkDate");
             var dateProp = Expression.Property(workDateProp, "Date");
             var workDateLeft = Expression.Equal(dateProp, Expression.Constant(request.WorkDate.Date));
-            Expression combinedBody = Expression.AndAlso(clinicIdLeft, workDateLeft);
-            // 1. Filter by Doctor FullName (Case-Insensitive substring matching)
+            var isDeletedProp = Expression.Property(parameter, "IsDeleted");
+            var notDeleted = Expression.Equal(isDeletedProp, Expression.Constant(false));
+            Expression combinedBody = Expression.AndAlso(
+                Expression.AndAlso(clinicIdLeft, workDateLeft),
+                notDeleted
+            );            // 1. Filter by Doctor FullName (Case-Insensitive substring matching)
             if (!string.IsNullOrWhiteSpace(request.SearchDoctor))
             {
                 var search = request.SearchDoctor.ToLower();
@@ -148,6 +152,8 @@ namespace ECS.Application.Services.ReceptionistManagementServices.ReceptionistGe
             return schedules.Select(s => new GetAvailableSlotsResponse
             {
                 Id = s.Id.ToString(),
+                DoctorId = s.DoctorId.ToString(),
+                RoomId = s.Room?.Id.ToString(),
                 ShiftType = s.ShiftType.ToString().ToUpper(),
                 DoctorName = s.Doctor.User.FullName,
                 Title = s.Doctor.Title,

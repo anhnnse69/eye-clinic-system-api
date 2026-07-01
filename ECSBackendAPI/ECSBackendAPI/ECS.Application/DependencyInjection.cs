@@ -44,10 +44,13 @@ using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewDo
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewListPatientServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDemographicsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDetailServices;
+using ECS.Application.Services.DoctorScheduleManagementServices.BlockUnblockSlotServices;
 using ECS.Application.Services.DoctorScheduleManagementServices.CreateDoctorScheduleService;
 using ECS.Application.Services.DoctorScheduleManagementServices.DeleteDoctorScheduleServices;
 using ECS.Application.Services.DoctorScheduleManagementServices.DoctorDashboardServices;
 using ECS.Application.Services.DoctorScheduleManagementServices.EditDoctorScheduleServices;
+using ECS.Application.Services.DoctorScheduleManagementServices.GetActiveDoctorsServices;
+using ECS.Application.Services.DoctorScheduleManagementServices.GetActiveRoomsServices;
 using ECS.Application.Services.DoctorScheduleManagementServices.ViewDoctorPersonalScheduleServices;
 using ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordServices;
 using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordDetailServices;
@@ -207,6 +210,8 @@ public static class DependencyInjection
         services.AddScoped<IDeleteAccountService, DeleteAccountService>();
         services.AddScoped<IGetAppointmentDetailService, GetAppointmentDetailService>();
         services.AddScoped<ISubmitFeedbackService, SubmitFeedbackService>();
+        services.AddScoped<IGetActiveDoctorsService, GetActiveDoctorsService>();
+        services.AddScoped<IGetActiveRoomsService, GetActiveRoomsService>();
         services.AddScoped<ICreateClinicAdminService, CreateClinicAdminService>();
         services.AddScoped<IGetClinicLookupService, GetClinicLookupService>();
         services.AddTransient<IEmailService, SmtpEmailService>();

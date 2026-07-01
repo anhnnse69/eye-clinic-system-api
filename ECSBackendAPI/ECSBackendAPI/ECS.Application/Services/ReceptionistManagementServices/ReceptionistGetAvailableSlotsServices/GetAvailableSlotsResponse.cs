@@ -6,6 +6,8 @@
     public class GetAvailableSlotsResponse
     {
         public string Id { get; set; } = null!;
+        public string DoctorId { get; set; } = null!;
+        public string? RoomId { get; set; }
         public string ShiftType { get; set; } = null!;
         public string DoctorName { get; set; } = null!;
         public string? Title { get; set; }

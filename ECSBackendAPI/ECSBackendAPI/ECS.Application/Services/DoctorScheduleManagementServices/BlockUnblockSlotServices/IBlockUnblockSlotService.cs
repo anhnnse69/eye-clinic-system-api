@@ -1,6 +1,6 @@
 ﻿using ECS.Application.Common.Response;
 
-namespace ECS.Application.Services.DoctorScheduleManagementServices.EditDoctorScheduleServices
+namespace ECS.Application.Services.DoctorScheduleManagementServices.BlockUnblockSlotServices
 {
     /// <summary>
     /// Defines operations for blocking or unblocking doctor time slots.
@@ -15,7 +15,8 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.EditDoctorSc
         /// <param name="request">Block status information.</param>
         /// <returns>The operation result.</returns>
         Task<ApiResponse<string>> Process(
-            Guid userId,
+            Guid receptionistUserId,
+            Guid doctorId,
             Guid slotId,
             BlockUnblockSlotRequest request);
     }

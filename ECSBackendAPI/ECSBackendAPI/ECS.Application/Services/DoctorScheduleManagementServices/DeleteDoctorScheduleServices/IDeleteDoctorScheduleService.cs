@@ -8,19 +8,20 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.DeleteDoctor
     public interface IDeleteDoctorScheduleService
     {
         /// <summary>
-        /// Deletes a doctor's schedule by its identifier.
+        /// Soft-deletes a doctor's schedule.
         /// </summary>
-        /// <param name="userId">
-        /// The identifier of the authenticated user performing the deletion.
+        /// <param name="receptionistUserId">
+        /// Identifier of the receptionist performing the deletion.
+        /// </param>
+        /// <param name="doctorId">
+        /// Identifier of the DoctorProfile that owns the schedule.
         /// </param>
         /// <param name="scheduleId">
-        /// The identifier of the schedule to be deleted.
+        /// Identifier of the schedule to delete.
         /// </param>
-        /// <returns>
-        /// An <see cref="ApiResponse{T}"/> containing details of the deleted schedule.
-        /// </returns>
         Task<ApiResponse<DeleteDoctorScheduleResponse>> Process(
-            Guid userId,
+            Guid receptionistUserId,
+            Guid doctorId,
             Guid scheduleId);
     }
 }

@@ -12,6 +12,8 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.CreateDoctor
     /// Handles creating one or more doctor schedules (shifts) across
     /// multiple work dates, auto-generating hourly time slots and
     /// skipping date/shift combinations that already exist.
+    /// Enforces that the receptionist and the selected doctor belong
+    /// to the same clinic.
     /// </summary>
     public class CreateDoctorScheduleService : ICreateDoctorScheduleService
     {
@@ -19,6 +21,8 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.CreateDoctor
             _doctorRepo;
         private readonly IRepositoryQueryBase<FacilityRoom, Guid, AppDbContext>
             _roomRepo;
+        private readonly IRepositoryQueryBase<StaffClinic, Guid, AppDbContext>
+            _staffClinicRepo;
         private readonly IRepositoryQueryBase<DoctorSchedule, Guid, AppDbContext>
             _scheduleQueryRepo;
         private readonly IRepositoryBaseAsync<DoctorSchedule, Guid, AppDbContext>
@@ -30,9 +34,9 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.CreateDoctor
         private static readonly Dictionary<ShiftType, (int StartHour, int StartMinute, int TotalSlots)>
             ShiftConfig = new()
             {
-                [ShiftType.MORNING] = (8, 0, 8),  
-                [ShiftType.AFTERNOON] = (12, 0, 10),  
-                [ShiftType.EVENING] = (17, 0, 6),   
+                [ShiftType.MORNING] = (8, 0, 8),
+                [ShiftType.AFTERNOON] = (12, 0, 10),
+                [ShiftType.EVENING] = (17, 0, 6),
             };
 
         private const int DefaultMaxPatientsPerSlot = 1;
@@ -43,6 +47,7 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.CreateDoctor
         public CreateDoctorScheduleService(
             IRepositoryQueryBase<DoctorProfile, Guid, AppDbContext> doctorRepo,
             IRepositoryQueryBase<FacilityRoom, Guid, AppDbContext> roomRepo,
+            IRepositoryQueryBase<StaffClinic, Guid, AppDbContext> staffClinicRepo,
             IRepositoryQueryBase<DoctorSchedule, Guid, AppDbContext> scheduleQueryRepo,
             IRepositoryBaseAsync<DoctorSchedule, Guid, AppDbContext> scheduleCommandRepo,
             IRepositoryBaseAsync<TimeSlot, Guid, AppDbContext> slotCommandRepo,
@@ -50,6 +55,7 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.CreateDoctor
         {
             _doctorRepo = doctorRepo;
             _roomRepo = roomRepo;
+            _staffClinicRepo = staffClinicRepo;
             _scheduleQueryRepo = scheduleQueryRepo;
             _scheduleCommandRepo = scheduleCommandRepo;
             _slotCommandRepo = slotCommandRepo;
@@ -59,22 +65,17 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.CreateDoctor
         /// <summary>
         /// Creates schedules for every (work date, shift type) combination
         /// requested, skipping combinations that already exist for the doctor.
+        /// Validates that the receptionist and the doctor share the same clinic.
         /// </summary>
-        /// <param name="userId">
-        /// Identifier of the user account linked to the doctor profile.
-        /// </param>
-        /// <param name="request">
-        /// Work dates, shift types and room for the new schedules.
-        /// </param>
-        /// <returns>
-        /// A successful response containing created and skipped schedule items.
-        /// </returns>
         public async Task<ApiResponse<CreateDoctorScheduleResponse>> Process(
-            Guid userId,
+            Guid receptionistUserId,
+            Guid doctorId,
             CreateDoctorScheduleRequest request)
         {
-            var doctorProfile = await ResolveActiveDoctorProfileAsync(userId);
-            var room = await ResolveActiveRoomAsync(request.RoomId);
+            var receptionistClinicId = await ResolveReceptionistClinicIdAsync(receptionistUserId);
+            var doctorProfile = await ResolveActiveDoctorProfileAsync(doctorId);
+            EnsureSameClinic(receptionistClinicId, doctorProfile.ClinicId);
+            var room = await ResolveActiveRoomAsync(request.RoomId, receptionistClinicId);
             var shiftTypes = ParseShiftTypes(request.ShiftTypes);
             ValidateRequest(request, shiftTypes);
             var distinctDates = request.WorkDates.Distinct().ToList();
@@ -93,37 +94,60 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.CreateDoctor
         }
 
         /// <summary>
-        /// Resolves the active doctor profile for the specified user.
+        /// Resolves the clinic that the receptionist (current user) belongs to,
+        /// via their active StaffClinic assignment. Throws when not found.
+        /// </summary>
+        private async Task<Guid> ResolveReceptionistClinicIdAsync(Guid receptionistUserId)
+        {
+            var staffClinic = await _staffClinicRepo
+                .FindByCondition(sc =>
+                    sc.UserId == receptionistUserId &&
+                    sc.IsActive)
+                .FirstOrDefaultAsync();
+            if (staffClinic is null)
+                throw new KeyNotFoundException(GeneralCode.APP_MESSAGE_4008.ToString());
+            return staffClinic.ClinicId;
+        }
+
+        /// <summary>
+        /// Resolves the active doctor profile for the specified doctor id.
         /// Throws when not found.
         /// </summary>
-        private async Task<DoctorProfile> ResolveActiveDoctorProfileAsync(
-            Guid userId)
+        private async Task<DoctorProfile> ResolveActiveDoctorProfileAsync(Guid doctorId)
         {
             var doctorProfile = await _doctorRepo
-                .FindByCondition(d =>
-                    d.UserId == userId &&
-                    d.IsActive)
+                .FindByCondition(d => d.Id == doctorId && d.IsActive)
                 .FirstOrDefaultAsync();
             if (doctorProfile is null)
-                throw new KeyNotFoundException(
-                    GeneralCode.APP_MESSAGE_4008.ToString());
+                throw new KeyNotFoundException(GeneralCode.APP_MESSAGE_4008.ToString());
             return doctorProfile;
         }
 
         /// <summary>
-        /// Resolves the active facility room by id.
-        /// Throws when not found.
+        /// Ensures the receptionist's clinic matches the doctor's clinic.
+        /// Throws when they differ (receptionist trying to act on a doctor
+        /// outside their own clinic).
         /// </summary>
-        private async Task<FacilityRoom> ResolveActiveRoomAsync(Guid roomId)
+        private static void EnsureSameClinic(Guid receptionistClinicId, Guid doctorClinicId)
+        {
+            if (receptionistClinicId != doctorClinicId)
+                throw new UnauthorizedAccessException(GeneralCode.APP_MESSAGE_4008.ToString());
+        }
+
+        /// <summary>
+        /// Resolves the active facility room by id, ensuring it also belongs
+        /// to the receptionist's clinic. Throws when not found or mismatched.
+        /// </summary>
+        private async Task<FacilityRoom> ResolveActiveRoomAsync(Guid roomId, Guid clinicId)
         {
             var room = await _roomRepo
                 .FindByCondition(r =>
                     r.Id == roomId &&
-                    r.IsActive)
+                    r.IsActive &&
+                    r.ClinicId == clinicId)
                 .FirstOrDefaultAsync();
             if (room is null)
-                throw new KeyNotFoundException(
-                    GeneralCode.APP_MESSAGE_4004.ToString());
+                throw new KeyNotFoundException(GeneralCode.APP_MESSAGE_4004.ToString());
             return room;
         }
 
@@ -151,15 +175,12 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.CreateDoctor
             List<ShiftType> shiftTypes)
         {
             if (request.WorkDates == null || request.WorkDates.Count == 0)
-                throw new ArgumentException(
-                    GeneralCode.APP_MESSAGE_4001.ToString());
+                throw new ArgumentException(GeneralCode.APP_MESSAGE_4001.ToString());
             if (shiftTypes == null || shiftTypes.Count == 0)
-                throw new ArgumentException(
-                    GeneralCode.APP_MESSAGE_4001.ToString());
+                throw new ArgumentException(GeneralCode.APP_MESSAGE_4001.ToString());
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
             if (request.WorkDates.Any(d => d < today))
-                throw new ArgumentException(
-                    GeneralCode.APP_MESSAGE_4001.ToString());
+                throw new ArgumentException(GeneralCode.APP_MESSAGE_4001.ToString());
         }
 
         /// <summary>
@@ -250,32 +271,29 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.CreateDoctor
                 UpdatedAt = DateTime.UtcNow,
             };
             _dbContext.Entry(schedule).Property("RoomId").CurrentValue = roomId;
-                await _scheduleCommandRepo.CreateAsync(schedule);
-                await _scheduleCommandRepo.SaveChangesAsync();
+            await _scheduleCommandRepo.CreateAsync(schedule);
+            await _scheduleCommandRepo.SaveChangesAsync();
             var slots = GenerateThirtyMinuteSlots(schedule.Id, workDate, shiftType);
             foreach (var slot in slots)
                 await _slotCommandRepo.CreateAsync(slot);
-                await _slotCommandRepo.SaveChangesAsync();
+            await _slotCommandRepo.SaveChangesAsync();
             schedule.TimeSlots = slots;
             return schedule;
         }
 
         /// <summary>
-        /// Generates 30-minute TimeSlot entries matching the frontend timeline
+        /// Generates 30-minute TimeSlot entries matching the frontend timeline.
         /// </summary>
         private static List<TimeSlot> GenerateThirtyMinuteSlots(
             Guid scheduleId, DateOnly workDate, ShiftType shiftType)
         {
             var (startHour, startMinute, totalSlots) = ShiftConfig[shiftType];
             var slots = new List<TimeSlot>();
-
             var current = new TimeOnly(startHour, startMinute);
-
             for (int i = 0; i < totalSlots; i++)
             {
                 var start = workDate.ToDateTime(current);
                 var end = start.AddMinutes(30);
-
                 slots.Add(new TimeSlot
                 {
                     Id = Guid.NewGuid(),
