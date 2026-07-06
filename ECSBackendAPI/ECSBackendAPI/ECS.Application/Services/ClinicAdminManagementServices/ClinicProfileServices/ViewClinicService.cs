@@ -193,7 +193,10 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ClinicProfileSe
                 RatingAvg = clinic.RatingAvg,
                 ReviewCount = clinic.ReviewCount,
                 OpenTime = clinic.OpenTime,
-                CloseTime = clinic.CloseTime
+                CloseTime = clinic.CloseTime,
+                IsPublished = clinic.IsPublished,
+                IsPublicationRequested = clinic.IsPublicationRequested,
+                PublicationRequestedAt = clinic.PublicationRequestedAt
             };
         }
     }

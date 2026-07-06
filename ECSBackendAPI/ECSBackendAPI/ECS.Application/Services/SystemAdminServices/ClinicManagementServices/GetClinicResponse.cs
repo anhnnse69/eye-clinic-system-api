@@ -24,6 +24,15 @@
         public string CreatedAt { get; set; } = null!;
 
         // Lifecycle status metric tracking representation string: "ACTIVE" or "INACTIVE" matching client layout structures
-        public string Status { get; set; } = null!; 
+        public string Status { get; set; } = null!;
+
+        // Publication status - true if clinic is published, false otherwise
+        public bool IsPublished { get; set; }
+
+        // Publication request status - true if publication has been requested
+        public bool IsPublicationRequested { get; set; }
+
+        // Publication request time
+        public DateTime? PublicationRequestedAt { get; set; }
     }
 }

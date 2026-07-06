@@ -1,4 +1,5 @@
-﻿using ECS.Application.Services.AuthServices.ChangePasswordServices;
+﻿using System.Reflection;
+using ECS.Application.Services.AuthServices.ChangePasswordServices;
 using ECS.Application.Services.AuthServices.ForgotPasswordServices;
 using ECS.Application.Services.AuthServices.LoginServices;
 using ECS.Application.Services.AuthServices.RegisterServices;
@@ -25,6 +26,7 @@ using ECS.Application.Services.ClinicAdminManagementServices.DeleteClinicFeedbac
 using ECS.Application.Services.ClinicAdminManagementServices.EditClinicProfileServices;
 using ECS.Application.Services.ClinicAdminManagementServices.EditServiceServices;
 using ECS.Application.Services.ClinicAdminManagementServices.EditStaffAccountServices;
+using ECS.Application.Services.ClinicAdminManagementServices.RequestPublishClinicServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ViewListServiceServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAccountsServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.GetActiveSpecialtiesServices;
@@ -94,6 +96,7 @@ using ECS.Application.Services.SystemAdminServices.AdminSystemGetDashboardServic
 using ECS.Application.Services.SystemAdminServices.AdminSystemListAccountServices;
 using ECS.Application.Services.SystemAdminServices.AdminSystemUpdateClinicServices;
 using ECS.Application.Services.SystemAdminServices.ApproveClinicApplicationServices;
+using ECS.Application.Services.SystemAdminServices.ApproveClinicPublicationServices;
 using ECS.Application.Services.SystemAdminServices.ClinicManagementServices;
 using ECS.Application.Services.SystemAdminServices.ClinicRegisterServices;
 using ECS.Application.Services.SystemAdminServices.GetClinicLookupServices;
@@ -101,7 +104,6 @@ using ECS.Application.Services.SystemAdminServices.RejectClinicApplicationServic
 using ECS.Application.Services.SystemAdminServices.ReviewClinicRegisterServices;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
 
 namespace ECS.Application;
 
@@ -219,6 +221,8 @@ public static class DependencyInjection
         services.AddScoped<ICreateClinicAdminService, CreateClinicAdminService>();
         services.AddScoped<IGetClinicLookupService, GetClinicLookupService>();
         services.AddTransient<IEmailService, SmtpEmailService>();
+        services.AddScoped<IRequestPublishClinicService, RequestPublishClinicService>();
+        services.AddScoped<IApproveClinicPublicationService, ApproveClinicPublicationService>();
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
