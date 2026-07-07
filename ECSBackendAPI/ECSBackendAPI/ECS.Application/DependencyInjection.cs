@@ -47,6 +47,7 @@ using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewLi
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDemographicsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDetailServices;
 using ECS.Application.Services.DoctorScheduleManagementServices.BlockUnblockSlotServices;
+using ECS.Application.Services.DoctorScheduleManagementServices.ClinicShiftServices;
 using ECS.Application.Services.DoctorScheduleManagementServices.CreateDoctorScheduleService;
 using ECS.Application.Services.DoctorScheduleManagementServices.DeleteDoctorScheduleServices;
 using ECS.Application.Services.DoctorScheduleManagementServices.DoctorDashboardServices;
@@ -221,6 +222,8 @@ public static class DependencyInjection
         services.AddScoped<ICreateClinicAdminService, CreateClinicAdminService>();
         services.AddScoped<IGetClinicLookupService, GetClinicLookupService>();
         services.AddTransient<IEmailService, SmtpEmailService>();
+        services.AddTransient<IClinicShiftService, ClinicShiftService>();
+        services.AddTransient<IBatchCreateDoctorScheduleService, BatchCreateDoctorScheduleService>();
         services.AddScoped<IRequestPublishClinicService, RequestPublishClinicService>();
         services.AddScoped<IApproveClinicPublicationService, ApproveClinicPublicationService>();
         // ── FluentValidation ──────────────────────────────────

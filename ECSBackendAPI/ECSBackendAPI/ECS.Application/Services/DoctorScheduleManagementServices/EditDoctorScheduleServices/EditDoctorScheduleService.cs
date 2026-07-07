@@ -58,7 +58,10 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.EditDoctorSc
             var schedule = await ResolveOwnedScheduleAsync(doctorProfile.Id, scheduleId);
             EnsureNoBookedSlots(schedule);
             var room = await ResolveTargetRoomAsync(schedule, request.RoomId, receptionistClinicId);
+            var effectiveWorkDate = request.WorkDate?.ToDateTime(TimeOnly.MinValue) ?? schedule.WorkDate;
             await EnsureNoDuplicateOnNewDateAsync(doctorProfile.Id, schedule, request.WorkDate);
+            await EnsureNoRoomConflictAsync(doctorProfile.Id, schedule.Id, room.Id, effectiveWorkDate, schedule.ShiftType);
+
             ApplyChanges(schedule, room, request);
             await _dbContext.SaveChangesAsync();
             var response = BuildResponse(schedule, room);
@@ -178,6 +181,39 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.EditDoctorSc
 
             if (duplicateExists)
                 throw new InvalidOperationException(GeneralCode.APP_MESSAGE_4015.ToString());
+        }
+
+        /// <summary>
+        /// Ensures the target room isn't already occupied by a DIFFERENT doctor
+        /// on the same (work date, shift type) combination. Excludes the schedule
+        /// being edited itself, and excludes conflicts with the same doctor
+        /// (a doctor can't conflict with their own schedule).
+        /// </summary>
+        private async Task EnsureNoRoomConflictAsync(
+            Guid doctorId,
+            Guid scheduleId,
+            Guid targetRoomId,
+            DateTime workDate,
+            ShiftType shiftType)
+        {
+            var conflictSchedules = await _dbContext.Set<DoctorSchedule>()
+                .Where(s =>
+                    s.Id != scheduleId &&
+                    !s.IsDeleted &&
+                    s.WorkDate == workDate &&
+                    s.ShiftType == shiftType &&
+                    s.DoctorId != doctorId)
+                .Select(s => new
+                {
+                    s.DoctorId,
+                    RoomId = EF.Property<Guid>(s, "RoomId"),
+                })
+                .ToListAsync();
+
+            var hasConflict = conflictSchedules.Any(s => s.RoomId == targetRoomId);
+
+            if (hasConflict)
+                throw new InvalidOperationException(GeneralCode.APP_MESSAGE_4058.ToString());
         }
 
         /// <summary>

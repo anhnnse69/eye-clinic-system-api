@@ -1,7 +1,8 @@
-﻿using System.Security.Claims;
+﻿using ECS.Application.Common.Response;
 using ECS.Application.Services.DoctorScheduleManagementServices.EditDoctorScheduleServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace ECS.API.Controllers.DoctorScheduleManagementController
 {
@@ -51,15 +52,15 @@ namespace ECS.API.Controllers.DoctorScheduleManagementController
             }
             catch (KeyNotFoundException ex)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(ApiResponse<string>.Fail(ex.Message));
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Forbid(ex.Message);
+                return StatusCode(403, ApiResponse<string>.Fail(ex.Message)); 
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ApiResponse<string>.Fail(ex.Message));
             }
         }
     }
