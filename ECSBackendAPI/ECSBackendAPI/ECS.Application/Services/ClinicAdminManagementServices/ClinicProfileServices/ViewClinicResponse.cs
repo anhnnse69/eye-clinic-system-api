@@ -17,5 +17,8 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ClinicProfileSe
         public int? ReviewCount { get; set; }
         public TimeOnly OpenTime { get; set; }
         public TimeOnly CloseTime { get; set; }
+        public bool IsPublished { get; set; }
+        public bool IsPublicationRequested { get; set; }
+        public DateTime? PublicationRequestedAt { get; set; }
     }
 }

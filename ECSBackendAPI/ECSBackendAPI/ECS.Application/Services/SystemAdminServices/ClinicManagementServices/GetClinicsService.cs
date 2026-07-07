@@ -1,9 +1,9 @@
-﻿using ECS.Application.Common.Response;
+﻿using System.Linq.Expressions;
+using ECS.Application.Common.Response;
 using ECS.Domain.Entities.Clinics;
 using ECS.Domain.Enums;
 using ECS.Infrastructure.Persistence;
 using ECS.Infrastructure.Repositories.Interfaces;
-using System.Linq.Expressions;
 
 namespace ECS.Application.Services.SystemAdminServices.ClinicManagementServices
 {
@@ -116,7 +116,10 @@ namespace ECS.Application.Services.SystemAdminServices.ClinicManagementServices
                 ContactEmail = string.IsNullOrEmpty(clinic.Email) ? "N/A" : clinic.Email,
                 CreatedAt = clinic.CreatedAt.ToString("dd/MM/yyyy"),
                 // Conversions back into exact text labels expected by the React state engine
-                Status = clinic.IsActive ? "ACTIVE" : "INACTIVE"
+                Status = clinic.IsActive ? "ACTIVE" : "INACTIVE",
+                IsPublished = clinic.IsPublished,
+                IsPublicationRequested = clinic.IsPublicationRequested,
+                PublicationRequestedAt = clinic.PublicationRequestedAt
             }).ToList();
         }
 

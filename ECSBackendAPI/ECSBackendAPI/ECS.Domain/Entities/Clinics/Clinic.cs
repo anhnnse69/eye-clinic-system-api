@@ -17,6 +17,8 @@ namespace ECS.Domain.Entities.Clinics
         public string? Description { get; set; }
         public bool IsActive { get; set; } = true;
         public bool IsPublished { get; set; } = false;
+        public bool IsPublicationRequested { get; set; } = false;
+        public DateTime? PublicationRequestedAt { get; set; }
         public decimal? RatingAvg { get; set; } = 0;
         public int? ReviewCount { get; set; } = 0;
         public TimeOnly OpenTime { get; set; }

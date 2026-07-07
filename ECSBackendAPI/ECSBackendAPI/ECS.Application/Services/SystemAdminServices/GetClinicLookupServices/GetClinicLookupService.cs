@@ -30,24 +30,27 @@ namespace ECS.Application.Services.SystemAdminServices.GetClinicLookupServices
         /// <returns>An <see cref="ApiResponse{List{GetClinicLookupResponse}}"/> enclosing descriptive state payloads.</returns>
         public async Task<ApiResponse<List<GetClinicLookupResponse>>> Process(GetClinicLookupRequest request)
         {
-            // Step 1: Query underlying data structures filtering exclusive active configurations
-            var ActiveClinics = await FetchActiveClinicsFromRepository();
+            // Step 1: Query underlying data structures filtering exclusive active configurations without staff
+            var activeClinicsWithoutStaff = await FetchActiveClinicsWithoutStaffFromRepository();
 
             // Step 2: Map internal domain state model attributes onto decoupled serialized lookup schemas
-            var OutputDtoList = MapToResponseDtoList(ActiveClinics);
+            var outputDtoList = MapToResponseDtoList(activeClinicsWithoutStaff);
 
             // Step 3: Package structural items cleanly inside consistent transmission frames
-            return CreateResponse(OutputDtoList);
+            return CreateResponse(outputDtoList);
         }
 
         /// <summary>
-        /// Queries the data store using explicit transactional tracking skips to grab active system entities.
+        /// Queries the data store using explicit transactional tracking skips to grab active system entities with NO staff.
         /// </summary>
-        /// <returns>The verified raw collection matching active clinic indicators.</returns>
-        private async Task<List<Clinic>> FetchActiveClinicsFromRepository()
+        /// <returns>The verified raw collection matching active clinic indicators with no assigned staff.</returns>
+        private async Task<List<Clinic>> FetchActiveClinicsWithoutStaffFromRepository()
         {
             return await _clinicRepository
-                .FindByCondition(c => c.IsActive, trackChanges: false)
+                .FindByCondition(
+                    c => c.IsActive && (c.StaffClinics == null || !c.StaffClinics.Any()),
+                    trackChanges: false
+                )
                 .OrderBy(c => c.Name)
                 .ToListAsync();
         }
