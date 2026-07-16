@@ -39,13 +39,16 @@ public static class ScheduleHelper
     /// <param name="openTime">The clinic's opening time.</param>
     /// <param name="closeTime">The clinic's closing time.</param>
     /// <returns>A dictionary mapping shift types to their start and end times.</returns>
-    /// <exception cref="ArgumentException">Thrown when close time is not after open time.</exception>
+    /// <exception cref="ArgumentException">Thrown when close time is not after open time (overnight shifts not supported).</exception>
     public static Dictionary<ShiftType, (TimeOnly Start, TimeOnly End)> BuildShiftRanges(
         TimeOnly openTime,
         TimeOnly closeTime)
     {
         if (closeTime <= openTime)
-            throw new ArgumentException("Giờ đóng cửa phải sau giờ mở cửa.");
+            throw new ArgumentException(
+                $"Giờ đóng cửa phải sau giờ mở cửa. " +
+                $"Hiện tại: mở={openTime:HH\\:mm}, đóng={closeTime:HH\\:mm}. " +
+                $"Hệ thống không hỗ trợ ca đêm qua đêm.");
 
         var result = new Dictionary<ShiftType, (TimeOnly, TimeOnly)>();
 

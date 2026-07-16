@@ -10,4 +10,5 @@ namespace ECS.Domain.Enums
     public enum EyeSide { RIGHT, LEFT, BOTH }
     public enum RecordType { MS21_TRAUMA, MS22_ANTERIOR, MS23_FUNDUS, MS24_GLAUCOMA, MS25_STRABISMUS_PTOSIS, MS26_PEDIATRIC }
     public enum TriageUrgencyLevel { Low, Medium, High, Emergency }
+    public enum RecordStatus { DRAFT = 1, FINALIZED = 2, AMENDED = 3, CANCELLED = 4 }
 }

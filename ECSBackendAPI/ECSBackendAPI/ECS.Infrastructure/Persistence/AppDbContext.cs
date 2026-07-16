@@ -1,15 +1,12 @@
 ﻿using ECS.Domain.Entities.Auth;
 using ECS.Domain.Entities.Clinics;
 using ECS.Domain.Entities.Configurations;
-using ECS.Domain.Entities.EyeExaminations;
 using ECS.Domain.Entities.Feedbacks;
 using ECS.Domain.Entities.MedicalRecords;
 using ECS.Domain.Entities.Notifications;
 using ECS.Domain.Entities.Paraclinical;
 using ECS.Domain.Entities.Patient;
-using ECS.Domain.Entities.Prescriptions;
 using ECS.Domain.Entities.Scheduling;
-using ECS.Domain.Entities.SubspecialtyRecords;
 using Microsoft.EntityFrameworkCore;
 
 namespace ECS.Infrastructure.Persistence
@@ -41,42 +38,16 @@ namespace ECS.Infrastructure.Persistence
         public DbSet<Appointment> Appointments => Set<Appointment>();
         public DbSet<Queue> Queues => Set<Queue>();
 
-        // Medical Records
+        // Medical Records (form data stored as JSON on Cloudinary, only metadata is kept in DB)
         public DbSet<MedicalRecord> MedicalRecords => Set<MedicalRecord>();
-        public DbSet<MedicalRecordExtras> MedicalRecordExtras => Set<MedicalRecordExtras>();
         public DbSet<PreliminaryDiagnosis> PreliminaryDiagnoses => Set<PreliminaryDiagnosis>();
         public DbSet<DocumentAccessPermission> DocumentAccessPermissions => Set<DocumentAccessPermission>();
         public DbSet<EmrExportLog> EmrExportLogs => Set<EmrExportLog>();
 
-        // Eye Examinations (8 tables)
-        public DbSet<EyeExamBasic> EyeExamBasics => Set<EyeExamBasic>();
-        public DbSet<EyeEyelidConjunctiva> EyeEyelidConjunctivae => Set<EyeEyelidConjunctiva>();
-        public DbSet<EyeCornea> EyeCorneas => Set<EyeCornea>();
-        public DbSet<EyeAcIris> EyeAcIrises => Set<EyeAcIris>();
-        public DbSet<EyeLensVitreous> EyeLensVitreouses => Set<EyeLensVitreous>();
-        public DbSet<EyeSclera> EyeScleras => Set<EyeSclera>();
-        public DbSet<EyeFundusDiscMacula> EyeFundusDiscMaculas => Set<EyeFundusDiscMacula>();
-        public DbSet<EyeFundusRetinaVessel> EyeFundusRetinaVessels => Set<EyeFundusRetinaVessel>();
-        public DbSet<EyeOrbit> EyeOrbits => Set<EyeOrbit>();
-        public DbSet<LacrimalRecord> LacrimalRecords => Set<LacrimalRecord>();
-
-        // Paraclinical
+        // Paraclinical (results from instruments / AI predictions)
         public DbSet<OctResult> OctResults => Set<OctResult>();
         public DbSet<VisualFieldTest> VisualFieldTests => Set<VisualFieldTest>();
         public DbSet<UltrasoundEye> UltrasoundEyes => Set<UltrasoundEye>();
-
-        // Subspecialty Records
-        public DbSet<TraumaRecord> TraumaRecords => Set<TraumaRecord>();
-        public DbSet<TraumaSurgery> TraumaSurgeries => Set<TraumaSurgery>();
-        public DbSet<GlaucomaRecord> GlaucomaRecords => Set<GlaucomaRecord>();
-        public DbSet<GlaucomaHistory> GlaucomaHistories => Set<GlaucomaHistory>();
-        public DbSet<StrabismusPtosisRecord> StrabismusPtosisRecords => Set<StrabismusPtosisRecord>();
-        public DbSet<PediatricEyeRecord> PediatricEyeRecords => Set<PediatricEyeRecord>();
-
-        // Prescriptions
-        public DbSet<Prescription> Prescriptions => Set<Prescription>();
-        public DbSet<PrescriptionItem> PrescriptionItems => Set<PrescriptionItem>();
-        public DbSet<GlassesPrescription> GlassesPrescriptions => Set<GlassesPrescription>();
 
         // Feedback
         public DbSet<Feedback> Feedbacks => Set<Feedback>();

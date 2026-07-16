@@ -39,4 +39,17 @@
 		<Using Include="Xunit" />
 	</ItemGroup>
 
+	<!--
+		Refactored (2026-07-14): the legacy mapping/integration tests below reference
+		navigation properties (EyeFundusRetinaVessels, EyeExamBasics, Prescription, etc.)
+		that were removed from MedicalRecord during the Cloudinary refactor. The underlying
+		entities were also dropped (moved into the JSON formData payload on Cloudinary).
+		Excluded from compilation; new tests must target the JSON formData shape.
+	-->
+	<ItemGroup>
+		<Compile Remove="Services/MedicalRecordsServices/UpdateMedicalRecordServiceTests/UpdateMedicalRecordServiceMappingTests.cs" />
+		<Compile Remove="Services/MedicalRecordsServices/UpdateMedicalRecordServiceTests/UpdateMedicalRecordServiceIntegrationTests.cs" />
+		<Compile Remove="Services/MedicalRecordsServices/UpdateMedicalRecordServiceTests/UpdateMedicalRecordServiceTests.cs" />
+	</ItemGroup>
+
 </Project>

@@ -105,7 +105,7 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServi
                     || x.Patient.FullName.ToLower().Contains(searchTerm)
                     || x.AppointmentId.ToString().Contains(searchTerm)
                     || (x.ChiefComplaint != null && x.ChiefComplaint.ToLower().Contains(searchTerm))
-                    || (x.DiagnosisMain != null && x.DiagnosisMain.ToLower().Contains(searchTerm)))
+                    || (x.Summary != null && x.Summary.ToLower().Contains(searchTerm)))
                 && (filterDoctorId == null || x.DoctorId == filterDoctorId.Value);
         }
 
@@ -180,8 +180,8 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServi
                     AppointmentDate = record.Appointment.AppointmentDate,
                     RecordType = record.RecordType.ToString(),
                     ChiefComplaint = record.ChiefComplaint,
-                    DiagnosisMain = record.DiagnosisMain,
-                    TreatmentPlan = record.TreatmentPlan,
+                    DiagnosisMain = record.Summary,
+                    TreatmentPlan = record.Notes,
                     IsLocked = record.IsLocked,
                     CreatedAt = record.CreatedAt,
                     UpdatedAt = record.UpdatedAt,

@@ -3,12 +3,21 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Cr
     /// <summary>
     /// Response DTO confirming patient medical demographics creation.
     /// Based on UC36 - Create Patient Demographics
-    /// Contains only medical/ophthalmology information entered by the doctor.
+    /// Contains both medical/ophthalmology AND updated administrative info.
     /// </summary>
     public class CreatePatientDemographicsResponse
     {
         public Guid PatientProfileId { get; set; }
         public string? PatientName { get; set; }
+        
+        // === Administrative Info (updated by doctor) ===
+        public string? FullName { get; set; }
+        public string? DateOfBirth { get; set; }
+        public string? Gender { get; set; }
+        public string? PhoneNumber { get; set; }
+        public string? IdentityNumber { get; set; }
+        public string? BhytNumber { get; set; }
+        public string? Address { get; set; }
         
         // === Medical Background Section ===
         public string? BloodType { get; set; }

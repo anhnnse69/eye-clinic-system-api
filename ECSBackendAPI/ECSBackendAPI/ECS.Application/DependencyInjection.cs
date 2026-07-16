@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using ECS.Application.Services.AuthServices.ChangePasswordServices;
 using ECS.Application.Services.AuthServices.ForgotPasswordServices;
 using ECS.Application.Services.AuthServices.LoginServices;
@@ -60,6 +60,10 @@ using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordDetailServ
 using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServices;
 using ECS.Application.Services.MedicalRecordsServices.PreliminaryDiagnosisServices;
 using ECS.Application.Services.MedicalRecordsServices.UpdateMedicalRecordServices;
+using ECS.Application.Services.ParaclinicalServices.AiSuggestionServices;
+using ECS.Application.Services.ParaclinicalServices.CreateLabRequestServices;
+using ECS.Application.Services.ParaclinicalServices.GetLabResultsServices;
+using ECS.Application.Services.ParaclinicalServices.UpdateLabResultServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.CancelAppointmentServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.ClinicSlotServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.CreateAppointmentByClinicServices;
@@ -226,6 +230,12 @@ public static class DependencyInjection
         services.AddTransient<IBatchCreateDoctorScheduleService, BatchCreateDoctorScheduleService>();
         services.AddScoped<IRequestPublishClinicService, RequestPublishClinicService>();
         services.AddScoped<IApproveClinicPublicationService, ApproveClinicPublicationService>();
+
+        // Paraclinical (UC42-44) — MongoDB-backed lab requests
+        services.AddScoped<ICreateLabRequestService, CreateLabRequestService>();
+        services.AddScoped<IGetLabResultsService, GetLabResultsService>();
+        services.AddScoped<IUpdateLabResultService, UpdateLabResultService>();
+        services.AddScoped<IAiSuggestService, AiSuggestService>();
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
