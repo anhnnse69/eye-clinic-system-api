@@ -177,8 +177,9 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Cr
         }
 
         /// <summary>
-        /// Updates patient profile with medical demographics data from the request.
-        /// Only updates medical/ophthalmology fields.
+        /// Updates patient profile with administrative and medical demographics data from the request.
+        /// Administrative fields are pre-filled from PatientProfile but can be edited by doctor.
+        /// Medical fields are entered by doctor.
         /// </summary>
         private void UpdatePatientWithMedicalDemographics(CreatePatientDemographicsRequest request, ExecutionState state)
         {
@@ -187,6 +188,42 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Cr
             if (patientProfile == null || state.HasError)
             {
                 return;
+            }
+
+            // === Administrative Info Section (can be edited by doctor) ===
+            if (!string.IsNullOrWhiteSpace(request.FullName))
+            {
+                patientProfile.FullName = request.FullName.Trim();
+            }
+            if (!string.IsNullOrWhiteSpace(request.DateOfBirth))
+            {
+                if (DateTime.TryParse(request.DateOfBirth, out var dob))
+                {
+                    patientProfile.Dob = dob;
+                }
+            }
+            if (!string.IsNullOrWhiteSpace(request.Gender))
+            {
+                if (Enum.TryParse<Gender>(request.Gender, true, out var gender))
+                {
+                    patientProfile.Gender = gender;
+                }
+            }
+            if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
+            {
+                patientProfile.PhoneNumber = request.PhoneNumber.Trim();
+            }
+            if (!string.IsNullOrWhiteSpace(request.IdentityNumber))
+            {
+                patientProfile.IdentityNumber = request.IdentityNumber.Trim();
+            }
+            if (!string.IsNullOrWhiteSpace(request.BhytNumber))
+            {
+                patientProfile.BhytNumber = request.BhytNumber.Trim();
+            }
+            if (!string.IsNullOrWhiteSpace(request.Address))
+            {
+                patientProfile.Address = request.Address.Trim();
             }
 
             // === Medical Background Section ===
@@ -282,14 +319,28 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Cr
             {
                 PatientProfileId = state.PatientProfileId,
                 PatientName = patientProfile?.FullName,
+                
+                // === Administrative Info (updated by doctor) ===
+                FullName = patientProfile?.FullName,
+                DateOfBirth = patientProfile?.Dob.ToString("yyyy-MM-dd"),
+                Gender = patientProfile?.Gender.ToString(),
+                PhoneNumber = patientProfile?.PhoneNumber,
+                IdentityNumber = patientProfile?.IdentityNumber,
+                BhytNumber = patientProfile?.BhytNumber,
+                Address = patientProfile?.Address,
+                
+                // === Medical Background Section ===
                 BloodType = patientProfile?.BloodType,
                 Allergies = patientProfile?.Allergies,
                 MedicalHistory = patientProfile?.MedicalHistory,
                 FamilyHistory = patientProfile?.FamilyHistory,
                 LifestyleFactors = patientProfile?.LifestyleFactors,
+                
+                // === Ophthalmology-specific fields ===
                 CurrentEyeMedications = patientProfile?.CurrentEyeMedications,
                 PreviousEyeSurgery = patientProfile?.PreviousEyeSurgery,
                 EyeVisionHistory = patientProfile?.EyeVisionHistory,
+                
                 CreatedAt = DateTime.UtcNow.ToString("dd/MM/yyyy HH:mm"),
                 IsSuccess = true
             };

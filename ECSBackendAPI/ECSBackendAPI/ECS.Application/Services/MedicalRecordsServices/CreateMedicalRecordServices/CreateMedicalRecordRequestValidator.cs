@@ -1,5 +1,6 @@
-using FluentValidation;
+using System.Text.Json;
 using ECS.Domain.Enums;
+using FluentValidation;
 
 namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordServices
 {
@@ -18,6 +19,14 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
                     .WithErrorCode(GeneralCode.APP_MESSAGE_4019.ToString())
                     .WithMessage(GeneralCode.APP_MESSAGE_4019.ToString());
 
+            RuleFor(x => x.PatientId)
+                .NotEmpty()
+                    .WithErrorCode(GeneralCode.APP_MESSAGE_4003.ToString())
+                    .WithMessage(GeneralCode.APP_MESSAGE_4003.ToString())
+                .Must(BeAValidGuid)
+                    .WithErrorCode(GeneralCode.APP_MESSAGE_4019.ToString())
+                    .WithMessage(GeneralCode.APP_MESSAGE_4019.ToString());
+
             RuleFor(x => x.RecordType)
                 .NotEmpty()
                     .WithErrorCode(GeneralCode.APP_MESSAGE_4003.ToString())
@@ -25,6 +34,11 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
                 .Must(BeAValidRecordType)
                     .WithErrorCode(GeneralCode.APP_MESSAGE_4019.ToString())
                     .WithMessage(GeneralCode.APP_MESSAGE_4019.ToString());
+
+            RuleFor(x => x.FormData)
+                .Must(fd => fd.ValueKind == JsonValueKind.Object)
+                    .WithErrorCode(GeneralCode.APP_MESSAGE_4019.ToString())
+                    .WithMessage("FormData must be a JSON object");
         }
 
         private static bool BeAValidGuid(string value)

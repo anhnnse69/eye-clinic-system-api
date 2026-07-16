@@ -6,7 +6,8 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Cr
     /// <summary>
     /// Validator for patient medical demographics creation request.
     /// Based on UC36 - Create Patient Demographics
-    /// Medical Demographics: All fields are optional (patient info already created by Patient/Receptionist)
+    /// Administrative fields are optional but validated if provided.
+    /// Medical fields are all optional.
     /// </summary>
     public class CreatePatientDemographicsRequestValidator : AbstractValidator<CreatePatientDemographicsRequest>
     {
@@ -20,6 +21,59 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Cr
                 .Must(BeAValidGuid)
                 .WithErrorCode(GeneralCode.APP_MESSAGE_4019.ToString())
                 .WithMessage(GeneralCode.APP_MESSAGE_4019.ToString());
+
+            // === Administrative Fields (Optional, but validated if provided) ===
+            
+            // FullName validation (optional)
+            RuleFor(x => x.FullName)
+                .MaximumLength(100)
+                .When(x => !string.IsNullOrEmpty(x.FullName))
+                .WithErrorCode(GeneralCode.APP_MESSAGE_4019.ToString())
+                .WithMessage(GeneralCode.APP_MESSAGE_4019.ToString());
+
+            // DateOfBirth validation (optional, must be valid date)
+            RuleFor(x => x.DateOfBirth)
+                .Must(BeAValidDateOrEmpty)
+                .When(x => !string.IsNullOrEmpty(x.DateOfBirth))
+                .WithErrorCode(GeneralCode.APP_MESSAGE_4019.ToString())
+                .WithMessage(GeneralCode.APP_MESSAGE_4019.ToString());
+
+            // Gender validation (optional, must be MALE or FEMALE)
+            RuleFor(x => x.Gender)
+                .Must(BeAValidGenderOrEmpty)
+                .When(x => !string.IsNullOrEmpty(x.Gender))
+                .WithErrorCode(GeneralCode.APP_MESSAGE_4019.ToString())
+                .WithMessage(GeneralCode.APP_MESSAGE_4019.ToString());
+
+            // PhoneNumber validation (optional)
+            RuleFor(x => x.PhoneNumber)
+                .MaximumLength(20)
+                .When(x => !string.IsNullOrEmpty(x.PhoneNumber))
+                .WithErrorCode(GeneralCode.APP_MESSAGE_4019.ToString())
+                .WithMessage(GeneralCode.APP_MESSAGE_4019.ToString());
+
+            // IdentityNumber validation (optional)
+            RuleFor(x => x.IdentityNumber)
+                .MaximumLength(20)
+                .When(x => !string.IsNullOrEmpty(x.IdentityNumber))
+                .WithErrorCode(GeneralCode.APP_MESSAGE_4019.ToString())
+                .WithMessage(GeneralCode.APP_MESSAGE_4019.ToString());
+
+            // BhytNumber validation (optional)
+            RuleFor(x => x.BhytNumber)
+                .MaximumLength(20)
+                .When(x => !string.IsNullOrEmpty(x.BhytNumber))
+                .WithErrorCode(GeneralCode.APP_MESSAGE_4019.ToString())
+                .WithMessage(GeneralCode.APP_MESSAGE_4019.ToString());
+
+            // Address validation (optional)
+            RuleFor(x => x.Address)
+                .MaximumLength(500)
+                .When(x => !string.IsNullOrEmpty(x.Address))
+                .WithErrorCode(GeneralCode.APP_MESSAGE_4019.ToString())
+                .WithMessage(GeneralCode.APP_MESSAGE_4019.ToString());
+
+            // === Medical Fields (Optional) ===
 
             // BloodType validation (optional)
             RuleFor(x => x.BloodType)
@@ -81,6 +135,18 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Cr
         private static bool BeAValidGuid(string? value)
         {
             return string.IsNullOrEmpty(value) || Guid.TryParse(value, out _);
+        }
+
+        private static bool BeAValidDateOrEmpty(string? value)
+        {
+            if (string.IsNullOrEmpty(value)) return true;
+            return DateTime.TryParse(value, out _);
+        }
+
+        private static bool BeAValidGenderOrEmpty(string? value)
+        {
+            if (string.IsNullOrEmpty(value)) return true;
+            return Enum.TryParse<Gender>(value, true, out _);
         }
     }
 }

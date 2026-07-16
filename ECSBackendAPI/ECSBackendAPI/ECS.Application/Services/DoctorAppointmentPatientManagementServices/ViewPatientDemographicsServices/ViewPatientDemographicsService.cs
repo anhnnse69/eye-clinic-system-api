@@ -218,7 +218,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
                     DoctorName = r.Doctor.User.FullName,
                     AppointmentDate = r.Appointment.AppointmentDate.ToString("dd/MM/yyyy"),
                     ChiefComplaint = r.ChiefComplaint,
-                    DiagnosisMain = r.DiagnosisMain,
+                    DiagnosisMain = r.Summary,
                     IsLocked = r.IsLocked,
                     HasMedicalDemographics = r.Patient.HasMedicalDemographics,
                     CreatedAt = r.CreatedAt.ToString("dd/MM/yyyy HH:mm")
@@ -259,7 +259,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
             {
                 var searchTerm = request.SearchTerm.Trim().ToLower();
                 query = query.Where(r =>
-                    (r.DiagnosisMain != null && r.DiagnosisMain.ToLower().Contains(searchTerm)) ||
+                    (r.Summary != null && r.Summary.ToLower().Contains(searchTerm)) ||
                     (r.ChiefComplaint != null && r.ChiefComplaint.ToLower().Contains(searchTerm)));
             }
 

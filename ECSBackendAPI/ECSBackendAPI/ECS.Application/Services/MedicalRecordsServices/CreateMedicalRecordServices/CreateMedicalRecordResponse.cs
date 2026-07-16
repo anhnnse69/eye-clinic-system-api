@@ -36,6 +36,12 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
         public string CreatedAt { get; set; } = string.Empty;
 
         /// <summary>
+        /// MongoDB document ID storing the full form payload (Bệnh Án + Khám bệnh).
+        /// Used by GET endpoints to hydrate the JSON.
+        /// </summary>
+        public string? MongoDocumentId { get; set; }
+
+        /// <summary>
         /// Success flag.
         /// </summary>
         public bool IsSuccess { get; set; }

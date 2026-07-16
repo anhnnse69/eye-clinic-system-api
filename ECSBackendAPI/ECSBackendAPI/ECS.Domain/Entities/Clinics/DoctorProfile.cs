@@ -2,7 +2,6 @@
 using ECS.Domain.Entities.Feedbacks;
 using ECS.Domain.Entities.General;
 using ECS.Domain.Entities.MedicalRecords;
-using ECS.Domain.Entities.Prescriptions;
 using ECS.Domain.Entities.Scheduling;
 
 namespace ECS.Domain.Entities.Clinics
@@ -30,8 +29,6 @@ namespace ECS.Domain.Entities.Clinics
         public virtual ICollection<DoctorSchedule>? DoctorSchedules { get; set; }
         public virtual ICollection<Appointment>? Appointments { get; set; }
         public virtual ICollection<MedicalRecord>? MedicalRecords { get; set; }
-        public virtual ICollection<Prescription>? Prescriptions { get; set; }
-        public virtual ICollection<GlassesPrescription>? GlassesPrescriptions { get; set; }
         public virtual ICollection<Feedback>? Feedbacks { get; set; }
     }
 }
