@@ -1,161 +1,292 @@
 using System.Security.Claims;
+using System.Text.Json;
 using ECS.Application.Common.Response;
 using ECS.Domain.Entities.Clinics;
 using ECS.Domain.Entities.MedicalRecords;
 using ECS.Domain.Enums;
 using ECS.Infrastructure.Persistence;
+using ECS.Infrastructure.Persistence.MongoDb;
 using ECS.Infrastructure.Repositories.Interfaces;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using MongoDB.Bson;
+using MongoDB.Driver;
 
 namespace ECS.Application.Services.MedicalRecordsServices.UpdateMedicalRecordServices
 {
     /// <summary>
     /// Service implementation for updating medical records.
-    /// **Refactored (2026-07-14)**: This is the legacy v1 update endpoint. The detailed
-    /// form data (eye exam, subspecialty, prescriptions, etc.) used to be split across
-    /// ~20 navigation collections on <see cref="MedicalRecord"/>. After the Cloudinary
-    /// refactor those entities were dropped; the form data now lives as JSON in a single
-    /// payload on Cloudinary (<see cref="MedicalRecord.RecordDataUrl"/>).
-    ///
-    /// For now this legacy endpoint only updates the core metadata columns of
-    /// <see cref="MedicalRecord"/> (RecordType, Notes, Status). New updates should use the
-    /// v2 endpoint that uploads a new JSON payload to Cloudinary.
+    /// **Refactored (2026-07-20)**: follows the same MongoDB-backed JSON envelope
+    /// pattern as CreateMedicalRecordService. The form payload is stored in MongoDB
+    /// (collection: medical_records); SQL Server keeps relational metadata + pointer.
     /// </summary>
     public class UpdateMedicalRecordService : IUpdateMedicalRecordService
     {
-        private readonly IRepositoryBaseAsync<MedicalRecord, Guid, AppDbContext> _medicalRecordRepository;
+        private readonly IRepositoryQueryBase<MedicalRecord, Guid, AppDbContext> _medicalRecordRepository;
+        private readonly IRepositoryBaseAsync<MedicalRecord, Guid, AppDbContext> _medicalRecordRepositoryAsync;
         private readonly IRepositoryQueryBase<DoctorProfile, Guid, AppDbContext> _doctorRepository;
+        private readonly IMongoDbContext _mongo;
         private readonly IValidator<UpdateMedicalRecordRequest> _validator;
+        private readonly AppDbContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly IServiceProvider _serviceProvider;
 
         public UpdateMedicalRecordService(
-            IRepositoryBaseAsync<MedicalRecord, Guid, AppDbContext> medicalRecordRepository,
+            IRepositoryQueryBase<MedicalRecord, Guid, AppDbContext> medicalRecordRepository,
+            IRepositoryBaseAsync<MedicalRecord, Guid, AppDbContext> medicalRecordRepositoryAsync,
             IRepositoryQueryBase<DoctorProfile, Guid, AppDbContext> doctorRepository,
+            IMongoDbContext mongo,
             IValidator<UpdateMedicalRecordRequest> validator,
-            IHttpContextAccessor httpContextAccessor,
-            IServiceProvider serviceProvider)
+            AppDbContext context,
+            IHttpContextAccessor httpContextAccessor)
         {
             _medicalRecordRepository = medicalRecordRepository;
+            _medicalRecordRepositoryAsync = medicalRecordRepositoryAsync;
             _doctorRepository = doctorRepository;
+            _mongo = mongo;
             _validator = validator;
+            _context = context;
             _httpContextAccessor = httpContextAccessor;
-            _serviceProvider = serviceProvider;
         }
 
         public async Task<ApiResponse<UpdateMedicalRecordResponse>> Process(Guid recordId, UpdateMedicalRecordRequest request)
         {
             var state = new ExecutionState();
 
-            try
-            {
-                // Validation (now no-op for v1 since most fields were removed from entity)
-                var validation = await _validator.ValidateAsync(request);
-                if (!validation.IsValid)
-                {
-                    state.HasError = true;
-                    state.ErrorCode = GeneralCode.APP_MESSAGE_4019.ToString();
-                    return CreateResponse(state);
-                }
+            // 1. Validate
+            ValidateRequest(request, state);
 
-                var record = await FetchMedicalRecordAsync(recordId);
-                if (record == null)
-                {
-                    state.HasError = true;
-                    state.ErrorCode = GeneralCode.APP_MESSAGE_4004.ToString();
-                    return CreateResponse(state);
-                }
-                state.MedicalRecord = record;
+            // 2. Extract user from JWT
+            RetrieveAuthenticatedUserId(state);
 
-                // Only metadata fields are still on the entity — update those.
-                if (!string.IsNullOrEmpty(request.RecordType))
-                {
-                    if (Enum.TryParse<RecordType>(request.RecordType, true, out var rt))
-                    {
-                        record.RecordType = rt;
-                    }
-                }
-                if (request.Notes != null) record.Notes = request.Notes;
-                if (request.Summary != null) record.Summary = request.Summary;
-                record.UpdatedAt = DateTime.UtcNow;
+            // 3. Fetch existing MedicalRecord
+            await FetchMedicalRecordAsync(recordId, state);
 
-                state.IsExecutionSuccess = true;
-                await PersistChangesAsync(state);
-            }
-            catch (Exception)
-            {
-                state.HasError = true;
-                state.ErrorCode = GeneralCode.APP_MESSAGE_5001.ToString();
-            }
+            // 4. Verify doctor ownership
+            await VerifyDoctorOwnershipAsync(state);
+
+            // 5. Check record is not locked
+            CheckRecordLockStatus(state);
+
+            // 6. Update dual-storage (MongoDB + SQL)
+            await UpdateMedicalRecordAsync(request, state);
 
             return CreateResponse(state);
         }
 
-        /// <summary>
-        /// Fetches the medical record (only core navigation: Patient, Doctor, Appointment)
-        /// since all eye exam/subspecialty navigation collections have been dropped.
-        /// </summary>
-        private async Task<MedicalRecord?> FetchMedicalRecordAsync(Guid recordId)
+        // ────────────────────────────────────────────────────────────
+        // Execution state
+        // ────────────────────────────────────────────────────────────
+        private class ExecutionState
         {
-            return await _medicalRecordRepository
-                .FindByCondition(r => r.Id == recordId)
-                .Include(r => r.Appointment)
-                .Include(r => r.Patient)
-                .Include(r => r.Doctor)
-                .Include(r => r.DocumentAccessPermissions)
-                .FirstOrDefaultAsync();
+            public bool HasError { get; set; }
+            public string? ErrorCode { get; set; }
+
+            public Guid ActiveUserId { get; set; }
+            public MedicalRecord? MedicalRecord { get; set; }
+            public DoctorProfile? DoctorProfile { get; set; }
+
+            public string? PatientName { get; set; }
+            public string? DoctorName { get; set; }
+            public string? RecordTypeLabel { get; set; }
         }
 
-        private async Task PersistChangesAsync(ExecutionState state)
+        // ────────────────────────────────────────────────────────────
+        // Steps
+        // ────────────────────────────────────────────────────────────
+        private void ValidateRequest(UpdateMedicalRecordRequest request, ExecutionState state)
+        {
+            var result = _validator.Validate(request);
+            state.HasError = !result.IsValid;
+            if (!result.IsValid)
+            {
+                state.ErrorCode = GeneralCode.APP_MESSAGE_4019.ToString();
+            }
+        }
+
+        private void RetrieveAuthenticatedUserId(ExecutionState state)
+        {
+            if (state.HasError) return;
+            var principalIdValue = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var parseResult = Guid.TryParse(principalIdValue, out var parsedUserId);
+            state.ActiveUserId = parseResult ? parsedUserId : Guid.Empty;
+            state.HasError = !parseResult;
+            state.ErrorCode = parseResult ? state.ErrorCode : GeneralCode.APP_MESSAGE_4033.ToString();
+        }
+
+        private async Task FetchMedicalRecordAsync(Guid recordId, ExecutionState state)
+        {
+            if (state.HasError) return;
+
+            var record = await _medicalRecordRepository
+                .FindByCondition(r => r.Id == recordId, trackChanges: false)
+                .Include(r => r.Appointment)
+                .ThenInclude(a => a.Patient)
+                .Include(r => r.Doctor)
+                .ThenInclude(d => d.User)
+                .FirstOrDefaultAsync();
+
+            state.MedicalRecord = record;
+            state.PatientName = record?.Appointment?.Patient?.FullName;
+            state.DoctorName = record?.Doctor?.User?.FullName;
+
+            if (record == null)
+            {
+                state.HasError = true;
+                state.ErrorCode = GeneralCode.APP_MESSAGE_4004.ToString();
+            }
+        }
+
+        private async Task VerifyDoctorOwnershipAsync(ExecutionState state)
         {
             if (state.HasError || state.MedicalRecord == null) return;
 
+            var doctorProfile = await _doctorRepository
+                .FindByCondition(d => d.UserId == state.ActiveUserId && d.IsActive, trackChanges: false)
+                .Include(d => d.User)
+                .FirstOrDefaultAsync();
+
+            state.DoctorProfile = doctorProfile;
+
+            // Only the doctor who created the record can update it
+            if (doctorProfile == null)
+            {
+                state.HasError = true;
+                state.ErrorCode = GeneralCode.APP_MESSAGE_4011.ToString();
+                return;
+            }
+
+            if (state.MedicalRecord.DoctorId != doctorProfile.Id)
+            {
+                state.HasError = true;
+                state.ErrorCode = GeneralCode.APP_MESSAGE_4014.ToString();
+            }
+        }
+
+        private void CheckRecordLockStatus(ExecutionState state)
+        {
+            if (state.HasError || state.MedicalRecord == null) return;
+
+            if (state.MedicalRecord.IsLocked)
+            {
+                state.HasError = true;
+                state.ErrorCode = GeneralCode.APP_MESSAGE_4028.ToString();
+            }
+        }
+
+        private async Task UpdateMedicalRecordAsync(UpdateMedicalRecordRequest request, ExecutionState state)
+        {
+            if (state.HasError || state.MedicalRecord == null) return;
+
+            var record = state.MedicalRecord;
+
+            // ─── Serialize form data ────────────────────────────────
+            var jsonContent = JsonSerializer.Serialize(request.FormData, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = false
+            });
+
+            // ─── Parse JSON → BsonDocument ────────────────────────
+            BsonDocument formDataBson;
             try
             {
-                await _medicalRecordRepository.SaveChangesAsync();
-                state.IsExecutionSuccess = true;
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                state.HasConcurrencyError = true;
-                state.HasError = true;
-                state.IsExecutionSuccess = false;
-                state.ErrorCode = GeneralCode.APP_MESSAGE_5001.ToString();
+                formDataBson = BsonDocument.Parse(jsonContent);
             }
             catch (Exception)
             {
                 state.HasError = true;
-                state.IsExecutionSuccess = false;
+                state.ErrorCode = GeneralCode.APP_MESSAGE_4019.ToString();
+                return;
+            }
+
+            var newChecksum = MongoDbContext.ComputeSha256(jsonContent);
+            var newSizeBytes = System.Text.Encoding.UTF8.GetByteCount(jsonContent);
+            var now = DateTime.UtcNow;
+
+            // ─── Update MongoDB document ───────────────────────────
+            var mongoFilter = MongoDB.Driver.Builders<MedicalRecordDocument>.Filter.Eq(x => x.Id, record.MongoDocumentId);
+            var mongoUpdate = MongoDB.Driver.Builders<MedicalRecordDocument>.Update
+                .Set(x => x.FormData, formDataBson)
+                .Set(x => x.Sha256Checksum, newChecksum)
+                .Set(x => x.SizeBytes, newSizeBytes)
+                .Set(x => x.UpdatedAt, now)
+                .Inc(x => x.Version, 1);
+
+            UpdateResult mongoResult;
+            try
+            {
+                mongoResult = await _mongo.MedicalRecords.UpdateOneAsync(mongoFilter, mongoUpdate);
+
+                if (mongoResult.MatchedCount == 0)
+                {
+                    state.HasError = true;
+                    state.ErrorCode = GeneralCode.APP_MESSAGE_4004.ToString();
+                    return;
+                }
+            }
+            catch (Exception)
+            {
+                state.HasError = true;
+                state.ErrorCode = GeneralCode.APP_MESSAGE_5001.ToString();
+                return;
+            }
+
+            // ─── Update SQL metadata ───────────────────────────────
+            record.Notes = request.Notes ?? record.Notes;
+            record.ChiefComplaint = ExtractChiefComplaint(request.FormData);
+            record.Summary = ExtractSummary(request.FormData);
+            record.UpdatedAt = now;
+            record.RecordDataVersion += 1;
+            record.RecordDataChecksum = newChecksum;
+            record.RecordDataSizeBytes = newSizeBytes;
+
+            _context.MedicalRecords.Update(record);
+
+            try
+            {
+                await _context.SaveChangesAsync();
+                state.RecordTypeLabel = GetRecordTypeLabel(record.RecordType);
+            }
+            catch (Exception)
+            {
+                // Roll back MongoDB update so data stays consistent
+                try
+                {
+                    var revertUpdate = MongoDB.Driver.Builders<MedicalRecordDocument>.Update
+                        .Set(x => x.UpdatedAt, record.UpdatedAt)
+                        .Set(x => x.Version, record.RecordDataVersion - 1);
+                    await _mongo.MedicalRecords.UpdateOneAsync(mongoFilter, revertUpdate);
+                }
+                catch
+                {
+                    /* swallow secondary rollback failure */
+                }
+
+                state.HasError = true;
                 state.ErrorCode = GeneralCode.APP_MESSAGE_5001.ToString();
             }
         }
 
-        private static ApiResponse<UpdateMedicalRecordResponse> CreateResponse(ExecutionState state)
+        // ────────────────────────────────────────────────────────────
+        // Helpers
+        // ────────────────────────────────────────────────────────────
+        private static string? ExtractChiefComplaint(JsonElement formData)
         {
-            if (state.HasConcurrencyError)
-            {
-                return ApiResponse<UpdateMedicalRecordResponse>.Fail(GeneralCode.APP_MESSAGE_5001.ToString());
-            }
+            if (formData.ValueKind != JsonValueKind.Object) return null;
+            if (!formData.TryGetProperty("benhAn", out var benhAn)) return null;
+            if (!benhAn.TryGetProperty("lyDoVaoVien", out var lyDo)) return null;
+            return lyDo.ValueKind == JsonValueKind.String ? lyDo.GetString() : null;
+        }
 
-            if (state.HasError)
-            {
-                return ApiResponse<UpdateMedicalRecordResponse>.Fail(state.ErrorCode ?? GeneralCode.APP_MESSAGE_5001.ToString());
-            }
-
-            var response = new UpdateMedicalRecordResponse
-            {
-                MedicalRecordId = state.MedicalRecord?.Id.ToString() ?? string.Empty,
-                PatientName = state.PatientName,
-                RecordTypeLabel = state.RecordTypeLabel ?? GetRecordTypeLabel(state.MedicalRecord?.RecordType ?? RecordType.MS23_FUNDUS),
-                AppointmentDate = state.MedicalRecord?.Appointment?.AppointmentDate.ToString("dd/MM/yyyy"),
-                DoctorName = state.DoctorName,
-                UpdatedAt = DateTime.UtcNow.ToString("dd/MM/yyyy HH:mm"),
-                IsSuccess = true
-            };
-
-            return ApiResponse<UpdateMedicalRecordResponse>.Success(GeneralCode.APP_MESSAGE_2006.ToString(), response);
+        private static string? ExtractSummary(JsonElement formData)
+        {
+            if (formData.ValueKind != JsonValueKind.Object) return null;
+            if (!formData.TryGetProperty("benhAn", out var benhAn)) return null;
+            if (benhAn.TryGetProperty("summary", out var sum) && sum.ValueKind == JsonValueKind.String)
+                return sum.GetString();
+            var lyDo = ExtractChiefComplaint(formData);
+            return lyDo is { Length: > 0 } ? lyDo[..Math.Min(200, lyDo.Length)] : null;
         }
 
         private static string GetRecordTypeLabel(RecordType recordType)
@@ -171,20 +302,27 @@ namespace ECS.Application.Services.MedicalRecordsServices.UpdateMedicalRecordSer
                 _ => recordType.ToString()
             };
         }
-    }
 
-    /// <summary>
-    /// Internal execution state for the v1 update flow.
-    /// </summary>
-    internal class ExecutionState
-    {
-        public MedicalRecord? MedicalRecord { get; set; }
-        public string? PatientName { get; set; }
-        public string? DoctorName { get; set; }
-        public string? RecordTypeLabel { get; set; }
-        public bool HasError { get; set; }
-        public bool HasConcurrencyError { get; set; }
-        public bool IsExecutionSuccess { get; set; }
-        public string? ErrorCode { get; set; }
+        private ApiResponse<UpdateMedicalRecordResponse> CreateResponse(ExecutionState state)
+        {
+            if (state.HasError)
+            {
+                return ApiResponse<UpdateMedicalRecordResponse>.Fail(
+                    state.ErrorCode ?? GeneralCode.APP_MESSAGE_4001.ToString());
+            }
+
+            var response = new UpdateMedicalRecordResponse
+            {
+                MedicalRecordId = state.MedicalRecord?.Id.ToString() ?? string.Empty,
+                PatientName = state.PatientName,
+                RecordTypeLabel = state.RecordTypeLabel,
+                AppointmentDate = state.MedicalRecord?.Appointment?.AppointmentDate.ToString("dd/MM/yyyy"),
+                DoctorName = state.DoctorName,
+                UpdatedAt = DateTime.UtcNow.ToString("dd/MM/yyyy HH:mm"),
+                IsSuccess = true
+            };
+
+            return ApiResponse<UpdateMedicalRecordResponse>.Success(GeneralCode.APP_MESSAGE_2006.ToString(), response);
+        }
     }
 }

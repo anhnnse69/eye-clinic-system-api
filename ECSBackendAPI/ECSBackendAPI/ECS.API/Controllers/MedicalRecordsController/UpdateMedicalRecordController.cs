@@ -9,9 +9,11 @@ namespace ECS.API.Controllers.MedicalRecordsController
     /// <summary>
     /// Handles medical record update endpoints.
     /// UC41 - Edit Medical Record
+    /// **Refactored (2026-07-20)**: follows the same MongoDB-backed JSON envelope
+    /// pattern as CreateMedicalRecordController.
     /// </summary>
     [ApiController]
-    [Route("api/v1/medical-records")]
+    [Route("api/v1/doctor-appointment/medical-record")]
     [Authorize(Roles = "DOCTOR")]
     public class UpdateMedicalRecordController : ControllerBase
     {
@@ -53,7 +55,7 @@ namespace ECS.API.Controllers.MedicalRecordsController
                 return Ok(result);
             }
             var codeMessage = result.CodeMessage;
-            if (codeMessage.Contains(GeneralCode.APP_MESSAGE_4028.ToString()) ||
+            if (codeMessage.Contains(GeneralCode.APP_MESSAGE_4004.ToString()) ||
                 codeMessage.Contains("not found", StringComparison.OrdinalIgnoreCase))
             {
                 return NotFound(result);
@@ -62,6 +64,10 @@ namespace ECS.API.Controllers.MedicalRecordsController
                 codeMessage.Contains("forbidden", StringComparison.OrdinalIgnoreCase))
             {
                 return StatusCode(StatusCodes.Status403Forbidden, result);
+            }
+            if (codeMessage.Contains(GeneralCode.APP_MESSAGE_4028.ToString()))
+            {
+                return BadRequest(result);
             }
             if (codeMessage.Contains(GeneralCode.APP_MESSAGE_5001.ToString()))
             {

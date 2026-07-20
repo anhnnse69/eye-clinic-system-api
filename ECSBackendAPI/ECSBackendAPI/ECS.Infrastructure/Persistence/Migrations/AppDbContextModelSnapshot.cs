@@ -867,6 +867,10 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("is_locked");
 
+                    b.Property<string>("MongoDocumentId")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("mongo_document_id");
+
                     b.Property<string>("Notes")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("notes");
