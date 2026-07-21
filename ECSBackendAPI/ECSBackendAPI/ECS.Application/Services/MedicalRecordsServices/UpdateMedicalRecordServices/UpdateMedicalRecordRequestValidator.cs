@@ -1,5 +1,6 @@
-using FluentValidation;
+using System.Text.Json;
 using ECS.Domain.Enums;
+using FluentValidation;
 
 namespace ECS.Application.Services.MedicalRecordsServices.UpdateMedicalRecordServices
 {
@@ -10,24 +11,10 @@ namespace ECS.Application.Services.MedicalRecordsServices.UpdateMedicalRecordSer
     {
         public UpdateMedicalRecordRequestValidator()
         {
-            RuleFor(x => x.RecordType)
-                .Must(BeAValidRecordTypeOrEmpty)
-                .When(x => !string.IsNullOrEmpty(x.RecordType))
+            RuleFor(x => x.FormData)
+                .Must(fd => fd.ValueKind == JsonValueKind.Object)
                     .WithErrorCode(GeneralCode.APP_MESSAGE_4019.ToString())
-                    .WithMessage(GeneralCode.APP_MESSAGE_4019.ToString());
-
-            RuleFor(x => x.DiagnosisMain)
-                .NotEmpty()
-                    .When(x => x.DiagnosisMain != null)
-                    .WithErrorCode(GeneralCode.APP_MESSAGE_4019.ToString())
-                    .WithMessage(GeneralCode.APP_MESSAGE_4019.ToString())
-                .WithMessage("Primary diagnosis cannot be cleared when updating medical record");
-        }
-
-        private static bool BeAValidRecordTypeOrEmpty(string value)
-        {
-            if (string.IsNullOrEmpty(value)) return true;
-            return Enum.TryParse<RecordType>(value, true, out _);
+                    .WithMessage("FormData must be a JSON object");
         }
     }
 }

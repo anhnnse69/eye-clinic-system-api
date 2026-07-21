@@ -115,7 +115,7 @@ namespace ECS.Application.Services.AuthServices.LoginServices
             return await _userRepository
                 .FindByCondition(x =>
                     x.Email != null &&
-                    x.Email.ToLower() == emailAddress &&
+                    x.Email == emailAddress &&
                     x.IsActive)
                 .FirstOrDefaultAsync();
         }

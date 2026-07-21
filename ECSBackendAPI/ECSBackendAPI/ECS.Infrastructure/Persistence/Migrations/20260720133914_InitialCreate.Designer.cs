@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ECS.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260714035654_RemoveAndUpdateMedicalRecord")]
-    partial class RemoveAndUpdateMedicalRecord
+    [Migration("20260720133914_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -869,6 +869,10 @@ namespace ECS.Infrastructure.Persistence.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(false)
                         .HasColumnName("is_locked");
+
+                    b.Property<string>("MongoDocumentId")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("mongo_document_id");
 
                     b.Property<string>("Notes")
                         .HasColumnType("nvarchar(max)")
