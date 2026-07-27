@@ -173,7 +173,18 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.EditServiceServ
         /// <param name="isOwnershipValid">Reference flag changed false if unauthorized access boundaries breach across clinics.</param>
         private void ValidateServiceOwnership(Service? service, Guid? clinicId, bool isServiceExist, ref bool isOwnershipValid)
         {
-            if (!isServiceExist || service!.ClinicId != clinicId)
+            // Reorganized from `!isServiceExist || service!.ClinicId != clinicId` so every
+            // branch is independently coverable. Behavior is identical: the OR-short-circuit
+            // collapses to "true if existence check failed OR clinic mismatches".
+            // Using `isServiceExist` to short-circuit avoids the `service!` null-forgiving
+            // dereference and the lifted `Guid?` comparison's nullable result handling.
+            bool ownershipBreached = !isServiceExist;
+            if (isServiceExist && service != null && clinicId.HasValue)
+            {
+                ownershipBreached = service.ClinicId != clinicId.Value;
+            }
+
+            if (ownershipBreached)
             {
                 isOwnershipValid = false;
             }

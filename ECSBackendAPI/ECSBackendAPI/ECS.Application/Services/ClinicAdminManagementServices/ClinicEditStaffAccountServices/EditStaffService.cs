@@ -266,7 +266,7 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.EditStaffAccoun
 
             return ApiResponse<EditStaffResponse>.Success(
                 GeneralCode.APP_MESSAGE_2006.ToString(),
-                MapToResponse(coreUser!, operationalNode!));
+                MapToResponse(coreUser!, operationalNode));
         }
 
         private ApiResponse<EditStaffResponse>? FilterSystemicValidationFailures(
@@ -285,7 +285,7 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.EditStaffAccoun
             return null;
         }
 
-        private EditStaffResponse MapToResponse(User accountSource, StaffClinic allocationLink)
+        private EditStaffResponse MapToResponse(User accountSource, StaffClinic? allocationLink)
         {
             return new EditStaffResponse
             {
@@ -294,7 +294,7 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.EditStaffAccoun
                 Email = accountSource.Email,
                 FullName = accountSource.FullName,
                 IsActive = accountSource.IsActive,
-                UpdatedRole = allocationLink.Role.ToString()
+                UpdatedRole = allocationLink?.Role.ToString() ?? accountSource.Role.ToString()
             };
         }
     }

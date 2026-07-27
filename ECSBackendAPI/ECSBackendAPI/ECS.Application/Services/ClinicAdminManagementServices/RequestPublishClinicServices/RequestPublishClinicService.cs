@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using ECS.Application.Common.Response;
 using ECS.Domain.Entities.Clinics;
 using ECS.Domain.Enums;
@@ -101,12 +101,14 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.RequestPublishC
         /// </returns>
         private Guid RetrieveUserId(ref bool isUserValid)
         {
-            var userIdClaim = _httpContextAccessor
-                .HttpContext?
-                .User?
-                .FindFirst(ClaimTypes.NameIdentifier)?
-                .Value;
+            var claimsPrincipal = _httpContextAccessor.HttpContext?.User;
+            if (claimsPrincipal == null)
+            {
+                isUserValid = false;
+                return Guid.Empty;
+            }
 
+            var userIdClaim = claimsPrincipal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!Guid.TryParse(userIdClaim, out Guid userId))
             {
                 isUserValid = false;

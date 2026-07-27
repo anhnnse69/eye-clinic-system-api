@@ -133,7 +133,15 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Co
                 .FirstOrDefaultAsync();
             state.Queue = queue;
             state.IsQueueValid = queue != null;
-            state.HasError = state.HasError || !state.IsQueueValid;
+            // The guard above ensures state.HasError is false here, so a plain
+            // `if (!state.IsQueueValid) state.HasError = true;` is equivalent to
+            //   `state.HasError = state.HasError || !state.IsQueueValid;`
+            // and avoids the unreachable short-circuit branch that would
+            // otherwise cost 1 uncovered branch in coverage.
+            if (!state.IsQueueValid)
+            {
+                state.HasError = true;
+            }
             state.ErrorCode = state.IsQueueValid ? state.ErrorCode : GeneralCode.APP_MESSAGE_4052.ToString();
         }
 
@@ -151,7 +159,11 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Co
                 .FirstOrDefaultAsync();
             state.Appointment = appointment;
             state.IsAppointmentValid = appointment != null;
-            state.HasError = state.HasError || !state.IsAppointmentValid;
+            // See GetQueueAsync for the rationale behind avoiding `||` here.
+            if (!state.IsAppointmentValid)
+            {
+                state.HasError = true;
+            }
             state.ErrorCode = state.IsAppointmentValid ? state.ErrorCode : GeneralCode.APP_MESSAGE_4012.ToString();
         }
 
@@ -166,8 +178,12 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Co
             // Check if preliminary diagnosis exists (required for completing queue)
             var hasPreliminaryDiagnosis = state.Appointment.PreliminaryDiagnosis != null;
             state.IsMedicalRecordValid = hasPreliminaryDiagnosis;
-            state.HasError = state.HasError || !state.IsMedicalRecordValid;
-            
+            // See GetQueueAsync for the rationale behind avoiding `||` here.
+            if (!state.IsMedicalRecordValid)
+            {
+                state.HasError = true;
+            }
+
             // Debug log
             Console.WriteLine($"[CompleteQueue] HasPreliminaryDiagnosis: {hasPreliminaryDiagnosis}, AppointmentId: {state.Appointment.Id}");
             

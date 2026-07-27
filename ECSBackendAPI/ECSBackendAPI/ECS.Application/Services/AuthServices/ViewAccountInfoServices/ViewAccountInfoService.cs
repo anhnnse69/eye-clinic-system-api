@@ -30,11 +30,13 @@ namespace ECS.Application.Services.AuthServices.ViewAccountInfoServices
         }
 
         /// <summary>
-        /// Processes the view account info request by validating the user id and returning account details.
+        /// Coordinates the four-step account lookup workflow: request validation, active-user retrieval,
+        /// user-existence evaluation, and API response construction.
         /// </summary>
         /// <param name="viewAccountInfoRequest">The request containing the user id from JWT.</param>
         /// <returns>An <see cref="ApiResponse{ViewAccountInfoResponse}"/> containing account details or an error code.</returns>
-        public async Task<ApiResponse<ViewAccountInfoResponse>> Process(ViewAccountInfoRequest viewAccountInfoRequest)
+        public async Task<ApiResponse<ViewAccountInfoResponse>> Process(
+            ViewAccountInfoRequest viewAccountInfoRequest)
         {
             // Initialize status tracking flags
             bool isValidationPassed = true;
@@ -51,50 +53,33 @@ namespace ECS.Application.Services.AuthServices.ViewAccountInfoServices
         }
 
         /// <summary>
-        /// Validates the incoming request payload against defined business rules.
+        /// Validates the request and writes the resulting pass/fail state and validation code
+        /// into the workflow state supplied by <see cref="Process"/>.
         /// </summary>
         /// <param name="viewAccountInfoRequest">The request payload to validate.</param>
-        /// <param name="isValidationPassed">Flag updated to <c>false</c> if validation fails.</param>
-        /// <param name="validationErrorCode">Stores the first validation error code encountered.</param>
+        /// <param name="isValidationPassed">The workflow flag updated with the validation result.</param>
+        /// <param name="validationErrorCode">The first validation error code, when validation fails.</param>
         private void ValidateRequest(
             ViewAccountInfoRequest viewAccountInfoRequest,
             ref bool isValidationPassed,
             ref string? validationErrorCode)
         {
             var result = _validator.Validate(viewAccountInfoRequest);
-            if (!result.IsValid)
+            var validationState = result.IsValid switch
             {
-                isValidationPassed = false;
-                validationErrorCode = result.Errors.First().ErrorCode;
-            }
+                true => (IsPassed: true, ErrorCode: (string?)null),
+                false => (IsPassed: false, ErrorCode: result.Errors.First().ErrorCode)
+            };
+
+            isValidationPassed = validationState.IsPassed;
+            validationErrorCode = validationState.ErrorCode;
         }
 
         /// <summary>
-        /// Validates the retrieved user existence.
+        /// Queries the repository for the active user identified by the request.
         /// </summary>
-        /// <param name="retrievedUser">The user entity retrieved from the database, or <c>null</c> if not found.</param>
-        /// <param name="isUserFound">Flag updated to <c>false</c> if user is not found.</param>
-        /// <param name="isValidationPassed">Precondition flag indicating if request validation succeeded.</param>
-        private void ValidateUser(
-            User? retrievedUser,
-            ref bool isUserFound,
-            bool isValidationPassed)
-        {
-            if (!isValidationPassed)
-            {
-                return;
-            }
-            if (retrievedUser == null)
-            {
-                isUserFound = false;
-            }
-        }
-
-        /// <summary>
-        /// Queries the repository for an active user matching the given id.
-        /// </summary>
-        /// <param name="userId">The user id to search for.</param>
-        /// <returns>The matching <see cref="User"/> if found and active; otherwise <c>null</c>.</returns>
+        /// <param name="userId">The user identifier extracted from the request.</param>
+        /// <returns>The matching active user, or <see langword="null"/> when no match exists.</returns>
         private async Task<User?> RetrieveUserData(Guid userId)
         {
             return await _userRepository
@@ -103,58 +88,55 @@ namespace ECS.Application.Services.AuthServices.ViewAccountInfoServices
         }
 
         /// <summary>
-        /// Generates an API response payload based on validation status flags.
+        /// Resolves whether the retrieved user should be treated as found for the workflow.
+        /// Invalid requests preserve the initial found state so response selection remains
+        /// controlled by the validation result.
         /// </summary>
-        /// <param name="retrievedUser">The resolved user entity instance.</param>
-        /// <param name="isValidationPassed">Indicates whether request format validation succeeded.</param>
-        /// <param name="isUserFound">Indicates whether the user was located.</param>
-        /// <param name="validationErrorCode">The error code from validation failure, if any.</param>
-        /// <returns>A configured <see cref="ApiResponse{ViewAccountInfoResponse}"/>.</returns>
-        private ApiResponse<ViewAccountInfoResponse> CreateResponse(
+        /// <param name="retrievedUser">The active user returned by the repository.</param>
+        /// <param name="isUserFound">The workflow flag updated with the user-existence result.</param>
+        /// <param name="isValidationPassed">The request validation state.</param>
+        private static void ValidateUser(
+            User? retrievedUser,
+            ref bool isUserFound,
+            bool isValidationPassed)
+        {
+            isUserFound = (isValidationPassed, retrievedUser) switch
+            {
+                (false, _) => true,
+                (true, null) => false,
+                _ => true
+            };
+        }
+
+        /// <summary>
+        /// Selects the API response variant from validation and user-existence state.
+        /// </summary>
+        /// <param name="retrievedUser">The user used to build a successful response.</param>
+        /// <param name="isValidationPassed">Whether request validation succeeded.</param>
+        /// <param name="isUserFound">Whether an active user was retrieved.</param>
+        /// <param name="validationErrorCode">The validation error code, when applicable.</param>
+        /// <returns>A validation error, user-not-found error, or mapped success response.</returns>
+        private static ApiResponse<ViewAccountInfoResponse> CreateResponse(
             User? retrievedUser,
             bool isValidationPassed,
             bool isUserFound,
             string? validationErrorCode)
         {
-            var errorResponse = CreateErrorResponse(
-                isValidationPassed, isUserFound, validationErrorCode);
-            if (errorResponse != null)
+            return (isValidationPassed, isUserFound) switch
             {
-                return errorResponse;
-            }
-            return CreateSuccessResponse(retrievedUser!);
+                (false, _) => ApiResponse<ViewAccountInfoResponse>.Fail(validationErrorCode!),
+                (true, false) => ApiResponse<ViewAccountInfoResponse>.Fail(
+                    GeneralCode.APP_MESSAGE_4020.ToString()),
+                _ => CreateSuccessResponse(retrievedUser!)
+            };
         }
 
         /// <summary>
-        /// Creates an error response based on validation failure flags.
+        /// Maps the user entity into the account-information payload and wraps it in a success response.
         /// </summary>
-        /// <param name="isValidationPassed">Indicates whether request validation succeeded.</param>
-        /// <param name="isUserFound">Indicates whether the user was located.</param>
-        /// <param name="validationErrorCode">The error code from validation failure.</param>
-        /// <returns>A failed <see cref="ApiResponse{ViewAccountInfoResponse}"/> variant if errors are found; otherwise <c>null</c>.</returns>
-        private ApiResponse<ViewAccountInfoResponse>? CreateErrorResponse(
-            bool isValidationPassed,
-            bool isUserFound,
-            string? validationErrorCode)
-        {
-            if (!isValidationPassed)
-            {
-                return ApiResponse<ViewAccountInfoResponse>.Fail(validationErrorCode!);
-            }
-            if (!isUserFound)
-            {
-                return ApiResponse<ViewAccountInfoResponse>.Fail(
-                    GeneralCode.APP_MESSAGE_4020.ToString());
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// Creates a success response containing the account information.
-        /// </summary>
-        /// <param name="user">The authenticated user entity.</param>
-        /// <returns>A success <see cref="ApiResponse{ViewAccountInfoResponse}"/> with the account payload.</returns>
-        private ApiResponse<ViewAccountInfoResponse> CreateSuccessResponse(User user)
+        /// <param name="user">The active user entity to map.</param>
+        /// <returns>A success response containing the mapped account information.</returns>
+        private static ApiResponse<ViewAccountInfoResponse> CreateSuccessResponse(User user)
         {
             var response = new ViewAccountInfoResponse
             {
@@ -168,6 +150,7 @@ namespace ECS.Application.Services.AuthServices.ViewAccountInfoServices
                 CreatedAt = user.CreatedAt,
                 UpdatedAt = user.UpdatedAt
             };
+
             return ApiResponse<ViewAccountInfoResponse>.Success(
                 GeneralCode.APP_MESSAGE_2000.ToString(),
                 response);

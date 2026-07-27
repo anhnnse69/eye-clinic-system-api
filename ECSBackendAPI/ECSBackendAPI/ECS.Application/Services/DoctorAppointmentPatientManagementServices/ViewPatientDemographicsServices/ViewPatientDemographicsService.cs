@@ -1,4 +1,3 @@
-using System.Linq.Expressions;
 using ECS.Application.Common.Response;
 using ECS.Domain.Entities.Clinics;
 using ECS.Domain.Entities.MedicalRecords;
@@ -98,11 +97,15 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
         /// </summary>
         private Guid RetrieveUserId(ref bool isDataScopeExist)
         {
-            var userIdClaim = _httpContextAccessor
-                .HttpContext?
-                .User
-                .FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?
-                .Value;
+            var httpContext = _httpContextAccessor.HttpContext;
+            if (httpContext == null)
+            {
+                isDataScopeExist = false;
+                return Guid.Empty;
+            }
+
+            var claim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            var userIdClaim = claim != null ? claim.Value : null;
 
             if (!Guid.TryParse(userIdClaim, out Guid userId))
             {
@@ -120,11 +123,9 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
         {
             if (!isDataScopeExist) return new List<Guid>();
 
-            var roleClaim = _httpContextAccessor
-                .HttpContext?
-                .User
-                .FindFirst(System.Security.Claims.ClaimTypes.Role)?
-                .Value;
+            var httpContext = _httpContextAccessor.HttpContext!;
+            var roleClaimObj = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.Role);
+            var roleClaim = roleClaimObj != null ? roleClaimObj.Value : null;
 
             if (string.Equals(roleClaim, "DOCTOR", StringComparison.OrdinalIgnoreCase))
             {
@@ -148,7 +149,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
                 .Select(x => x.Id)
                 .ToListAsync();
 
-            var linkedPatientIds = await _context.Set<ECS.Domain.Entities.Patient.UserPatient>()
+            var linkedPatientIds = await _context.Set<UserPatient>()
                 .AsNoTracking()
                 .Where(x => x.UserId == userId)
                 .Select(x => x.PatientId)
@@ -177,7 +178,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
         {
             if (!isDataScopeExist) return 0;
 
-            var query = BuildBaseQuery(request, accessiblePatientIds, isDataScopeExist);
+            var query = BuildBaseQuery(request, accessiblePatientIds);
             return await query.CountAsync();
         }
 
@@ -193,7 +194,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
         {
             if (!isDataScopeExist) return new List<ViewPatientDemographicsListItem>();
 
-            var query = BuildBaseQuery(request, accessiblePatientIds, isDataScopeExist);
+            var query = BuildBaseQuery(request, accessiblePatientIds);
 
             return await query
                 .OrderByDescending(x => x.CreatedAt)
@@ -231,12 +232,8 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
         /// </summary>
         private IQueryable<MedicalRecord> BuildBaseQuery(
             ViewPatientDemographicsRequest request,
-            List<Guid> accessiblePatientIds,
-            bool isDataScopeExist)
+            List<Guid> accessiblePatientIds)
         {
-            if (!isDataScopeExist)
-                return _medicalRecordRepository.FindByCondition(r => false, trackChanges: false);
-
             IQueryable<MedicalRecord> query = _medicalRecordRepository
                 .FindByCondition(r => accessiblePatientIds.Contains(r.PatientId), trackChanges: false)
                 .Include(r => r.Patient)
@@ -271,7 +268,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
         /// </summary>
         private static int CalculateTotalPages(int totalRecords, int pageSize)
         {
-            return pageSize == 0 ? 0 : (int)Math.Ceiling((double)totalRecords / pageSize);
+            return (int)Math.Ceiling((double)totalRecords / pageSize);
         }
 
         /// <summary>
@@ -305,7 +302,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
                     GeneralCode.APP_MESSAGE_4019.ToString());
             }
 
-            if (!isDataScopeExist || result == null)
+            if (!isDataScopeExist)
             {
                 return ApiResponse<ViewPatientDemographicsListResponse>.Fail(
                     GeneralCode.APP_MESSAGE_4010.ToString());

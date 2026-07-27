@@ -152,10 +152,7 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.CreateStaffAcco
                 return null;
             }
             string computingPasswordHash = BCrypt.Net.BCrypt.HashPassword(dataInput.Password);
-            if (!Enum.TryParse<StaffRole>(dataInput.StaffRole.ToString(), true, out var parsedStaffRole))
-            {
-                return null;
-            }
+            StaffRole parsedStaffRole = dataInput.StaffRole;
 
             UserRole mappedUserRole = UserRole.RECEPTIONIST;
             switch (parsedStaffRole)

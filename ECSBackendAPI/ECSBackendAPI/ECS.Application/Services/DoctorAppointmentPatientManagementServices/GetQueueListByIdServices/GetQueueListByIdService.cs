@@ -34,6 +34,12 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Ge
         {
             var state = new ExecutionState { DoctorId = doctorId };
             await ValidateDoctorAsync(doctorId, state);
+
+            if (state.HasError)
+            {
+                return ApiResponse<GetQueueListByIdResponse>.Fail(state.ErrorCode!);
+            }
+
             await GetQueueDataAsync(doctorId, date, state);
             return CreateResponse(state, date);
         }
@@ -74,14 +80,15 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Ge
                 .AsNoTracking()
                 .FirstOrDefaultAsync(d => d.Id == doctorId && d.IsActive);
 
-            state.IsDoctorExists = doctor != null;
-            state.HasError = !state.IsDoctorExists;
-            state.ErrorCode = state.IsDoctorExists ? null : GeneralCode.APP_MESSAGE_4011.ToString();
+            var isDoctorExists = doctor != null;
+            state.IsDoctorExists = isDoctorExists;
+            state.HasError = !isDoctorExists;
+            state.ErrorCode = isDoctorExists ? null : GeneralCode.APP_MESSAGE_4011.ToString();
         }
 
         /// <summary>
         /// Retrieves the queue data for the specified doctor and date from the database.
-        /// Eager loads related appointment, patient, service, and room entities.
+        /// Eager loads related appointment, patient, service, slot, medical record, and room entities.
         /// </summary>
         /// <param name="doctorId">The doctor profile ID to filter queues.</param>
         /// <param name="date">The date for which to retrieve queues.</param>
@@ -97,6 +104,10 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Ge
                     .ThenInclude(a => a!.Patient)
                 .Include(q => q.Appointment)
                     .ThenInclude(a => a!.Service)
+                .Include(q => q.Appointment)
+                    .ThenInclude(a => a!.Slot)
+                .Include(q => q.Appointment)
+                    .ThenInclude(a => a!.MedicalRecord)
                 .Include(q => q.Room)
                 .Where(q => q.Appointment != null &&
                            q.Appointment.DoctorId == doctorId &&
@@ -117,8 +128,6 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Ge
         /// <returns>A success or failure API response with the queue list data.</returns>
         private ApiResponse<GetQueueListByIdResponse> CreateResponse(ExecutionState state, DateOnly date)
         {
-            var isSuccess = !state.HasError && state.IsDataLoaded;
-
             var waitingCount = 0;
             var inProgressCount = 0;
             var completedCount = 0;
@@ -142,9 +151,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Ge
                 Items = queueItems
             };
 
-            return isSuccess
-                ? ApiResponse<GetQueueListByIdResponse>.Success(GeneralCode.APP_MESSAGE_2001.ToString(), response)
-                : ApiResponse<GetQueueListByIdResponse>.Fail(state.ErrorCode ?? GeneralCode.APP_MESSAGE_5001.ToString());
+            return ApiResponse<GetQueueListByIdResponse>.Success(GeneralCode.APP_MESSAGE_2001.ToString(), response);
         }
 
         /// <summary>
@@ -175,32 +182,42 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Ge
         private static QueueByIdItemDto MapToQueueItem(Queue queue)
         {
             var appointment = queue.Appointment;
-            var patient = appointment?.Patient;
-            var service = appointment?.Service;
-            var slot = appointment?.Slot;
+            var patient = appointment.Patient;
+            var service = appointment.Service;
+            var slot = appointment.Slot;
             var room = queue.Room;
+
+            Guid? roomId = null;
+            string? roomName = null;
+            if (room != null)
+            {
+                roomId = room.Id;
+                roomName = room.RoomName;
+            }
+
+            var serviceName = service != null ? service.ServiceName : null;
 
             var queueItem = new QueueByIdItemDto
             {
                 QueueId = queue.Id,
                 QueueNumber = queue.QueueNumber,
-                AppointmentId = queue.AppointmentId,
-                PatientId = appointment?.PatientId ?? Guid.Empty,
-                PatientName = DefaultString(patient?.FullName, "Unknown"),
-                PatientPhone = patient?.PhoneNumber,
-                PatientDateOfBirth = patient?.Dob,
-                PatientGender = DefaultString(patient?.Gender.ToString(), "UNKNOWN"),
+                AppointmentId = appointment.Id,
+                PatientId = appointment.PatientId,
+                PatientName = DefaultString(patient.FullName, "Unknown"),
+                PatientPhone = patient.PhoneNumber,
+                PatientDateOfBirth = patient.Dob,
+                PatientGender = DefaultString(patient.Gender.ToString(), "UNKNOWN"),
                 AppointmentTime = CalculateAppointmentTime(appointment, slot),
-                Symptoms = appointment?.Symptoms,
-                RoomId = room?.Id,
-                RoomName = room?.RoomName,
+                Symptoms = appointment.Symptoms,
+                RoomId = roomId,
+                RoomName = roomName,
                 Status = queue.Status,
                 StatusText = GetStatusText(queue.Status),
                 CalledAt = queue.CalledAt,
                 CompletedAt = queue.CompletedAt,
-                HasMedicalRecord = appointment?.MedicalRecord != null,
-                ServiceName = service?.ServiceName,
-                BookingSource = DefaultString(appointment?.BookingSource, "UNKNOWN")
+                HasMedicalRecord = appointment.MedicalRecord != null,
+                ServiceName = serviceName,
+                BookingSource = DefaultString(appointment.BookingSource, "UNKNOWN")
             };
 
             return queueItem;
@@ -208,21 +225,13 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Ge
 
         /// <summary>
         /// Calculates the appointment time from the appointment date and time slot.
-        /// Falls back to defaults if appointment or slot is null.
         /// </summary>
         /// <param name="appointment">The appointment entity containing the date.</param>
         /// <param name="slot">The time slot entity containing the start time.</param>
         /// <returns>The calculated appointment DateTime.</returns>
-        private static DateTime CalculateAppointmentTime(Appointment? appointment, TimeSlot? slot)
+        private static DateTime CalculateAppointmentTime(Appointment appointment, TimeSlot slot)
         {
-            var defaultTime = DateTime.UtcNow;
-            var hasAppointment = appointment != null;
-            var hasSlot = slot != null;
-
-            var baseDate = hasAppointment ? appointment!.AppointmentDate.Date : defaultTime.Date;
-            var timeOfDay = hasSlot ? slot!.StartTime.TimeOfDay : defaultTime.TimeOfDay;
-
-            return baseDate.Add(timeOfDay);
+            return appointment.AppointmentDate.Date.Add(slot.StartTime.TimeOfDay);
         }
 
         /// <summary>
