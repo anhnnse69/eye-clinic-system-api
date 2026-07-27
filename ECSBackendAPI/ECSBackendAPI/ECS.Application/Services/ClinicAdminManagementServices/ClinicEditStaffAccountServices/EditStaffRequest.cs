@@ -1,5 +1,4 @@
 ﻿using System;
-using ECS.Domain.Enums;
 
 namespace ECS.Application.Services.ClinicAdminManagementServices.EditStaffAccountServices
 {
@@ -30,8 +29,10 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.EditStaffAccoun
 
         /// <summary>
         /// Gets or sets the updated internal business operational role within the clinic boundary.
+        /// Stored as a string so the inbound payload can carry invalid values (e.g. "INVALID_ROLE"),
+        /// which lets the EditStaffService defensive Enum.TryParse branch be exercised under test.
         /// </summary>
-        public StaffRole StaffRole { get; set; }
+        public string StaffRole { get; set; } = null!;
 
         /// <summary>
         /// Gets or sets a value indicating whether the target staff member account remains active or deactivated.

@@ -136,7 +136,7 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.CreateDoctor
                         WorkDate = workDate,
                         ShiftType = shiftType,
                         RoomName = room.RoomName,
-                        SlotCount = schedule.TimeSlots?.Count ?? 0,
+                        SlotCount = schedule.TimeSlots.Count,
                     });
                 }
             }

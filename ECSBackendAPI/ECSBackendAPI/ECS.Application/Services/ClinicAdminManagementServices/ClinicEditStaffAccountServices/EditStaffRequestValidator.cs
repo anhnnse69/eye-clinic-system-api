@@ -43,7 +43,10 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.EditStaffAccoun
                     .WithMessage(GeneralCode.APP_MESSAGE_4003.ToString());
 
             RuleFor(x => x.StaffRole)
-                .IsInEnum()
+                .NotEmpty()
+                    .WithErrorCode(GeneralCode.APP_MESSAGE_4003.ToString())
+                    .WithMessage(GeneralCode.APP_MESSAGE_4003.ToString())
+                .Must(value => Enum.TryParse<StaffRole>(value, true, out _))
                     .WithErrorCode(GeneralCode.APP_MESSAGE_4019.ToString())
                     .WithMessage(GeneralCode.APP_MESSAGE_4019.ToString());
 

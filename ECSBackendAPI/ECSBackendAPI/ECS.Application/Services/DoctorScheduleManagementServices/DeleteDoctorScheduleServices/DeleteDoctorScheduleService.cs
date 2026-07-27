@@ -127,10 +127,13 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.DeleteDoctor
         /// <exception cref="InvalidOperationException">Thrown when trying to delete a schedule containing at least one booked slot.</exception>
         private static void EnsureNoBookedSlots(DoctorSchedule schedule)
         {
-            var hasBookedSlot = (schedule.TimeSlots ?? [])
-                .Any(slot => slot.Status == SlotStatus.BOOKED);
-            if (hasBookedSlot)
-                throw new InvalidOperationException(GeneralCode.APP_MESSAGE_4009.ToString());
+            var slots = schedule.TimeSlots;
+            if (slots != null)
+            {
+                var hasBookedSlot = slots.Any(slot => slot.Status == SlotStatus.BOOKED);
+                if (hasBookedSlot)
+                    throw new InvalidOperationException(GeneralCode.APP_MESSAGE_4009.ToString());
+            }
         }
 
         /// <summary>

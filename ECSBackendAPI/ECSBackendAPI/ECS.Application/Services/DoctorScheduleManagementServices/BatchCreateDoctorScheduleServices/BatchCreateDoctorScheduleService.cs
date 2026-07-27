@@ -185,7 +185,7 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.CreateDoctor
                         continue;
                     }
                     // Create schedule and slots
-                    var schedule = await CreateScheduleWithSlotsAsync(
+                    var (schedule, slotCount) = await CreateScheduleWithSlotsAsync(
                         doctorProfile.Id,
                         room.Id,
                         workDate,
@@ -200,7 +200,7 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.CreateDoctor
                         WorkDate = workDate,
                         ShiftType = shiftType,
                         RoomName = room.RoomName,
-                        SlotCount = schedule.TimeSlots?.Count ?? 0,
+                        SlotCount = slotCount,
                     });
                 }
             }
@@ -211,8 +211,10 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.CreateDoctor
         /// <summary>
         /// Creates a single <see cref="DoctorSchedule"/> using the room's
         /// foreign key value directly, then generates its 30-minute slots.
+        /// Returns the schedule together with its slot count so the caller
+        /// does not need to navigate a (possibly null) navigation property.
         /// </summary>
-        private async Task<DoctorSchedule> CreateScheduleWithSlotsAsync(
+        private async Task<(DoctorSchedule Schedule, int SlotCount)> CreateScheduleWithSlotsAsync(
             Guid doctorId,
             Guid roomId,
             DateOnly workDate,
@@ -239,7 +241,7 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.CreateDoctor
             await _slotCommandRepo.SaveChangesAsync();
 
             schedule.TimeSlots = slots;
-            return schedule;
+            return (schedule, slots.Count);
         }
 
         /// <summary>

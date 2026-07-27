@@ -163,16 +163,30 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Co
             DoctorProfile doctor,
             AppointmentDecision decision)
         {
-            var patientUserId = appointment.Patient?.User?.Id;
-            if (patientUserId is null || patientUserId == Guid.Empty)
+            var patient = appointment.Patient;
+            if (patient?.User is { } linkedUser && linkedUser.Id != Guid.Empty)
             {
-                patientUserId = await _dbContext.Set<UserPatient>()
-                    .Where(up => up.PatientId == appointment.PatientId)
-                    .Select(up => (Guid?)up.UserId)
-                    .FirstOrDefaultAsync();
-            }
-            if (patientUserId is null || patientUserId == Guid.Empty)
+                var patientUserId = linkedUser.Id;
+                await SendNotificationAsync(patientUserId, doctor, appointment, decision);
                 return;
+            }
+            // Linked user present with empty Guid, OR patient navigation null,
+            // OR patient has no User at all. In every case we delegate to the
+            // EF Core lookup for a UserPatient row keyed by PatientId.
+            var fallbackUserId = await _dbContext.Set<UserPatient>()
+                .Where(up => up.PatientId == appointment.PatientId)
+                .Select(up => (Guid?)up.UserId)
+                .FirstOrDefaultAsync() ?? Guid.Empty;
+            if (fallbackUserId == Guid.Empty) return;
+            await SendNotificationAsync(fallbackUserId, doctor, appointment, decision);
+        }
+
+        private async Task SendNotificationAsync(
+            Guid patientUserId,
+            DoctorProfile doctor,
+            Appointment appointment,
+            AppointmentDecision decision)
+        {
             string templateKey = decision == AppointmentDecision.CONFIRM
                 ? "APPOINTMENT_CONFIRMED"
                 : "APPOINTMENT_REJECTED";
@@ -184,7 +198,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Co
                      { "RejectReason", appointment.NoteReason ?? string.Empty }
              };
             string payloadJson = System.Text.Json.JsonSerializer.Serialize(payload);
-            await _notificationService.Process(patientUserId.Value, templateKey, payloadJson);
+            await _notificationService.Process(patientUserId, templateKey, payloadJson);
         }
 
         /// <summary>

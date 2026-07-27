@@ -112,13 +112,25 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Cr
         /// </summary>
         private void RetrieveAuthenticatedUserId(ExecutionState state)
         {
-            var principalIdValue = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (state.HasError) return;
+
+            var httpContext = _httpContextAccessor.HttpContext;
+            if (httpContext == null)
+            {
+                state.IsUserValid = false;
+                state.HasError = true;
+                state.ErrorCode = GeneralCode.APP_MESSAGE_4033.ToString();
+                return;
+            }
+
+            var claim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier);
+            var principalIdValue = claim?.Value;
             var parseResult = Guid.TryParse(principalIdValue, out var parsedUserId);
             
             state.IsUserValid = parseResult;
             state.ActiveUserId = parseResult ? parsedUserId : Guid.Empty;
             state.HasError = !parseResult;
-            state.ErrorCode = parseResult ? null : GeneralCode.APP_MESSAGE_4033.ToString();
+            state.ErrorCode = parseResult ? state.ErrorCode : GeneralCode.APP_MESSAGE_4033.ToString();
         }
 
         /// <summary>
@@ -127,11 +139,13 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Cr
         /// </summary>
         private void ParsePatientProfileId(string patientProfileId, ExecutionState state)
         {
+            if (state.HasError) return;
+
             var parseResult = Guid.TryParse(patientProfileId, out var parsedId);
             
             state.IsPatientProfileIdValid = parseResult;
             state.PatientProfileId = parseResult ? parsedId : Guid.Empty;
-            state.HasError = state.HasError || !parseResult;
+            state.HasError = !parseResult;
             state.ErrorCode = parseResult ? state.ErrorCode : GeneralCode.APP_MESSAGE_4019.ToString();
         }
 
@@ -141,6 +155,8 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Cr
         /// </summary>
         private void GetPatientProfileAsync(ExecutionState state)
         {
+            if (state.HasError) return;
+
             var patientProfile = _patientProfileRepository
                 .FindByCondition(p => p.Id == state.PatientProfileId, trackChanges: true)
                 .FirstOrDefaultAsync()
@@ -150,7 +166,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Cr
             state.PatientProfile = patientProfile;
             state.IsPatientExists = patientProfile != null;
             state.PatientName = patientProfile?.FullName;
-            state.HasError = state.HasError || !state.IsPatientExists;
+            state.HasError = !state.IsPatientExists;
             state.ErrorCode = state.IsPatientExists ? state.ErrorCode : GeneralCode.APP_MESSAGE_4010.ToString();
         }
 
@@ -160,10 +176,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Cr
         /// </summary>
         private void CheckMedicalDemographicsExists(ExecutionState state)
         {
-            if (!state.IsPatientExists || state.HasError)
-            {
-                return;
-            }
+            if (state.HasError) return;
 
             var patientProfile = state.PatientProfile!;
             
@@ -183,12 +196,9 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Cr
         /// </summary>
         private void UpdatePatientWithMedicalDemographics(CreatePatientDemographicsRequest request, ExecutionState state)
         {
-            var patientProfile = state.PatientProfile;
-            
-            if (patientProfile == null || state.HasError)
-            {
-                return;
-            }
+            if (state.HasError) return;
+
+            var patientProfile = state.PatientProfile!;
 
             // === Administrative Info Section (can be edited by doctor) ===
             if (!string.IsNullOrWhiteSpace(request.FullName))
@@ -265,7 +275,6 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Cr
             // Mark medical demographics as created
             patientProfile.HasMedicalDemographics = true;
             patientProfile.UpdatedAt = DateTime.UtcNow;
-            state.PatientProfile = patientProfile;
         }
 
         /// <summary>
@@ -274,22 +283,14 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Cr
         /// </summary>
         private async Task PersistDataAsync(ExecutionState state)
         {
-            if (state.HasError)
-            {
-                return;
-            }
+            if (state.HasError) return;
 
             using var transactionScope = await _patientProfileRepository.BeginTransactionAsync();
             
             try
             {
-                // Update patient profile with medical demographics
-                if (state.PatientProfile != null)
-                {
-                    _context.PatientProfiles.Update(state.PatientProfile!);
-                    await _context.SaveChangesAsync();
-                }
-
+                _context.PatientProfiles.Update(state.PatientProfile!);
+                await _context.SaveChangesAsync();
                 await transactionScope.CommitAsync();
             }
             catch
@@ -309,37 +310,36 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Cr
         {
             if (state.HasError)
             {
-                var errorCode = state.ErrorCode ?? GeneralCode.APP_MESSAGE_4001.ToString();
-                return ApiResponse<CreatePatientDemographicsResponse>.Fail(errorCode);
+                return ApiResponse<CreatePatientDemographicsResponse>.Fail(state.ErrorCode!);
             }
 
-            var patientProfile = state.PatientProfile;
+            var patientProfile = state.PatientProfile!;
             
             var response = new CreatePatientDemographicsResponse
             {
                 PatientProfileId = state.PatientProfileId,
-                PatientName = patientProfile?.FullName,
+                PatientName = patientProfile.FullName,
                 
                 // === Administrative Info (updated by doctor) ===
-                FullName = patientProfile?.FullName,
-                DateOfBirth = patientProfile?.Dob.ToString("yyyy-MM-dd"),
-                Gender = patientProfile?.Gender.ToString(),
-                PhoneNumber = patientProfile?.PhoneNumber,
-                IdentityNumber = patientProfile?.IdentityNumber,
-                BhytNumber = patientProfile?.BhytNumber,
-                Address = patientProfile?.Address,
+                FullName = patientProfile.FullName,
+                DateOfBirth = patientProfile.Dob.ToString("yyyy-MM-dd"),
+                Gender = patientProfile.Gender.ToString(),
+                PhoneNumber = patientProfile.PhoneNumber,
+                IdentityNumber = patientProfile.IdentityNumber,
+                BhytNumber = patientProfile.BhytNumber,
+                Address = patientProfile.Address,
                 
                 // === Medical Background Section ===
-                BloodType = patientProfile?.BloodType,
-                Allergies = patientProfile?.Allergies,
-                MedicalHistory = patientProfile?.MedicalHistory,
-                FamilyHistory = patientProfile?.FamilyHistory,
-                LifestyleFactors = patientProfile?.LifestyleFactors,
+                BloodType = patientProfile.BloodType,
+                Allergies = patientProfile.Allergies,
+                MedicalHistory = patientProfile.MedicalHistory,
+                FamilyHistory = patientProfile.FamilyHistory,
+                LifestyleFactors = patientProfile.LifestyleFactors,
                 
                 // === Ophthalmology-specific fields ===
-                CurrentEyeMedications = patientProfile?.CurrentEyeMedications,
-                PreviousEyeSurgery = patientProfile?.PreviousEyeSurgery,
-                EyeVisionHistory = patientProfile?.EyeVisionHistory,
+                CurrentEyeMedications = patientProfile.CurrentEyeMedications,
+                PreviousEyeSurgery = patientProfile.PreviousEyeSurgery,
+                EyeVisionHistory = patientProfile.EyeVisionHistory,
                 
                 CreatedAt = DateTime.UtcNow.ToString("dd/MM/yyyy HH:mm"),
                 IsSuccess = true
