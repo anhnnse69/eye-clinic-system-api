@@ -1,0 +1,209 @@
+using ECS.Application.Services.PatientAppointmentManagementServices.GetAppointmentHistoryServices;
+using ECS.Domain.Entities.Auth;
+using ECS.Domain.Entities.Clinics;
+using ECS.Domain.Entities.Feedbacks;
+using ECS.Domain.Entities.Patient;
+using ECS.Domain.Entities.Scheduling;
+using ECS.Domain.Enums;
+using System.Security.Claims;
+using ECS.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Http;
+using Moq;
+
+namespace ECS.Test.MockData
+{
+    public static class GetAppointmentHistoryMockData
+    {
+        public static readonly Guid ValidUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        public static readonly Guid OtherUserId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        public static readonly Guid ValidPatientId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        public static readonly Guid ValidDoctorId = Guid.Parse("44444444-4444-4444-4444-444444444444");
+        public static readonly Guid ValidSlotId = Guid.Parse("55555555-5555-5555-5555-555555555555");
+        public static readonly Guid ValidServiceId = Guid.Parse("66666666-6666-6666-6666-666666666666");
+        public static readonly Guid ValidAppointmentId = Guid.Parse("77777777-7777-7777-7777-777777777777");
+        public static readonly Guid ValidClinicId = Guid.Parse("88888888-8888-8888-8888-888888888888");
+
+        public static GetAppointmentHistoryRequest GetValidRequest() => new()
+        {
+            PageNumber = 1,
+            PageSize = 10,
+            SearchTerm = null,
+            Status = null
+        };
+
+        public static Mock<IHttpContextAccessor> GetHttpContextAccessorMock(Guid? userId = null, bool isAuthenticated = true)
+        {
+            var mockAccessor = new Mock<IHttpContextAccessor>();
+            if (!isAuthenticated || !userId.HasValue)
+            {
+                mockAccessor.Setup(x => x.HttpContext).Returns((HttpContext)null!);
+                return mockAccessor;
+            }
+
+            var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, userId.Value.ToString()) };
+            var identity = new ClaimsIdentity(claims, "TestAuthType");
+            var principal = new ClaimsPrincipal(identity);
+            var context = new DefaultHttpContext { User = principal };
+
+            mockAccessor.Setup(x => x.HttpContext).Returns(context);
+            return mockAccessor;
+        }
+
+        public static Mock<IHttpContextAccessor> GetHttpContextAccessorMockWithClaim(string? claimValue, bool isAuthenticated = true)
+        {
+            var mockAccessor = new Mock<IHttpContextAccessor>();
+            if (!isAuthenticated || string.IsNullOrWhiteSpace(claimValue))
+            {
+                mockAccessor.Setup(x => x.HttpContext).Returns((HttpContext)null!);
+                return mockAccessor;
+            }
+
+            var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, claimValue) };
+            var identity = new ClaimsIdentity(claims, "TestAuthType");
+            var principal = new ClaimsPrincipal(identity);
+            var context = new DefaultHttpContext { User = principal };
+
+            mockAccessor.Setup(x => x.HttpContext).Returns(context);
+            return mockAccessor;
+        }
+
+        public static Appointment GetAppointment(
+            Guid? id = null,
+            Guid? patientId = null,
+            Guid? doctorId = null,
+            Guid? slotId = null,
+            Guid? serviceId = null,
+            Guid? createdById = null,
+            AppointmentStatus status = AppointmentStatus.PENDING,
+            DateTime? appointmentDate = null,
+            DateTime? createdAt = null,
+            bool includeRelations = true)
+        {
+            var appointment = new Appointment
+            {
+                Id = id ?? ValidAppointmentId,
+                PatientId = patientId ?? ValidPatientId,
+                DoctorId = doctorId ?? ValidDoctorId,
+                SlotId = slotId ?? ValidSlotId,
+                ServiceId = serviceId ?? ValidServiceId,
+                CreatedById = createdById ?? ValidUserId,
+                AppointmentDate = appointmentDate ?? new DateTime(2025, 1, 10),
+                CreatedAt = createdAt ?? new DateTime(2025, 1, 1, 8, 0, 0),
+                Status = status,
+                Symptoms = "Mờ mắt",
+                NoteReason = "Khám định kỳ"
+            };
+
+            if (!includeRelations) return appointment;
+
+            appointment.Patient = GetPatientProfile(patientId ?? ValidPatientId, createdById ?? ValidUserId);
+            appointment.Doctor = GetDoctorProfile(doctorId ?? ValidDoctorId, ValidClinicId, createdById ?? ValidUserId);
+            appointment.Slot = GetTimeSlot(slotId ?? ValidSlotId);
+            appointment.Service = GetService(serviceId ?? ValidServiceId);
+            appointment.Feedback = GetFeedback();
+
+            return appointment;
+        }
+
+        public static PatientProfile GetPatientProfile(Guid? id = null, Guid? userId = null)
+        {
+            return new PatientProfile
+            {
+                Id = id ?? ValidPatientId,
+                UserId = userId ?? ValidUserId,
+                FullName = "Nguyễn Văn A",
+                PhoneNumber = "0123456789",
+                Gender = Gender.MALE,
+                Dob = new DateTime(1990, 1, 1),
+                User = new User
+                {
+                    Id = userId ?? ValidUserId,
+                    Phone = "0123456789",
+                    Email = "patient@example.com",
+                    PasswordHash = "hash",
+                    FullName = "Patient User"
+                }
+            };
+        }
+
+        public static DoctorProfile GetDoctorProfile(Guid? id = null, Guid? clinicId = null, Guid? userId = null)
+        {
+            return new DoctorProfile
+            {
+                Id = id ?? ValidDoctorId,
+                UserId = userId ?? ValidUserId,
+                ClinicId = clinicId ?? ValidClinicId,
+                Title = "BS",
+                User = new User
+                {
+                    Id = userId ?? ValidUserId,
+                    Phone = "0987654321",
+                    Email = "doctor@example.com",
+                    PasswordHash = "hash",
+                    FullName = "Dr. Hoa"
+                },
+                Clinic = new Clinic
+                {
+                    Id = clinicId ?? ValidClinicId,
+                    Name = "Phòng khám mắt",
+                    Address = "123 Lê Lợi",
+                    Phone = "0909090909"
+                }
+            };
+        }
+
+        public static TimeSlot GetTimeSlot(Guid? id = null)
+        {
+            return new TimeSlot
+            {
+                Id = id ?? ValidSlotId,
+                StartTime = new DateTime(2025, 1, 10, 10, 0, 0),
+                EndTime = new DateTime(2025, 1, 10, 11, 0, 0)
+            };
+        }
+
+        public static Service GetService(Guid? id = null)
+        {
+            return new Service
+            {
+                Id = id ?? ValidServiceId,
+                ServiceName = "Khám mắt tổng quát",
+                Price = 120000m
+            };
+        }
+
+        public static Feedback GetFeedback()
+        {
+            return new Feedback
+            {
+                RatingDoctor = 5,
+                RatingClinic = 4,
+                Comment = "Rất tốt",
+                IsPublic = true,
+                CreatedAt = new DateTime(2025, 1, 11, 8, 0, 0)
+            };
+        }
+
+        public static void SeedUserAccess(AppDbContext context, Guid userId, Guid patientId)
+        {
+            context.PatientProfiles.Add(new PatientProfile
+            {
+                Id = patientId,
+                UserId = userId,
+                FullName = "Bệnh nhân test",
+                Gender = Gender.MALE,
+                Dob = new DateTime(1990, 1, 1),
+                PhoneNumber = "0123456789"
+            });
+
+            context.UserPatients.Add(new UserPatient
+            {
+                UserId = userId,
+                PatientId = patientId,
+                Relationship = "Cha mẹ"
+            });
+
+            context.SaveChanges();
+        }
+    }
+}
