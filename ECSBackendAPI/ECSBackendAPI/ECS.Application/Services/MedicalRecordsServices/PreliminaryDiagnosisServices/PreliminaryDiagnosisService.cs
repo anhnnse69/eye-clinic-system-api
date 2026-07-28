@@ -166,7 +166,7 @@ namespace ECS.Application.Services.MedicalRecordsServices.PreliminaryDiagnosisSe
                 .FirstOrDefaultAsync();
             state.Appointment = appointment;
             state.IsAppointmentValid = appointment != null;
-            state.HasError = state.HasError || !state.IsAppointmentValid;
+            state.HasError = !state.IsAppointmentValid;
             state.ErrorCode = state.IsAppointmentValid ? state.ErrorCode : GeneralCode.APP_MESSAGE_4012.ToString();
         }
 
@@ -175,7 +175,7 @@ namespace ECS.Application.Services.MedicalRecordsServices.PreliminaryDiagnosisSe
         /// </summary>
         private async Task GetDoctorProfileAsync(ExecutionState state)
         {
-            if (state.HasError || state.Appointment == null) return;
+            if (state.HasError) return;
             var doctorProfile = await _doctorRepository
                 .FindByCondition(d => d.UserId == state.ActiveUserId && d.IsActive, trackChanges: false)
                 .Include(d => d.User)
@@ -183,7 +183,7 @@ namespace ECS.Application.Services.MedicalRecordsServices.PreliminaryDiagnosisSe
             state.DoctorProfile = doctorProfile;
             state.IsDoctorExists = doctorProfile != null;
             state.DoctorName = doctorProfile?.User?.FullName;
-            state.HasError = state.HasError || !state.IsDoctorExists;
+            state.HasError = !state.IsDoctorExists;
             state.ErrorCode = state.IsDoctorExists ? state.ErrorCode : GeneralCode.APP_MESSAGE_4011.ToString();
         }
 
@@ -199,7 +199,7 @@ namespace ECS.Application.Services.MedicalRecordsServices.PreliminaryDiagnosisSe
             state.PatientProfile = patientProfile;
             state.IsPatientExists = patientProfile != null;
             state.PatientName = patientProfile?.FullName;
-            state.HasError = state.HasError || !state.IsPatientExists;
+            state.HasError = !state.IsPatientExists;
             state.ErrorCode = state.IsPatientExists ? state.ErrorCode : GeneralCode.APP_MESSAGE_4010.ToString();
         }
 
