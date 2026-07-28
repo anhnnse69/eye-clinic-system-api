@@ -124,10 +124,24 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.EditDoctorSc
         /// </summary>
         private static void EnsureNoBookedSlots(DoctorSchedule schedule)
         {
-            var hasBookedSlot = (schedule.TimeSlots ?? [])
-                .Any(slot => slot.Status == SlotStatus.BOOKED);
+            var hasBookedSlot = HasBookedSlot(schedule);
             if (hasBookedSlot)
                 throw new InvalidOperationException(GeneralCode.APP_MESSAGE_4013.ToString());
+        }
+
+        /// <summary>
+        /// Checks if the schedule contains any booked time slots.
+        /// Extracted to separate method for 100% branch coverage testing.
+        /// </summary>
+        private static bool HasBookedSlot(DoctorSchedule schedule)
+        {
+            var slots = schedule.TimeSlots;
+            if (slots == null) return false;
+            foreach (var slot in slots)
+            {
+                if (slot.Status == SlotStatus.BOOKED) return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -238,7 +252,9 @@ namespace ECS.Application.Services.DoctorScheduleManagementServices.EditDoctorSc
         /// </summary>
         private static void ShiftSlotsToNewDate(DoctorSchedule schedule, DateOnly newWorkDate)
         {
-            foreach (var slot in schedule.TimeSlots ?? [])
+            var slots = schedule.TimeSlots;
+            if (slots == null) return;
+            foreach (var slot in slots)
             {
                 var duration = slot.EndTime - slot.StartTime;
                 var newStart = newWorkDate.ToDateTime(TimeOnly.FromTimeSpan(slot.StartTime.TimeOfDay));
