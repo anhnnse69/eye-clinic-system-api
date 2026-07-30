@@ -1,87 +1,90 @@
 ﻿using ECS.Application.Common.Response;
-using ECS.Application.Services.PatientAppointmentManagementServices.ViewNotificationListServices;
+using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ConfirmRejectAppointmentsServices;
 using ECS.Domain.Entities.Clinics;
-using ECS.Domain.Entities.Patient;
 using ECS.Domain.Entities.Scheduling;
 using ECS.Domain.Enums;
 using ECS.Infrastructure.Persistence;
 using ECS.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.ConfirmRejectAppointmentServices
+namespace ECS.Application.Services.ReceptionistAppointmentManagementServices.ConfirmRejectAppointmentsServices
 {
     /// <summary>
-    /// Handles confirming or rejecting appointments for the authenticated doctor.
+    /// Handles confirming or rejecting appointments on behalf of the
+    /// authenticated receptionist. The receptionist's clinic is resolved
+    /// via their active <see cref="StaffClinic"/> assignment, and the
+    /// target appointment must belong to a doctor within that same clinic
+    /// (the receptionist is not restricted to a single doctor).
     /// </summary>
-    public class ConfirmRejectAppointmentService : IConfirmRejectAppointmentService
+    public class ReceptionistConfirmRejectAppointmentService : IReceptionistConfirmRejectAppointmentService
     {
-        private readonly IRepositoryQueryBase<DoctorProfile, Guid, AppDbContext> _doctorRepo;
+        private readonly IRepositoryQueryBase<StaffClinic, Guid, AppDbContext> _staffClinicRepo;
         private readonly IRepositoryBaseAsync<Appointment, Guid, AppDbContext> _appointmentCommandRepo;
         private readonly IRepositoryQueryBase<Appointment, Guid, AppDbContext> _appointmentQueryRepo;
         private readonly IRepositoryBaseAsync<TimeSlot, Guid, AppDbContext> _slotCommandRepo;
-        private readonly INotificationCreationService _notificationService;
-        AppDbContext _dbContext;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ConfirmRejectAppointmentService"/>.
+        /// Initializes a new instance of the <see cref="ReceptionistConfirmRejectAppointmentService"/>.
         /// </summary>
-        public ConfirmRejectAppointmentService(
-            IRepositoryQueryBase<DoctorProfile, Guid, AppDbContext> doctorRepo,
+        public ReceptionistConfirmRejectAppointmentService(
+            IRepositoryQueryBase<StaffClinic, Guid, AppDbContext> staffClinicRepo,
             IRepositoryBaseAsync<Appointment, Guid, AppDbContext> appointmentCommandRepo,
             IRepositoryQueryBase<Appointment, Guid, AppDbContext> appointmentQueryRepo,
             IRepositoryBaseAsync<TimeSlot, Guid, AppDbContext> slotCommandRepo,
-            INotificationCreationService notificationService,
             AppDbContext dbContext)
         {
-            _doctorRepo = doctorRepo;
+            _staffClinicRepo = staffClinicRepo;
             _appointmentCommandRepo = appointmentCommandRepo;
             _appointmentQueryRepo = appointmentQueryRepo;
             _slotCommandRepo = slotCommandRepo;
-            _notificationService = notificationService;
-            _dbContext = dbContext;
         }
 
         /// <summary>
-        /// Confirms or rejects an appointment.
+        /// Confirms or rejects an appointment belonging to any doctor
+        /// within the receptionist's clinic.
         /// </summary>
-        /// <param name="userId">Identifier of the authenticated user.</param>
+        /// <param name="receptionistUserId">Identifier of the authenticated receptionist's user account.</param>
         /// <param name="appointmentId">Identifier of the appointment.</param>
         /// <param name="request">Decision request.</param>
         /// <returns>Updated appointment information.</returns>
         public async Task<ApiResponse<ConfirmRejectAppointmentResponse>> Process(
-            Guid userId,
+            Guid receptionistUserId,
             Guid appointmentId,
             ConfirmRejectAppointmentRequest request)
         {
-            var doctor = await ResolveDoctorAsync(userId);
-            var appointment = await ResolveAppointmentAsync(appointmentId, doctor.Id);
+            var clinicId = await ResolveReceptionistClinicIdAsync(receptionistUserId);
+            var appointment = await ResolveAppointmentAsync(appointmentId, clinicId);
             await ApplyDecisionAsync(appointment, request);
             await PersistAppointmentAsync(appointment);
-            await NotifyPatientAsync(appointment, doctor, request.Decision);
             var response = BuildResponse(appointment);
             return CreateSuccessResponse(response);
         }
 
         /// <summary>
-        /// Resolves the active doctor profile from the authenticated user.
+        /// Resolves the clinic that the receptionist (current user) belongs to,
+        /// via their active <see cref="StaffClinic"/> assignment.
         /// </summary>
-        private async Task<DoctorProfile> ResolveDoctorAsync(Guid userId)
+        /// <exception cref="KeyNotFoundException">Thrown when the receptionist has no active clinic assignment.</exception>
+        private async Task<Guid> ResolveReceptionistClinicIdAsync(Guid receptionistUserId)
         {
-            var doctor = await _doctorRepo
-                .FindByCondition(d => d.UserId == userId && d.IsActive)
+            var staffClinic = await _staffClinicRepo
+                .FindByCondition(sc => sc.UserId == receptionistUserId && sc.IsActive)
                 .FirstOrDefaultAsync();
-            if (doctor is null)
+
+            if (staffClinic is null)
                 throw new KeyNotFoundException(GeneralCode.APP_MESSAGE_4008.ToString());
-            return doctor;
+
+            return staffClinic.ClinicId;
         }
 
         /// <summary>
-        /// Retrieves the appointment belonging to the specified doctor.
+        /// Retrieves the appointment, ensuring its doctor belongs to the
+        /// receptionist's clinic. Throws when not found or out of scope.
         /// </summary>
-        private async Task<Appointment> ResolveAppointmentAsync(Guid appointmentId, Guid doctorId)
+        private async Task<Appointment> ResolveAppointmentAsync(Guid appointmentId, Guid clinicId)
         {
             var appointment = await _appointmentQueryRepo
-                .FindByCondition(a => a.Id == appointmentId && a.DoctorId == doctorId)
+                .FindByCondition(a => a.Id == appointmentId && a.Doctor.ClinicId == clinicId)
                 .Include(a => a.Slot)
                 .Include(a => a.Patient)
                     .ThenInclude(p => p.User)
@@ -94,7 +97,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Co
         }
 
         /// <summary>
-        /// Applies the doctor's decision to the appointment.
+        /// Applies the receptionist's decision to the appointment.
         /// </summary>
         private async Task ApplyDecisionAsync(Appointment appointment, ConfirmRejectAppointmentRequest request)
         {
@@ -151,54 +154,6 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Co
         {
             await _appointmentCommandRepo.UpdateAsync(appointment);
             await _appointmentCommandRepo.SaveChangesAsync();
-        }
-
-        /// <summary>
-        /// Sends a notification to the patient about the doctor's decision.
-        /// Silently skipped if the patient has no linked user account
-        /// (e.g. created by a receptionist without registering an account).
-        /// </summary>
-        private async Task NotifyPatientAsync(
-            Appointment appointment,
-            DoctorProfile doctor,
-            AppointmentDecision decision)
-        {
-            var patient = appointment.Patient;
-            if (patient?.User is { } linkedUser && linkedUser.Id != Guid.Empty)
-            {
-                var patientUserId = linkedUser.Id;
-                await SendNotificationAsync(patientUserId, doctor, appointment, decision);
-                return;
-            }
-            // Linked user present with empty Guid, OR patient navigation null,
-            // OR patient has no User at all. In every case we delegate to the
-            // EF Core lookup for a UserPatient row keyed by PatientId.
-            var fallbackUserId = await _dbContext.Set<UserPatient>()
-                .Where(up => up.PatientId == appointment.PatientId)
-                .Select(up => (Guid?)up.UserId)
-                .FirstOrDefaultAsync() ?? Guid.Empty;
-            if (fallbackUserId == Guid.Empty) return;
-            await SendNotificationAsync(fallbackUserId, doctor, appointment, decision);
-        }
-
-        private async Task SendNotificationAsync(
-            Guid patientUserId,
-            DoctorProfile doctor,
-            Appointment appointment,
-            AppointmentDecision decision)
-        {
-            string templateKey = decision == AppointmentDecision.CONFIRM
-                ? "APPOINTMENT_CONFIRMED"
-                : "APPOINTMENT_REJECTED";
-            var payload = new Dictionary<string, string>
-             {
-                     { "DoctorName", doctor.User?.FullName ?? "" },
-                     { "PatientName", appointment.Patient?.FullName ?? "" },
-                     { "AppointmentTime", appointment.AppointmentDate.ToString("yyyy-MM-ddTHH:mm:ssZ") },
-                     { "RejectReason", appointment.NoteReason ?? string.Empty }
-             };
-            string payloadJson = System.Text.Json.JsonSerializer.Serialize(payload);
-            await _notificationService.Process(patientUserId, templateKey, payloadJson);
         }
 
         /// <summary>

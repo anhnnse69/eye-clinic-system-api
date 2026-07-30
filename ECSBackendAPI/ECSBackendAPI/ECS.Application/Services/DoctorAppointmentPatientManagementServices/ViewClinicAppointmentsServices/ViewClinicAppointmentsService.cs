@@ -6,72 +6,72 @@ using ECS.Infrastructure.Persistence;
 using ECS.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewDoctorAppointmentsServices
+namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewClinicAppointmentsServices
 {
     /// <summary>
-    /// Handles retrieving paginated doctor appointments with full details 
-    /// including patient information, service, slot, and medical record data.
-    /// Supports filtering by status, date, and search keyword.
+    /// Handles retrieving paginated appointments for every doctor within
+    /// a receptionist's clinic, including doctor, patient, service, slot,
+    /// and medical record data. Supports filtering by doctor, status,
+    /// date, and search keyword. The receptionist's clinic is resolved
+    /// via their active <see cref="StaffClinic"/> assignment.
     /// </summary>
-    public class ViewDoctorAppointmentsService : IViewDoctorAppointmentsService
+    public class ViewClinicAppointmentsService : IViewClinicAppointmentsService
     {
-        private readonly IRepositoryQueryBase<DoctorProfile, Guid, AppDbContext> _doctorRepository;
-        private readonly IRepositoryQueryBase<Appointment, Guid, AppDbContext> _appointmentRepository;
+        private readonly IRepositoryQueryBase<StaffClinic, Guid, AppDbContext> _staffClinicRepo;
+        private readonly IRepositoryQueryBase<Appointment, Guid, AppDbContext> _appointmentRepo;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ViewDoctorAppointmentsService"/>.
+        /// Initializes a new instance of the <see cref="ViewClinicAppointmentsService"/>.
         /// </summary>
-        public ViewDoctorAppointmentsService(
-            IRepositoryQueryBase<DoctorProfile, Guid, AppDbContext> doctorRepository,
-            IRepositoryQueryBase<Appointment, Guid, AppDbContext> appointmentRepository)
+        public ViewClinicAppointmentsService(
+            IRepositoryQueryBase<StaffClinic, Guid, AppDbContext> staffClinicRepo,
+            IRepositoryQueryBase<Appointment, Guid, AppDbContext> appointmentRepo)
         {
-            _doctorRepository = doctorRepository;
-            _appointmentRepository = appointmentRepository;
+            _staffClinicRepo = staffClinicRepo;
+            _appointmentRepo = appointmentRepo;
         }
 
         /// <summary>
-        /// Retrieves paginated appointments for a doctor with support for filtering and searching.
+        /// Retrieves paginated appointments for the receptionist's clinic,
+        /// across all doctors, with support for filtering and searching.
         /// </summary>
-        /// <param name="userId">Identifier of the user account linked to the doctor profile.</param>
+        /// <param name="receptionistUserId">Identifier of the user account of the logged-in receptionist.</param>
         /// <param name="request">The request containing pagination and filter parameters.</param>
         /// <returns>A successful response containing the paginated list of appointments.</returns>
-        public async Task<ApiResponse<ViewDoctorAppointmentsResponse>> Process(
-            Guid userId,
-            ViewDoctorAppointmentsRequest request)
+        public async Task<ApiResponse<ViewClinicAppointmentsResponse>> Process(
+            Guid receptionistUserId,
+            ViewClinicAppointmentsRequest request)
         {
-            var doctorProfile = await ResolveActiveDoctorProfileAsync(userId);
+            var clinicId = await ResolveReceptionistClinicIdAsync(receptionistUserId);
             var (pageNumber, pageSize) = NormalizePaging(request);
-            var totalRecords = await CountAppointmentsAsync(doctorProfile.Id, request);
+            var totalRecords = await CountAppointmentsAsync(clinicId, request);
             var totalPages = CalculateTotalPages(totalRecords, pageSize);
-            var appointments = await FetchAppointmentsAsync(
-                doctorProfile.Id, request, pageNumber, pageSize);
-            var response = BuildResponse(
-                appointments, pageNumber, pageSize, totalPages, totalRecords);
+            var appointments = await FetchAppointmentsAsync(clinicId, request, pageNumber, pageSize);
+            var response = BuildResponse(appointments, pageNumber, pageSize, totalPages, totalRecords);
             return CreateSuccessResponse(response);
         }
 
         /// <summary>
-        /// Resolves the active doctor profile for the specified user.
+        /// Resolves the clinic that the receptionist (current user) belongs to,
+        /// via their active <see cref="StaffClinic"/> assignment.
         /// </summary>
-        /// <param name="userId">The user ID linked to the doctor profile.</param>
-        /// <returns>The active <see cref="DoctorProfile"/>.</returns>
-        /// <exception cref="KeyNotFoundException">Thrown when no active doctor profile is found.</exception>
-        private async Task<DoctorProfile> ResolveActiveDoctorProfileAsync(Guid userId)
+        /// <exception cref="KeyNotFoundException">Thrown when the receptionist has no active clinic assignment.</exception>
+        private async Task<Guid> ResolveReceptionistClinicIdAsync(Guid receptionistUserId)
         {
-            var doctorProfile = await _doctorRepository
-                .FindByCondition(d => d.UserId == userId && d.IsActive)
+            var staffClinic = await _staffClinicRepo
+                .FindByCondition(sc => sc.UserId == receptionistUserId && sc.IsActive)
                 .FirstOrDefaultAsync();
-            if (doctorProfile is null)
+
+            if (staffClinic is null)
                 throw new KeyNotFoundException(GeneralCode.APP_MESSAGE_4008.ToString());
-            return doctorProfile;
+
+            return staffClinic.ClinicId;
         }
 
         /// <summary>
         /// Normalizes pagination parameters, ensuring valid page number and page size.
         /// </summary>
-        /// <param name="request">The incoming request.</param>
-        /// <returns>Normalized page number and page size.</returns>
-        private static (int PageNumber, int PageSize) NormalizePaging(ViewDoctorAppointmentsRequest request)
+        private static (int PageNumber, int PageSize) NormalizePaging(ViewClinicAppointmentsRequest request)
         {
             var pageNumber = request.PageNumber < 1 ? 1 : request.PageNumber;
             var pageSize = request.PageSize < 1 ? 10 : request.PageSize;
@@ -82,29 +82,29 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
         /// Counts the total number of appointments matching the filter criteria.
         /// </summary>
         private async Task<int> CountAppointmentsAsync(
-            Guid doctorId,
-            ViewDoctorAppointmentsRequest request)
+            Guid clinicId,
+            ViewClinicAppointmentsRequest request)
         {
-            var query = BuildBaseQuery(doctorId, request);
+            var query = BuildBaseQuery(clinicId, request);
             return await query.CountAsync();
         }
 
         /// <summary>
         /// Retrieves a paginated list of appointments with all related data.
         /// </summary>
-        private async Task<List<AppointmentItem>> FetchAppointmentsAsync(
-            Guid doctorId,
-            ViewDoctorAppointmentsRequest request,
+        private async Task<List<ClinicAppointmentItem>> FetchAppointmentsAsync(
+            Guid clinicId,
+            ViewClinicAppointmentsRequest request,
             int pageNumber,
             int pageSize)
         {
-            var query = BuildBaseQuery(doctorId, request);
+            var query = BuildBaseQuery(clinicId, request);
 
             return await query
                 .OrderByDescending(a => a.AppointmentDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(a => new AppointmentItem
+                .Select(a => new ClinicAppointmentItem
                 {
                     AppointmentId = a.Id,
                     AppointmentDate = a.AppointmentDate,
@@ -113,17 +113,26 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
                     BookingSource = a.BookingSource,
                     DepositAmount = a.DepositAmount,
                     DepositPaid = a.DepositPaid,
+
+                    DoctorId = a.DoctorId,
+                    DoctorName = a.Doctor.User != null ? a.Doctor.User.FullName : null,
+                    DoctorTitle = a.Doctor.Title,
+                    DoctorAvatarUrl = a.Doctor.User != null ? a.Doctor.User.AvatarUrl : null,
+
                     PatientId = a.Patient.Id,
                     PatientName = a.Patient.FullName,
                     PatientPhone = a.Patient.PhoneNumber,
                     PatientAvatarUrl = a.Patient.User != null ? a.Patient.User.AvatarUrl : null,
                     PatientGender = a.Patient.Gender,
                     PatientDob = a.Patient.Dob,
+
                     ServiceId = a.ServiceId,
                     ServiceName = a.Service != null ? a.Service.ServiceName : null,
                     ServicePrice = a.Service != null ? a.Service.Price : null,
+
                     SlotStartTime = a.Slot.StartTime,
                     SlotEndTime = a.Slot.EndTime,
+
                     HasMedicalRecord = a.MedicalRecord != null,
                     MedicalRecordId = a.MedicalRecord != null ? a.MedicalRecord.Id : null,
                     CreatedAt = a.CreatedAt,
@@ -132,14 +141,17 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
         }
 
         /// <summary>
-        /// Builds the base query with necessary includes and applies all filters.
+        /// Builds the base query scoped to every doctor belonging to the
+        /// receptionist's clinic, with necessary includes and all filters applied.
         /// </summary>
         private IQueryable<Appointment> BuildBaseQuery(
-            Guid doctorId,
-            ViewDoctorAppointmentsRequest request)
+            Guid clinicId,
+            ViewClinicAppointmentsRequest request)
         {
-            var query = _appointmentRepository
-                .FindByCondition(a => a.DoctorId == doctorId)
+            var query = _appointmentRepo
+                .FindByCondition(a => a.Doctor.ClinicId == clinicId)
+                .Include(a => a.Doctor)
+                    .ThenInclude(d => d.User)
                 .Include(a => a.Patient)
                     .ThenInclude(p => p.User)
                 .Include(a => a.Service)
@@ -147,7 +159,10 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
                 .Include(a => a.MedicalRecord)
                 .AsQueryable();
 
-            // Apply filters
+            if (request.DoctorId.HasValue)
+            {
+                query = query.Where(a => a.DoctorId == request.DoctorId.Value);
+            }
             if (request.Status.HasValue)
             {
                 query = query.Where(a => a.Status == request.Status.Value);
@@ -162,7 +177,9 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
                 var keyword = request.Search.Trim().ToLower();
                 query = query.Where(a =>
                     (a.Patient.FullName != null && a.Patient.FullName.ToLower().Contains(keyword)) ||
-                    (a.Patient.PhoneNumber != null && a.Patient.PhoneNumber.Contains(keyword)));
+                    (a.Patient.PhoneNumber != null && a.Patient.PhoneNumber.Contains(keyword)) ||
+                    (a.Doctor.User != null && a.Doctor.User.FullName != null &&
+                        a.Doctor.User.FullName.ToLower().Contains(keyword)));
             }
             return query;
         }
@@ -180,14 +197,14 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
         /// <summary>
         /// Builds the response object containing pagination metadata and appointment list.
         /// </summary>
-        private static ViewDoctorAppointmentsResponse BuildResponse(
-            List<AppointmentItem> appointments,
+        private static ViewClinicAppointmentsResponse BuildResponse(
+            List<ClinicAppointmentItem> appointments,
             int pageNumber,
             int pageSize,
             int totalPages,
             int totalRecords)
         {
-            return new ViewDoctorAppointmentsResponse
+            return new ViewClinicAppointmentsResponse
             {
                 PageNumber = pageNumber,
                 PageSize = pageSize,
@@ -200,10 +217,10 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
         /// <summary>
         /// Creates a standardized successful API response.
         /// </summary>
-        private static ApiResponse<ViewDoctorAppointmentsResponse> CreateSuccessResponse(
-            ViewDoctorAppointmentsResponse response)
+        private static ApiResponse<ViewClinicAppointmentsResponse> CreateSuccessResponse(
+            ViewClinicAppointmentsResponse response)
         {
-            return ApiResponse<ViewDoctorAppointmentsResponse>.Success(
+            return ApiResponse<ViewClinicAppointmentsResponse>.Success(
                 GeneralCode.APP_MESSAGE_2000.ToString(),
                 response);
         }

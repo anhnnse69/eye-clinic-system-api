@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.ConfirmRejectAppointmentServices
+namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.ConfirmRejectAppointmentsServices
 {
     /// <summary>
     /// Request model for confirming or rejecting an appointment.

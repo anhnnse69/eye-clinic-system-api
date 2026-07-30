@@ -1,4 +1,3 @@
-using System.Reflection;
 using ECS.Application.Services.AuthServices.ChangePasswordServices;
 using ECS.Application.Services.AuthServices.ForgotPasswordServices;
 using ECS.Application.Services.AuthServices.LoginServices;
@@ -36,12 +35,11 @@ using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewClinicFeedbacksS
 using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewClinicProfileServices;
 using ECS.Application.Services.ClinicDoctorDiscoveryService.ViewDoctorSlotsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.CompleteQueueServices;
-using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ConfirmRejectAppointmentServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.CreatePatientDemographicsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.GetDetailPatientDemographicsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.GetMyQueueListServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.GetQueueListByIdServices;
-using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewDoctorAppointmentsServices;
+using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewClinicAppointmentsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewDoctorClinicRoomsServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewListPatientServices;
 using ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewPatientDemographicsServices;
@@ -74,12 +72,12 @@ using ECS.Application.Services.PatientAppointmentManagementServices.GetClinicBoo
 using ECS.Application.Services.PatientAppointmentManagementServices.GetClinicServicesForBookingServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.GetPatientProfilesForBookingServices;
 using ECS.Application.Services.PatientAppointmentManagementServices.SubmitFeedbackServices;
-using ECS.Application.Services.PatientAppointmentManagementServices.ViewNotificationListServices;
 using ECS.Application.Services.PatientProfileManagementServices.CreatePatientProfileServices;
 using ECS.Application.Services.PatientProfileManagementServices.GetPatientProfilesServices;
 using ECS.Application.Services.PatientProfileManagementServices.UpdatePatientProfileServices;
 using ECS.Application.Services.PatientProfileManagementServices.ViewMyFeedbackHistoryServices;
 using ECS.Application.Services.PatientProfileManagementServices.ViewPatientProfileDetailServices;
+using ECS.Application.Services.ReceptionistAppointmentManagementServices.ConfirmRejectAppointmentsServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistCancelAppointmentsServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistCheckInServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistCreatePatientProfileServices;
@@ -109,6 +107,7 @@ using ECS.Application.Services.SystemAdminServices.RejectClinicApplicationServic
 using ECS.Application.Services.SystemAdminServices.ReviewClinicRegisterServices;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 
 namespace ECS.Application;
 
@@ -172,8 +171,6 @@ public static class DependencyInjection
         services.AddScoped<IReceptionistUpdatePatientProfileService, ReceptionistUpdatePatientProfileService>();
         services.AddScoped<IReceptionistCreatePatientProfileService, ReceptionistCreatePatientProfileService>();
         services.AddScoped<IReceptionistSearchAccountService, ReceptionistSearchAccountService>();
-
-        services.AddScoped<IViewDoctorAppointmentsService, ViewDoctorAppointmentsService>();
         services.AddScoped<IDeleteRoomService, DeleteRoomService>();
         services.AddScoped<IViewMyFeedbackHistoryService, ViewMyFeedbackHistoryService>();
         services.AddScoped<IGetMedicineCatalogService, GetMedicineCatalogService>();
@@ -181,7 +178,6 @@ public static class DependencyInjection
         services.AddScoped<IEditRoomService, EditRoomService>();
         services.AddScoped<ICreateMedicineCatalogService, CreateMedicineCatalogService>();
         services.AddScoped<IReceptionistGetDailyAppointmentsService, ReceptionistGetDailyAppointmentsService>();
-        services.AddScoped<IConfirmRejectAppointmentService, ConfirmRejectAppointmentService>();
         services.AddScoped<ICreateMedicalRecordService, CreateMedicalRecordService>();
         services.AddScoped<IPreliminaryDiagnosisService, PreliminaryDiagnosisService>();
         services.AddScoped<IUpdateMedicalRecordService, UpdateMedicalRecordService>();
@@ -199,7 +195,7 @@ public static class DependencyInjection
         services.AddScoped<IGetMedicalRecordDetailService, GetMedicalRecordDetailService>();
         services.AddScoped<IEditDoctorScheduleService, EditDoctorScheduleService>();
         services.AddScoped<IBlockUnblockSlotService, BlockUnblockSlotService>();
-
+        services.AddScoped<IViewClinicAppointmentsService, ViewClinicAppointmentsService>();
         services.AddScoped<IDeleteMedicineCatalogService, DeleteMedicineCatalogService>();
         services.AddScoped<IGetAccountsService, GetAccountsService>();
         services.AddScoped<IReceptionistCancelAppointmentsService, ReceptionistCancelAppointmentsService>();
@@ -213,9 +209,6 @@ public static class DependencyInjection
         services.AddScoped<IGetMyQueueListService, GetMyQueueListService>();
         services.AddScoped<IGetQueueListByIdService, GetQueueListByIdService>();
         services.AddScoped<ICompleteQueueService, CompleteQueueService>();
-        services.AddScoped<INotificationCreationService, NotificationCreationService>();
-        services.AddScoped<IViewNotificationListService, ViewNotificationListService>();
-        services.AddScoped<IMarkNotificationReadService, MarkNotificationReadService>();
         services.AddScoped<IDeleteAccountService, DeleteAccountService>();
         services.AddScoped<IGetAppointmentDetailService, GetAppointmentDetailService>();
         services.AddScoped<ISubmitFeedbackService, SubmitFeedbackService>();
@@ -230,6 +223,7 @@ public static class DependencyInjection
         services.AddTransient<IBatchCreateDoctorScheduleService, BatchCreateDoctorScheduleService>();
         services.AddScoped<IRequestPublishClinicService, RequestPublishClinicService>();
         services.AddScoped<IApproveClinicPublicationService, ApproveClinicPublicationService>();
+        services.AddScoped<IReceptionistConfirmRejectAppointmentService, ReceptionistConfirmRejectAppointmentService>();
 
         // Paraclinical (UC42-44) — MongoDB-backed lab requests
         services.AddScoped<ICreateLabRequestService, CreateLabRequestService>();

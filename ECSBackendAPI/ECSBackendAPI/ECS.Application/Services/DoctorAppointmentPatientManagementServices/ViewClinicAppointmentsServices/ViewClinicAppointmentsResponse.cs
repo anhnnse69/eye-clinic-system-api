@@ -1,25 +1,26 @@
 ﻿using ECS.Domain.Enums;
 
-namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewDoctorAppointmentsServices
+namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.ViewClinicAppointmentsServices
 {
     /// <summary>
     /// Represents a paginated response
-    /// for a doctor's appointment list.
+    /// for a clinic-wide appointment list.
     /// </summary>
-    public class ViewDoctorAppointmentsResponse
+    public class ViewClinicAppointmentsResponse
     {
         public int PageNumber { get; set; }
         public int PageSize { get; set; }
         public int TotalPages { get; set; }
         public int TotalRecords { get; set; }
-        public List<AppointmentItem> Appointments { get; set; } = [];
+        public List<ClinicAppointmentItem> Appointments { get; set; } = [];
     }
 
     /// <summary>
-    /// Represents an appointment item
-    /// in the doctor's appointment list.
+    /// Represents an appointment item in the clinic-wide appointment list.
+    /// Extends the doctor-facing item with doctor identity fields since
+    /// the receptionist views appointments across multiple doctors.
     /// </summary>
-    public class AppointmentItem
+    public class ClinicAppointmentItem
     {
         public Guid AppointmentId { get; set; }
         public DateTime AppointmentDate { get; set; }
@@ -28,6 +29,12 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
         public string BookingSource { get; set; } = null!;
         public decimal DepositAmount { get; set; }
         public bool DepositPaid { get; set; }
+
+        // Doctor info
+        public Guid DoctorId { get; set; }
+        public string? DoctorName { get; set; }
+        public string? DoctorTitle { get; set; }
+        public string? DoctorAvatarUrl { get; set; }
 
         // Patient info
         public Guid PatientId { get; set; }

@@ -1,4 +1,4 @@
-﻿namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.ConfirmRejectAppointmentServices
+﻿namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.ConfirmRejectAppointmentsServices
 {
     /// <summary>
     /// Response model returned after confirming or rejecting an appointment.

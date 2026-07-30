@@ -69,6 +69,7 @@ namespace ECS.Application.Services.ClinicDoctorDiscoveryService.SearchClinicDoct
             return await _clinicQueryRepository
                 .FindByCondition(c =>
                     c.IsActive &&
+                    c.IsPublished &&
                     (keyword == string.Empty ||
                      c.Name.ToLower().Contains(keyword)))
                 .OrderBy(c => c.Name)
@@ -95,7 +96,10 @@ namespace ECS.Application.Services.ClinicDoctorDiscoveryService.SearchClinicDoct
                 string keyword)
         {
             return await _doctorQueryRepository
-                .FindByCondition(d => d.IsActive)
+                .FindByCondition(
+                    d => d.IsActive &&
+                    d.Clinic.IsActive &&
+                    d.Clinic.IsPublished)
                 .Include(d => d.User)
                 .Include(d => d.Specialty)
                 .Include(d => d.Clinic)
