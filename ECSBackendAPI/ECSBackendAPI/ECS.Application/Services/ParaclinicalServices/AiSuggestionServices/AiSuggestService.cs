@@ -2,6 +2,7 @@ using System.Security.Claims;
 using ECS.Application.Common.Response;
 using ECS.Domain.Enums;
 using ECS.Infrastructure.Ai;
+using ECS.Infrastructure.CloudStorage;
 using ECS.Infrastructure.Persistence.MongoDb;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -28,19 +29,22 @@ namespace ECS.Application.Services.ParaclinicalServices.AiSuggestionServices
         private readonly AiServiceOptions _opt;
         private readonly IHttpContextAccessor _http;
         private readonly ILogger<AiSuggestService> _logger;
+        private readonly ICloudStorageService? _cloudStorage;
 
         public AiSuggestService(
             IAiServiceClient ai,
             IMongoDbContext mongo,
             IOptions<AiServiceOptions> opt,
             IHttpContextAccessor http,
-            ILogger<AiSuggestService> logger)
+            ILogger<AiSuggestService> logger,
+            ICloudStorageService? cloudStorage = null)
         {
             _ai = ai;
             _mongo = mongo;
             _opt = opt.Value;
             _http = http;
             _logger = logger;
+            _cloudStorage = cloudStorage;
         }
 
         /// <summary>
@@ -136,6 +140,21 @@ namespace ECS.Application.Services.ParaclinicalServices.AiSuggestionServices
             var task = state.Task;
             if (task == null) return;
 
+            string? imageUrl = null;
+            if (_cloudStorage != null && request.ImageBytes != null && request.ImageBytes.Length > 0)
+            {
+                try
+                {
+                    using var ms = new MemoryStream(request.ImageBytes);
+                    var uploadRes = await _cloudStorage.UploadImageAsync(ms, "oct_scan.jpg", "ecs-oct-scans");
+                    imageUrl = uploadRes.Url;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Cloudinary upload for AI suggestion image failed, proceeding without ImageUrl");
+                }
+            }
+
             var doc = new AiSuggestionDocument
             {
                 RecordId = request.RecordId,
@@ -144,6 +163,7 @@ namespace ECS.Application.Services.ParaclinicalServices.AiSuggestionServices
                 ModelVersion = task.ModelVersion ?? "unknown",
                 PredictedClass = task.PredictedClass,
                 Confidence = task.Confidence,
+                ImageUrl = imageUrl,
                 AllProbabilities = BuildProbabilitiesBson(task.AllProbabilities),
                 Status = task.Status,
                 ErrorCode = task.ErrorCode,
@@ -184,6 +204,7 @@ namespace ECS.Application.Services.ParaclinicalServices.AiSuggestionServices
                 Status = task.Status,
                 PredictedClass = task.PredictedClass,
                 Confidence = task.Confidence,
+                ImageUrl = doc.ImageUrl,
                 AllProbabilities = task.AllProbabilities,
                 ModelVersion = task.ModelVersion,
                 ErrorCode = task.ErrorCode,

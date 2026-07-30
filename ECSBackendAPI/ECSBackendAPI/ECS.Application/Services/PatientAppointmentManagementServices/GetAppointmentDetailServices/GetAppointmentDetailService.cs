@@ -1,12 +1,16 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
+using System.Text.Json;
 using ECS.Application.Common.Response;
 using ECS.Domain.Entities.Patient;
 using ECS.Domain.Entities.Scheduling;
 using ECS.Domain.Enums;
 using ECS.Infrastructure.Persistence;
+using ECS.Infrastructure.Persistence.MongoDb;
 using ECS.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using MongoDB.Bson;
+using MongoDB.Driver;
 
 namespace ECS.Application.Services.PatientAppointmentManagementServices.GetAppointmentDetailServices
 {
@@ -18,28 +22,20 @@ namespace ECS.Application.Services.PatientAppointmentManagementServices.GetAppoi
         private readonly IRepositoryQueryBase<Appointment, Guid, AppDbContext> _appointmentRepository;
         private readonly AppDbContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IMongoDbContext? _mongo;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="GetAppointmentDetailService"/> class with required infrastructure boundaries.
-        /// </summary>
-        /// <param name="appointmentRepository">Repository boundary instance for querying physical appointment records.</param>
-        /// <param name="context">The underlying database persistence instance mapping multi-entity relational graph data models.</param>
-        /// <param name="httpContextAccessor">Accessor to safely retrieve authentication claims identities out of current HTTP request pipelines.</param>
         public GetAppointmentDetailService(
             IRepositoryQueryBase<Appointment, Guid, AppDbContext> appointmentRepository,
             AppDbContext context,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IMongoDbContext? mongo = null)
         {
             _appointmentRepository = appointmentRepository;
             _context = context;
             _httpContextAccessor = httpContextAccessor;
+            _mongo = mongo;
         }
 
-        /// <summary>
-        /// Processes the internal data pipeline workflow to validate access, retrieve appointment details, and map responses.
-        /// </summary>
-        /// <param name="request">The parameters containing appointment ID criteria.</param>
-        /// <returns>An <see cref="ApiResponse{GetAppointmentDetailResponse}"/> enclosing descriptive data structures.</returns>
         public async Task<ApiResponse<GetAppointmentDetailResponse>> Process(GetAppointmentDetailRequest request)
         {
             // Initialize status tracking flags
@@ -68,8 +64,101 @@ namespace ECS.Application.Services.PatientAppointmentManagementServices.GetAppoi
             // Step 5: Map internal domain state segments to serialized outcome presentation representations
             var result = MapToResponseDto(appointment!);
 
+            // Step 5.1: Attach prescription if medical record exists for this appointment
+            if (isPermissionValid && appointment != null)
+            {
+                await AttachPrescriptionAsync(appointment.Id, result);
+            }
+
             // Step 6: Package contextual payloads dynamically to manage outcome states
             return CreateResponse(result, isUserValid, isAppointmentExist, isPermissionValid);
+        }
+
+        private async Task AttachPrescriptionAsync(Guid appointmentId, GetAppointmentDetailResponse result)
+        {
+            try
+            {
+                var medicalRecord = await _context.Set<ECS.Domain.Entities.MedicalRecords.MedicalRecord>()
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(m => m.AppointmentId == appointmentId);
+
+                if (medicalRecord == null) return;
+
+                var prescriptionDto = new PatientPrescriptionDto
+                {
+                    DiagnosisMain = medicalRecord.ChiefComplaint ?? medicalRecord.Summary ?? "Khám mắt chuyên khoa",
+                    DoctorNotes = medicalRecord.Notes
+                };
+
+                if (_mongo != null && !string.IsNullOrEmpty(medicalRecord.MongoDocumentId))
+                {
+                    var mongoDoc = await _mongo.MedicalRecords
+                        .Find(Builders<MedicalRecordDocument>.Filter.Eq(x => x.Id, medicalRecord.MongoDocumentId))
+                        .FirstOrDefaultAsync();
+
+                    if (mongoDoc != null && mongoDoc.FormData != null)
+                    {
+                        var jsonStr = mongoDoc.FormData.ToJson(new MongoDB.Bson.IO.JsonWriterSettings { OutputMode = MongoDB.Bson.IO.JsonOutputMode.RelaxedExtendedJson });
+                        using var jsonDoc = JsonDocument.Parse(jsonStr);
+                        var root = jsonDoc.RootElement;
+
+                        if (root.TryGetProperty("benhAn", out var benhAnObj))
+                        {
+                            if (benhAnObj.TryGetProperty("chanDoanChinh", out var cdc)) prescriptionDto.DiagnosisMain = cdc.GetString() ?? prescriptionDto.DiagnosisMain;
+                            else if (benhAnObj.TryGetProperty("diagnosisMain", out var dm)) prescriptionDto.DiagnosisMain = dm.GetString() ?? prescriptionDto.DiagnosisMain;
+
+                            if (benhAnObj.TryGetProperty("chanDoanKiem", out var cdk)) prescriptionDto.DiagnosisComorbid = cdk.GetString();
+                            else if (benhAnObj.TryGetProperty("diagnosisComorbid", out var dcm)) prescriptionDto.DiagnosisComorbid = dcm.GetString();
+                        }
+
+                        JsonElement prescriptionEl = default;
+                        if (root.TryGetProperty("khamBenh", out var khamBenh))
+                        {
+                            if (khamBenh.TryGetProperty("donThuoc", out var dt)) prescriptionEl = dt;
+                            else if (khamBenh.TryGetProperty("prescription", out var rx)) prescriptionEl = rx;
+                        }
+                        if (prescriptionEl.ValueKind == JsonValueKind.Undefined && root.TryGetProperty("benhAn", out var benhAn))
+                        {
+                            if (benhAn.TryGetProperty("donThuoc", out var dt)) prescriptionEl = dt;
+                            else if (benhAn.TryGetProperty("prescription", out var rx)) prescriptionEl = rx;
+                        }
+
+                        if (prescriptionEl.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var item in prescriptionEl.EnumerateArray())
+                            {
+                                prescriptionDto.Items.Add(ExtractPrescriptionItem(item));
+                            }
+                        }
+                        else if (prescriptionEl.ValueKind == JsonValueKind.Object && prescriptionEl.TryGetProperty("items", out var itemsArray) && itemsArray.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var item in itemsArray.EnumerateArray())
+                            {
+                                prescriptionDto.Items.Add(ExtractPrescriptionItem(item));
+                            }
+                        }
+                    }
+                }
+
+                result.Prescription = prescriptionDto;
+            }
+            catch
+            {
+                // Silently ignore if prescription extraction encounters format errors
+            }
+        }
+
+        private static PatientPrescriptionItemDto ExtractPrescriptionItem(JsonElement item)
+        {
+            return new PatientPrescriptionItemDto
+            {
+                MedicineName = item.TryGetProperty("tenThuoc", out var tn) ? tn.GetString() ?? "" : (item.TryGetProperty("medicineName", out var mn) ? mn.GetString() ?? "" : ""),
+                Dosage = item.TryGetProperty("lieuDung", out var ld) ? ld.GetString() ?? "" : (item.TryGetProperty("dosage", out var d) ? d.GetString() ?? "" : ""),
+                Frequency = item.TryGetProperty("tanSuat", out var ts) ? ts.GetString() ?? "" : (item.TryGetProperty("frequency", out var f) ? f.GetString() ?? "" : ""),
+                DurationDays = item.TryGetProperty("soNgay", out var sn) ? sn.ToString() : (item.TryGetProperty("durationDays", out var dd) ? dd.ToString() : ""),
+                Quantity = item.TryGetProperty("soLuong", out var sl) ? sl.ToString() : (item.TryGetProperty("quantity", out var q) ? q.ToString() : ""),
+                Instruction = item.TryGetProperty("huongDan", out var hd) ? hd.GetString() ?? "" : (item.TryGetProperty("instruction", out var inst) ? inst.GetString() ?? "" : "")
+            };
         }
 
         /// <summary>

@@ -274,6 +274,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Ge
                 CalledAt = queue.CalledAt,
                 CompletedAt = queue.CompletedAt,
                 HasMedicalRecord = appointment.MedicalRecord != null,
+                MedicalRecordId = appointment.MedicalRecord?.Id,
                 HasPreliminaryDiagnosis = appointment.PreliminaryDiagnosis != null,
                 ServiceName = serviceName,
                 BookingSource = bookingSource

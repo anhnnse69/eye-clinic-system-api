@@ -21,6 +21,20 @@ namespace ECS.Infrastructure.CloudStorage
             CancellationToken ct = default);
 
         /// <summary>
+        /// Upload an image file (JPEG, PNG, WEBP, etc.) to Cloudinary image storage.
+        /// </summary>
+        /// <param name="stream">File stream or memory stream of the image.</param>
+        /// <param name="fileName">Original file name.</param>
+        /// <param name="folder">Optional Cloudinary subfolder.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>CloudUploadResult containing secure Cloudinary URL and public ID.</returns>
+        Task<CloudUploadResult> UploadImageAsync(
+            Stream stream,
+            string fileName,
+            string? folder = null,
+            CancellationToken ct = default);
+
+        /// <summary>
         /// Generate a server-signed URL for a private raw resource.
         /// Use TTL = 5 min by default for medical record reads.
         /// </summary>

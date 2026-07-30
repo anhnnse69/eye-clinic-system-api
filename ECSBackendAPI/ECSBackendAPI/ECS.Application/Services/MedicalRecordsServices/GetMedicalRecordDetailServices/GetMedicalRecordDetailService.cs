@@ -63,16 +63,27 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordDetail
             string? editRestrictionReason = null;
             if (!state.HasError && state.Record != null)
             {
+                var today = DateTime.UtcNow.Date;
+                bool isCreatedToday = state.Record.CreatedAt.Date == today || state.Record.Appointment.AppointmentDate.Date == today;
+
                 if (state.IsStaff)
                 {
-                    canEdit = true;
-                    canViewOnly = false;
+                    canEdit = isCreatedToday;
+                    canViewOnly = !canEdit;
+                    editRestrictionReason = !isCreatedToday ? "Hồ sơ bệnh án chỉ được phép chỉnh sửa trong ngày tạo. Đã qua ngày nên không thể chỉnh sửa." : null;
                 }
                 else if (state.UserRole == nameof(UserRole.DOCTOR) && state.Record.DoctorId == state.ProfileId)
                 {
-                    canEdit = !state.Record.IsLocked;
-                    canViewOnly = state.Record.IsLocked;
-                    editRestrictionReason = state.Record.IsLocked ? "Hồ sơ đã bị khóa" : null;
+                    canEdit = !state.Record.IsLocked && isCreatedToday;
+                    canViewOnly = state.Record.IsLocked || !isCreatedToday;
+                    if (state.Record.IsLocked)
+                    {
+                        editRestrictionReason = "Hồ sơ đã bị khóa";
+                    }
+                    else if (!isCreatedToday)
+                    {
+                        editRestrictionReason = "Hồ sơ bệnh án chỉ được phép chỉnh sửa trong ngày tạo. Đã qua ngày nên không thể chỉnh sửa.";
+                    }
                 }
             }
 
@@ -177,7 +188,7 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordDetail
             if (state.HasError) return (null, state);
 
             var record = await _medicalRecordRepository
-                .FindByCondition(x => x.Id == requestId, trackChanges: false)
+                .FindByCondition(x => x.Id == requestId || x.AppointmentId == requestId, trackChanges: false)
                 .AsNoTracking()
                 .Include(x => x.Appointment)
                 .Include(x => x.Patient)
@@ -278,6 +289,19 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordDetail
                 return ApiResponse<GetMedicalRecordDetailResponse>.Fail(state.ErrorCode!);
             }
 
+            var chiefComplaint = record.ChiefComplaint;
+            var summary = record.Summary;
+
+            if (string.IsNullOrEmpty(chiefComplaint) && state.FormData.HasValue)
+            {
+                chiefComplaint = ExtractChiefComplaint(state.FormData.Value);
+            }
+
+            if (string.IsNullOrEmpty(summary) && state.FormData.HasValue)
+            {
+                summary = ExtractSummary(state.FormData.Value);
+            }
+
             var response = new GetMedicalRecordDetailResponse
             {
                 Id = record.Id,
@@ -286,8 +310,8 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordDetail
                 DoctorId = record.DoctorId,
                 RecordType = record.RecordType.ToString(),
                 Status = record.Status.ToString(),
-                ChiefComplaint = record.ChiefComplaint,
-                Summary = record.Summary,
+                ChiefComplaint = chiefComplaint,
+                Summary = summary,
                 Notes = record.Notes,
                 IsLocked = record.IsLocked,
                 FinalizedAt = record.FinalizedAt,
@@ -326,6 +350,32 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordDetail
             return ApiResponse<GetMedicalRecordDetailResponse>.Success(
                 GeneralCode.APP_MESSAGE_2000.ToString(),
                 response);
+        }
+
+        private static string? ExtractChiefComplaint(JsonElement formData)
+        {
+            if (formData.ValueKind != JsonValueKind.Object) return null;
+            if (formData.TryGetProperty("benhAn", out var benhAn) && benhAn.ValueKind == JsonValueKind.Object)
+            {
+                if (benhAn.TryGetProperty("lyDoVaoVien", out var lyDo) && lyDo.ValueKind == JsonValueKind.String)
+                    return lyDo.GetString();
+            }
+            if (formData.TryGetProperty("lyDoVaoVien", out var lyDoDirect) && lyDoDirect.ValueKind == JsonValueKind.String)
+                return lyDoDirect.GetString();
+            return null;
+        }
+
+        private static string? ExtractSummary(JsonElement formData)
+        {
+            if (formData.ValueKind != JsonValueKind.Object) return null;
+            if (formData.TryGetProperty("benhAn", out var benhAn) && benhAn.ValueKind == JsonValueKind.Object)
+            {
+                if (benhAn.TryGetProperty("summary", out var sum) && sum.ValueKind == JsonValueKind.String)
+                    return sum.GetString();
+                if (benhAn.TryGetProperty("benhSu", out var benhSu) && benhSu.ValueKind == JsonValueKind.String)
+                    return benhSu.GetString();
+            }
+            return null;
         }
     }
 }

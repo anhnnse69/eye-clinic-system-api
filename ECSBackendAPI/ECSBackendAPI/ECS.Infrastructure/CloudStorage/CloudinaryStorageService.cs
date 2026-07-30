@@ -120,6 +120,46 @@ namespace ECS.Infrastructure.CloudStorage
             }
         }
 
+        public async Task<CloudUploadResult> UploadImageAsync(
+            Stream stream,
+            string fileName,
+            string? folder = null,
+            CancellationToken ct = default)
+        {
+            var targetFolder = !string.IsNullOrEmpty(folder) ? folder : _options.Folder;
+            var cleanFileName = Path.GetFileNameWithoutExtension(fileName);
+            var publicId = $"{Guid.NewGuid():N}_{cleanFileName}";
+
+            var uploadParams = new ImageUploadParams
+            {
+                File = new FileDescription(fileName, stream),
+                Folder = targetFolder,
+                PublicId = publicId,
+                Overwrite = true,
+                UniqueFilename = false,
+                Tags = "ecs-image,paraclinical"
+            };
+
+            var uploadResult = await _cloudinary.UploadAsync(uploadParams, ct);
+            if (uploadResult.StatusCode != HttpStatusCode.OK)
+            {
+                _logger.LogError("Cloudinary image upload failed for {PublicId}: {Error}",
+                    publicId, uploadResult.Error?.Message);
+                throw new CloudStorageException(
+                    $"Cloudinary image upload failed: {uploadResult.Error?.Message ?? "unknown error"}");
+            }
+
+            _logger.LogInformation(
+                "Cloudinary uploaded image {PublicId} to {Folder}, size={Size}B",
+                publicId, targetFolder, uploadResult.Bytes);
+
+            return new CloudUploadResult(
+                Url: uploadResult.SecureUrl?.ToString() ?? uploadResult.Url?.ToString() ?? string.Empty,
+                PublicId: uploadResult.PublicId,
+                SizeBytes: uploadResult.Bytes,
+                Sha256Checksum: string.Empty);
+        }
+
         public async Task<CloudFetchResult?> FetchAndVerifyAsync(
             string publicId,
             string expectedSha256,

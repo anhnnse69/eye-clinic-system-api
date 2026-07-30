@@ -41,7 +41,18 @@ public class MongoDbContext : IMongoDbContext
         if (string.IsNullOrWhiteSpace(opt.Database))
             throw new InvalidOperationException("MongoDb:Database is not configured.");
 
-        var settings = MongoClientSettings.FromConnectionString(opt.ConnectionString);
+        MongoClientSettings settings;
+        try
+        {
+            settings = MongoClientSettings.FromConnectionString(opt.ConnectionString);
+        }
+        catch (Exception)
+        {
+            // Fallback: If SRV/TXT DNS lookup fails on local router DNS (192.168.x.x), convert to direct shard hosts
+            var fallbackConnStr = GetFallbackConnectionString(opt.ConnectionString);
+            settings = MongoClientSettings.FromConnectionString(fallbackConnStr);
+        }
+
         settings.ApplicationName = opt.ApplicationName ?? "ecs-backend";
         settings.ServerSelectionTimeout = TimeSpan.FromSeconds(opt.ServerSelectionTimeoutSeconds);
 
@@ -51,6 +62,33 @@ public class MongoDbContext : IMongoDbContext
         MedicalRecords = Database.GetCollection<MedicalRecordDocument>(opt.MedicalRecordsCollection);
         LabResults = Database.GetCollection<LabResultDocument>(opt.LabResultsCollection);
         AiSuggestions = Database.GetCollection<AiSuggestionDocument>(opt.AiSuggestionsCollection);
+    }
+
+    private static string GetFallbackConnectionString(string connStr)
+    {
+        if (connStr.StartsWith("mongodb+srv://", StringComparison.OrdinalIgnoreCase))
+        {
+            var body = connStr.Substring("mongodb+srv://".Length);
+            var parts = body.Split('/', 2);
+            var authAndHost = parts[0];
+            var query = parts.Length > 1 && !string.IsNullOrEmpty(parts[1]) ? "/" + parts[1] : "/?retryWrites=true&w=majority";
+
+            if (authAndHost.Contains("@"))
+            {
+                var authSplit = authAndHost.Split('@', 2);
+                var userPass = authSplit[0];
+                var domain = authSplit[1];
+
+                var prefix = domain.EndsWith(".mongodb.net", StringComparison.OrdinalIgnoreCase)
+                    ? domain.Substring(0, domain.Length - ".mongodb.net".Length)
+                    : domain;
+
+                var directHosts = $"{prefix}-shard-00-00.mongodb.net:27017,{prefix}-shard-00-01.mongodb.net:27017,{prefix}-shard-00-02.mongodb.net:27017";
+                var delimiter = query.Contains("?") ? "&" : "?";
+                return $"mongodb://{userPass}@{directHosts}{query}{delimiter}ssl=true&authSource=admin";
+            }
+        }
+        return connStr;
     }
 
     private static void EnsureConventionsRegistered()
@@ -155,6 +193,7 @@ public class AiSuggestionDocument
 
     public string? PredictedClass { get; set; }
     public double? Confidence { get; set; }
+    public string? ImageUrl { get; set; }
     public BsonDocument AllProbabilities { get; set; } = new();
     public string Status { get; set; } = "pending";
     public string? ErrorCode { get; set; }

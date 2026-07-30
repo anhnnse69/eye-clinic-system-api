@@ -11,6 +11,7 @@ using ECS.Infrastructure.Repositories.Interfaces;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 
 namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordServices
@@ -33,6 +34,7 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
         private readonly IValidator<CreateMedicalRecordRequest> _validator;
         private readonly AppDbContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly ILogger<CreateMedicalRecordService> _logger;
 
         public CreateMedicalRecordService(
             IRepositoryQueryBase<Appointment, Guid, AppDbContext> appointmentRepository,
@@ -43,7 +45,8 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
             IMongoDbContext mongo,
             IValidator<CreateMedicalRecordRequest> validator,
             AppDbContext context,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            ILogger<CreateMedicalRecordService> logger)
         {
             _appointmentRepository = appointmentRepository;
             _doctorRepository = doctorRepository;
@@ -54,6 +57,7 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
             _validator = validator;
             _context = context;
             _httpContextAccessor = httpContextAccessor;
+            _logger = logger;
         }
 
         public async Task<ApiResponse<CreateMedicalRecordResponse>> Process(CreateMedicalRecordRequest request)
@@ -107,10 +111,15 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
         // ────────────────────────────────────────────────────────────
         private void ValidateRequest(CreateMedicalRecordRequest request, ExecutionState state)
         {
+            _logger.LogInformation("Starting validation. AppointmentId: {AppointmentId}, PatientId: {PatientId}, RecordType: {RecordType}",
+                request.AppointmentId, request.PatientId, request.RecordType);
+
             var result = _validator.Validate(request);
             state.HasError = !result.IsValid;
             if (!result.IsValid)
             {
+                _logger.LogWarning("Validation failed. Errors: {Errors}",
+                    string.Join(", ", result.Errors.Select(e => $"{e.PropertyName}: {e.ErrorMessage}")));
                 state.ErrorCode = GeneralCode.APP_MESSAGE_4019.ToString();
             }
         }
@@ -119,6 +128,7 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
         {
             if (state.HasError) return;
             var principalIdValue = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            _logger.LogDebug("Extracted user ID from claims: {UserId}", principalIdValue);
             var parseResult = Guid.TryParse(principalIdValue, out var parsedUserId);
             state.ActiveUserId = parseResult ? parsedUserId : Guid.Empty;
             state.HasError = !parseResult;
@@ -243,9 +253,12 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
             {
                 await _mongo.MedicalRecords.InsertOneAsync(mongoDoc);
                 state.MongoDocumentId = mongoDoc.Id;
+                _logger.LogInformation("MongoDB insert successful. DocumentId: {DocumentId}", mongoDoc.Id);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "MongoDB insert failed. AppointmentId: {AppointmentId}, PatientId: {PatientId}",
+                    state.AppointmentId, state.PatientId);
                 state.HasError = true;
                 state.ErrorCode = GeneralCode.APP_MESSAGE_5001.ToString();
                 return;
@@ -280,17 +293,22 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
                 await _context.SaveChangesAsync();
                 state.CreatedMedicalRecord = medicalRecord;
                 state.RecordTypeLabel = GetRecordTypeLabel(recordType);
+                _logger.LogInformation("SQL SaveChanges successful. MedicalRecordId: {MedicalRecordId}", medicalRecord.Id);
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "SQL SaveChanges failed. MedicalRecordId: {RecordId}, AppointmentId: {AppointmentId}",
+                    recordId, state.AppointmentId);
                 // Roll back Mongo insert so we don't leave orphan documents behind.
                 try
                 {
                     await _mongo.MedicalRecords.DeleteOneAsync(
                         MongoDB.Driver.Builders<MedicalRecordDocument>.Filter.Eq(x => x.Id, mongoDoc.Id));
+                    _logger.LogInformation("MongoDB rollback successful after SQL failure. DocumentId: {DocumentId}", mongoDoc.Id);
                 }
-                catch
+                catch (Exception rollbackEx)
                 {
+                    _logger.LogError(rollbackEx, "MongoDB rollback failed. DocumentId: {DocumentId}", mongoDoc.Id);
                     /* swallow secondary cleanup failure */
                 }
                 state.HasError = true;
