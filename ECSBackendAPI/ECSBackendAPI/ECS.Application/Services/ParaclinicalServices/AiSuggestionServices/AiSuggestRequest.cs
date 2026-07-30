@@ -30,6 +30,7 @@ namespace ECS.Application.Services.ParaclinicalServices.AiSuggestionServices
         public string Status { get; set; } = string.Empty;
         public string? PredictedClass { get; set; }
         public double? Confidence { get; set; }
+        public string? ImageUrl { get; set; }
         public Dictionary<string, double>? AllProbabilities { get; set; }
         public string? ModelVersion { get; set; }
         public string? ErrorCode { get; set; }

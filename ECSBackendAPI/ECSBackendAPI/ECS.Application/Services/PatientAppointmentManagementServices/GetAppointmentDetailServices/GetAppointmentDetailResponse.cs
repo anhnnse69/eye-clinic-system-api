@@ -1,4 +1,4 @@
-﻿namespace ECS.Application.Services.PatientAppointmentManagementServices.GetAppointmentDetailServices
+namespace ECS.Application.Services.PatientAppointmentManagementServices.GetAppointmentDetailServices
 {
     /// <summary>
     /// Response object containing comprehensive appointment details for the patient.
@@ -103,6 +103,36 @@
         /// Gets or sets the feedback details for the appointment.
         /// </summary>
         public FeedbackDetail? Feedback { get; set; }
+
+        // Prescription (optional)
+        /// <summary>
+        /// Gets or sets the prescription details if doctor prescribed medicines for this appointment.
+        /// </summary>
+        public PatientPrescriptionDto? Prescription { get; set; }
+    }
+
+    /// <summary>
+    /// Prescription details associated with an appointment medical record.
+    /// </summary>
+    public class PatientPrescriptionDto
+    {
+        public string DiagnosisMain { get; set; } = string.Empty;
+        public string? DiagnosisComorbid { get; set; }
+        public string? DoctorNotes { get; set; }
+        public List<PatientPrescriptionItemDto> Items { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Individual medicine item in a prescription.
+    /// </summary>
+    public class PatientPrescriptionItemDto
+    {
+        public string MedicineName { get; set; } = string.Empty;
+        public string Dosage { get; set; } = string.Empty;
+        public string Frequency { get; set; } = string.Empty;
+        public string DurationDays { get; set; } = string.Empty;
+        public string Quantity { get; set; } = string.Empty;
+        public string Instruction { get; set; } = string.Empty;
     }
 
     /// <summary>

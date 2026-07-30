@@ -1,4 +1,4 @@
-﻿using ECS.Application.Services.AuthServices.UpdatePersonalProfileServices;
+using ECS.Application.Services.AuthServices.UpdatePersonalProfileServices;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +10,7 @@ namespace ECS.API.Controllers.AuthController
     /// </summary>
     [ApiController]
     [Route("api/v1/auth/profile")]
-    [Authorize(Roles = "DOCTOR,RECEPTIONIST")]
+    [Authorize(Roles = "PATIENT,DOCTOR,CLINIC_ADMIN,RECEPTIONIST,SYSTEM_ADMIN")]
     public class UpdatePersonalProfileController : ControllerBase
     {
         private readonly IUpdatePersonalProfileService _profileService;

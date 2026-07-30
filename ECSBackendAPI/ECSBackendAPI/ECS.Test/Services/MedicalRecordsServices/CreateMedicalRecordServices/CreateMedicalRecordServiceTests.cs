@@ -15,6 +15,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MockQueryable.Moq;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -43,6 +44,7 @@ namespace ECS.Test.Services.MedicalRecordsServices.CreateMedicalRecordServices
         private readonly Mock<IMongoCollection<MedicalRecordDocument>> _mongoCollectionMock = new();
         private readonly Mock<IValidator<CreateMedicalRecordRequest>> _validatorMock = new();
         private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock = new();
+        private readonly Mock<ILogger<CreateMedicalRecordService>> _loggerMock = new();
         private AppDbContext _context;
         private CreateMedicalRecordService _sut;
 
@@ -115,7 +117,8 @@ namespace ECS.Test.Services.MedicalRecordsServices.CreateMedicalRecordServices
             _mongoMock.Object,
             _validatorMock.Object,
             _context,
-            _httpContextAccessorMock.Object);
+            _httpContextAccessorMock.Object,
+            _loggerMock.Object);
 
         // ─────────────────────────────────────────────────────────────────
         // Helpers

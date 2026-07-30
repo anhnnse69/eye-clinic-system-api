@@ -152,9 +152,10 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServi
             return records.Select(record =>
             {
                 var appointmentDate = record.Appointment.AppointmentDate.Date;
-                var isToday = appointmentDate == today;
-                var isPast = appointmentDate < today;
-                var isFuture = appointmentDate > today;
+                var createdDate = record.CreatedAt.Date;
+                var isToday = appointmentDate == today || createdDate == today;
+                var isPast = appointmentDate < today && createdDate < today;
+                var isFuture = appointmentDate > today && createdDate > today;
                 var isCurrentDoctor = record.DoctorId == currentDoctorId;
                 var isLocked = record.IsLocked;
 
@@ -163,8 +164,7 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServi
 
                 string? restrictionReason = isLocked ? "Hồ sơ đã bị khóa"
                     : !isCurrentDoctor ? "Bạn không phải bác sĩ điều trị của hồ sơ này"
-                    : isPast ? "Cuộc hẹn đã qua ngày khám"
-                    : isFuture ? "Cuộc hẹn chưa đến ngày khám"
+                    : !isToday ? "Hồ sơ bệnh án đã qua ngày tạo nên không thể chỉnh sửa"
                     : null;
 
                 return new GetMedicalRecordsResponse

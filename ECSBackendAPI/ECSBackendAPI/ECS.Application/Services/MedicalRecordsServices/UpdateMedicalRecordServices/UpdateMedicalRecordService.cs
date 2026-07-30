@@ -171,6 +171,15 @@ namespace ECS.Application.Services.MedicalRecordsServices.UpdateMedicalRecordSer
             {
                 state.HasError = true;
                 state.ErrorCode = GeneralCode.APP_MESSAGE_4028.ToString();
+                return;
+            }
+
+            var today = DateTime.UtcNow.Date;
+            bool isCreatedToday = state.MedicalRecord.CreatedAt.Date == today || (state.MedicalRecord.Appointment != null && state.MedicalRecord.Appointment.AppointmentDate.Date == today);
+            if (!isCreatedToday)
+            {
+                state.HasError = true;
+                state.ErrorCode = GeneralCode.APP_MESSAGE_4028.ToString();
             }
         }
 
