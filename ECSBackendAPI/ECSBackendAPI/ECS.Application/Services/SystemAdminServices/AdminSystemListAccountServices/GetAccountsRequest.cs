@@ -1,4 +1,4 @@
-﻿using ECS.Domain.Enums;
+using ECS.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -24,6 +24,11 @@ namespace ECS.Application.Services.SystemAdminServices.AdminSystemListAccountSer
         /// Optional status filter tracking active/inactive user flags.
         /// </summary>
         public bool? IsActive { get; set; }
+
+        /// <summary>
+        /// Optional clinic filter tracking clinic id matching staff clinics.
+        /// </summary>
+        public Guid? ClinicId { get; set; }
 
         /// <summary>
         /// The active index page position mapping boundary indicator.
