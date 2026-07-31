@@ -1,4 +1,4 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 using System.Security.Claims;
 using ECS.Application.Common.Response;
 using ECS.Domain.Entities.Auth;
@@ -121,8 +121,10 @@ namespace ECS.Application.Services.SystemAdminServices.AdminSystemListAccountSer
             var searchTerm = request.SearchTerm?.Trim().ToLower();
 
             return x =>
-                (!request.Role.HasValue || x.Role == request.Role.Value)
+                x.Role != UserRole.SYSTEM_ADMIN
+                && (!request.Role.HasValue || x.Role == request.Role.Value)
                 && (!request.IsActive.HasValue || x.IsActive == request.IsActive.Value)
+                && (!request.ClinicId.HasValue || (x.StaffClinics != null && x.StaffClinics.Any(sc => sc.ClinicId == request.ClinicId.Value)))
                 && (string.IsNullOrEmpty(searchTerm)
                     || x.FullName.ToLower().Contains(searchTerm)
                     || x.Phone.ToLower().Contains(searchTerm));
