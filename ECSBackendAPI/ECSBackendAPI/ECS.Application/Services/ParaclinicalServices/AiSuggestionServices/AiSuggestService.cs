@@ -159,7 +159,7 @@ namespace ECS.Application.Services.ParaclinicalServices.AiSuggestionServices
             {
                 RecordId = request.RecordId,
                 LabResultId = request.LabResultId,
-                ModelName = "VGG16_BN_OCT_Classifier",
+                ModelName = "VGG16_OCT_4class",
                 ModelVersion = task.ModelVersion ?? "unknown",
                 PredictedClass = task.PredictedClass,
                 Confidence = task.Confidence,
