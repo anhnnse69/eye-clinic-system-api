@@ -156,8 +156,10 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
         private async Task GetAppointmentAsync(ExecutionState state)
         {
             if (state.HasError) return;
+            // Track changes so the appointment entity can be updated and saved
+            // inside the same transaction as the MedicalRecord insert.
             var appointment = await _appointmentRepository
-                .FindByCondition(a => a.Id == state.AppointmentId, trackChanges: false)
+                .FindByCondition(a => a.Id == state.AppointmentId, trackChanges: true)
                 .Include(a => a.Patient)
                 .Include(a => a.Doctor).ThenInclude(d => d.User)
                 .FirstOrDefaultAsync();
@@ -288,12 +290,33 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
 
             _context.MedicalRecords.Add(medicalRecord);
 
+            // ─── Stage Appointment + Queue status changes in the same DbContext ────
+            // Creating a medical record means the consultation has been finalized.
+            // Move the appointment to COMPLETED so the patient sees "Đã khám xong"
+            // instead of being stuck in "Đang khám" (IN_PROGRESS). We stage the
+            // change here so it shares the single SaveChangesAsync below —
+            // either all three writes (MedicalRecord + Appointment + Queue) commit
+            // together, or none of them do.
+            state.Appointment.Status = AppointmentStatus.COMPLETED;
+            state.Appointment.UpdatedAt = DateTime.UtcNow;
+            _context.Appointments.Update(state.Appointment);
+
+            var queue = await _context.Queues.FirstOrDefaultAsync(q => q.AppointmentId == state.AppointmentId);
+            if (queue != null)
+            {
+                queue.Status = QueueStatus.COMPLETED;
+                queue.CompletedAt = DateTime.UtcNow;
+                _context.Queues.Update(queue);
+            }
+
             try
             {
                 await _context.SaveChangesAsync();
                 state.CreatedMedicalRecord = medicalRecord;
                 state.RecordTypeLabel = GetRecordTypeLabel(recordType);
-                _logger.LogInformation("SQL SaveChanges successful. MedicalRecordId: {MedicalRecordId}", medicalRecord.Id);
+                _logger.LogInformation(
+                    "SQL SaveChanges successful (single transaction). MedicalRecordId: {MedicalRecordId}, AppointmentId: {AppointmentId} -> COMPLETED",
+                    medicalRecord.Id, state.AppointmentId);
             }
             catch (Exception ex)
             {
@@ -316,12 +339,26 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
             }
         }
 
+        // ────────────────────────────────────────────────────────────
+        // Status update is now staged INSIDE CreateMedicalRecordAsync so it
+        // commits within the same SQL transaction as the MedicalRecord insert.
+        // This method is kept for backwards compatibility and is a no-op when
+        // the staged change already happened.
+        // ────────────────────────────────────────────────────────────
         private async Task UpdateStatusesAsync(ExecutionState state)
         {
             if (state.HasError || state.Appointment == null) return;
+            if (state.Appointment.Status == AppointmentStatus.COMPLETED)
+            {
+                _logger.LogDebug(
+                    "UpdateStatusesAsync skipped: AppointmentId {AppointmentId} already marked COMPLETED by the main transaction.",
+                    state.AppointmentId);
+                return;
+            }
+
             try
             {
-                state.Appointment.Status = AppointmentStatus.IN_PROGRESS;
+                state.Appointment.Status = AppointmentStatus.COMPLETED;
                 state.Appointment.UpdatedAt = DateTime.UtcNow;
                 _context.Appointments.Update(state.Appointment);
 
@@ -333,10 +370,15 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
                     _context.Queues.Update(queue);
                 }
                 await _context.SaveChangesAsync();
+                _logger.LogInformation(
+                    "UpdateStatusesAsync fallback commit successful. AppointmentId: {AppointmentId} -> COMPLETED",
+                    state.AppointmentId);
             }
-            catch
+            catch (Exception ex)
             {
-                /* non-critical; ignore */
+                _logger.LogWarning(ex,
+                    "UpdateStatusesAsync fallback failed for AppointmentId: {AppointmentId}",
+                    state.AppointmentId);
             }
         }
 

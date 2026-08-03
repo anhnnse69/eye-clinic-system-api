@@ -290,6 +290,7 @@ namespace ECS.Application.Services.PatientAppointmentManagementServices.GetAppoi
             {
                 // Basic Info
                 Id_appointment = appointment.Id.ToString(),
+                PatientId = appointment.PatientId.ToString(),
                 Status = appointment.Status.ToString(),
                 CreatedAt = appointment.CreatedAt.ToString("dd/MM/yyyy HH:mm"),
 

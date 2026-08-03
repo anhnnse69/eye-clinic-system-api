@@ -168,16 +168,20 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Co
         }
 
         /// <summary>
-        /// Verifies that a preliminary diagnosis exists for the appointment.
+        /// Verifies that a medical record exists for the appointment.
         /// This is required before completing the queue.
         /// </summary>
         private void VerifyMedicalRecordExists(ExecutionState state)
         {
             if (state.HasError || state.Queue == null || state.Appointment == null) return;
-            
-            // Check if preliminary diagnosis exists (required for completing queue)
+
+            // A consultation is considered complete when the doctor has produced a
+            // MedicalRecord (the full-form clinical record) OR has captured a
+            // PreliminaryDiagnosis (triage screen). Accept either so the queue
+            // can move to COMPLETED in all real flows.
+            var hasMedicalRecord = state.Appointment.MedicalRecord != null;
             var hasPreliminaryDiagnosis = state.Appointment.PreliminaryDiagnosis != null;
-            state.IsMedicalRecordValid = hasPreliminaryDiagnosis;
+            state.IsMedicalRecordValid = hasMedicalRecord || hasPreliminaryDiagnosis;
             // See GetQueueAsync for the rationale behind avoiding `||` here.
             if (!state.IsMedicalRecordValid)
             {
@@ -185,8 +189,8 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Co
             }
 
             // Debug log
-            Console.WriteLine($"[CompleteQueue] HasPreliminaryDiagnosis: {hasPreliminaryDiagnosis}, AppointmentId: {state.Appointment.Id}");
-            
+            Console.WriteLine($"[CompleteQueue] HasMedicalRecord: {hasMedicalRecord}, HasPreliminaryDiagnosis: {hasPreliminaryDiagnosis}, AppointmentId: {state.Appointment.Id}");
+
             state.ErrorCode = state.IsMedicalRecordValid ? state.ErrorCode : GeneralCode.APP_MESSAGE_4028.ToString();
         }
 
