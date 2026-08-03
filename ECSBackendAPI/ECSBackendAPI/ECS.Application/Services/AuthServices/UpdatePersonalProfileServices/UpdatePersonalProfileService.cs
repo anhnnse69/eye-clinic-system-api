@@ -1,4 +1,4 @@
-﻿using ECS.Application.Common.Response;
+using ECS.Application.Common.Response;
 using ECS.Domain.Entities.Auth;
 using ECS.Domain.Enums;
 using ECS.Infrastructure.Persistence;
@@ -52,6 +52,7 @@ namespace ECS.Application.Services.AuthServices.UpdatePersonalProfileServices
         {
             var user = await _userRepository.FindAll(trackChanges: true)
                 .Include(u => u.DoctorProfiles)
+                .Include(u => u.StaffClinics)
                 .FirstOrDefaultAsync(u => u.Id == userId);
             return user ?? throw new KeyNotFoundException("APP_MESSAGE_404_USER_NOT_FOUND");
         }
@@ -90,6 +91,27 @@ namespace ECS.Application.Services.AuthServices.UpdatePersonalProfileServices
                     activeDoctorProfile.Bio = request.Bio?.Trim();
                     activeDoctorProfile.SpecialtyId = request.SpecialtyId;
                     activeDoctorProfile.UpdatedAt = DateTime.UtcNow;
+                }
+                else
+                {
+                    var staffClinic = user.StaffClinics?.FirstOrDefault(sc => sc.IsActive);
+                    var clinicId = staffClinic?.ClinicId ?? Guid.Empty;
+                    user.DoctorProfiles ??= new List<ECS.Domain.Entities.Clinics.DoctorProfile>();
+                    user.DoctorProfiles.Add(new ECS.Domain.Entities.Clinics.DoctorProfile
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = user.Id,
+                        ClinicId = clinicId,
+                        Title = request.Title?.Trim() ?? "Bác sĩ",
+                        ExperienceYears = request.ExperienceYears,
+                        Bio = request.Bio?.Trim() ?? "Thông tin giới thiệu bác sĩ chưa được cập nhật.",
+                        SpecialtyId = request.SpecialtyId,
+                        IsActive = true,
+                        RatingAvg = 0,
+                        ReviewCount = 0,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    });
                 }
             }
         }

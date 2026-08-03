@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using ECS.Application.Common.Response;
 using ECS.Domain.Entities.Auth;
 using ECS.Domain.Entities.Clinics;
@@ -193,6 +193,28 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.CreateStaffAcco
                     UpdatedAt = DateTime.UtcNow
                 }
             };
+
+            if (parsedStaffRole == StaffRole.DOCTOR)
+            {
+                createdUser.DoctorProfiles = new List<DoctorProfile>
+                {
+                    new DoctorProfile
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = createdUser.Id,
+                        ClinicId = targetClinicId,
+                        SpecialtyId = null,
+                        Title = "Bác sĩ",
+                        ExperienceYears = 0,
+                        Bio = "Thông tin giới thiệu bác sĩ chưa được cập nhật.",
+                        IsActive = true,
+                        RatingAvg = 0,
+                        ReviewCount = 0,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    }
+                };
+            }
 
             return createdUser;
         }
