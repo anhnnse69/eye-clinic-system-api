@@ -12,6 +12,12 @@ namespace ECS.Application.Services.PatientAppointmentManagementServices.GetAppoi
         public string Id_appointment { get; set; } = null!;
 
         /// <summary>
+        /// Gets or sets the patient profile ID this appointment belongs to.
+        /// Used by the patient UI to filter prescriptions/records per profile.
+        /// </summary>
+        public string PatientId { get; set; } = null!;
+
+        /// <summary>
         /// Gets or sets the serialized text identifier tracking specific state lifecycle nodes of an appointment.
         /// </summary>
         public string Status { get; set; } = null!;
