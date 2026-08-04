@@ -28,9 +28,10 @@ namespace ECS.API.Controllers.CustomController
 
         /// <summary>
         /// Multipart upload endpoint: <c>file</c> (IFormFile), optional <c>folder</c>.
-        /// Uploads the image directly to Cloudinary and returns the secure image URL.
+        /// Uploads the image or document directly to Cloudinary and returns the secure image URL.
         /// </summary>
         [HttpPost("image")]
+        [AllowAnonymous]
         [Consumes("multipart/form-data")]
         [ProducesResponseType(typeof(ApiResponse<UploadImageResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<UploadImageResponse>), StatusCodes.Status400BadRequest)]
@@ -44,8 +45,8 @@ namespace ECS.API.Controllers.CustomController
                 return BadRequest(ApiResponse<UploadImageResponse>.Fail("APP_MESSAGE_4003"));
             }
 
-            // Validate image extension / mime type
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp" };
+            // Validate image extension / mime type (including .pdf for business licenses / documents)
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".pdf" };
             var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
             if (string.IsNullOrEmpty(ext) || !allowedExtensions.Contains(ext))
             {

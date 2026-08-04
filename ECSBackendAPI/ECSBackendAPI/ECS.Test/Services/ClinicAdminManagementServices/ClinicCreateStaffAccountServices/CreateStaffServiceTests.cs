@@ -429,7 +429,10 @@ namespace ECS.Test.Services.ClinicAdminManagementServices.ClinicCreateStaffAccou
             _userRepoMock.Verify(
                 r => r.CreateAsync(It.Is<User>(u =>
                     u.Role == UserRole.DOCTOR &&
-                    u.StaffClinics.First().Role == StaffRole.DOCTOR)),
+                    u.StaffClinics.First().Role == StaffRole.DOCTOR &&
+                    u.DoctorProfiles != null &&
+                    u.DoctorProfiles.Count == 1 &&
+                    u.DoctorProfiles.First().ClinicId == CreateStaffMockData.TestClinicId)),
                 Times.Once);
         }
 

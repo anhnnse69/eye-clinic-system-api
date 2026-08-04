@@ -1,4 +1,4 @@
-﻿using ECS.Application.Common.Response;
+using ECS.Application.Common.Response;
 using ECS.Domain.Entities.Clinics;
 using ECS.Domain.Enums;
 using ECS.Infrastructure.Persistence;
@@ -39,7 +39,7 @@ namespace ECS.Application.Services.SystemAdminServices.ApproveClinicApplicationS
             // Fetch and validate the active application request record
             var application = await FetchAndValidateApplication(id);
             // Update application parameters into approved state
-            UpdateToApprovedState(application, adminId);
+            await UpdateToApprovedState(application, adminId);
             // Provision a new minimal structural clinic space mapped from request parameters
             await ProvisionNewClinic(application);
             // Execute atomicity unit of work persistence operations
@@ -54,7 +54,7 @@ namespace ECS.Application.Services.SystemAdminServices.ApproveClinicApplicationS
         private async Task<ClinicRegistrationRequest> FetchAndValidateApplication(Guid id)
         {
             var application = await _requestRepository.FindByCondition(x => x.Id == id, trackChanges: true)
-                                                      .FirstOrDefaultAsync();
+                                                       .FirstOrDefaultAsync();
 
             if (application == null)
             {
@@ -70,13 +70,13 @@ namespace ECS.Application.Services.SystemAdminServices.ApproveClinicApplicationS
         /// <summary>
         /// Transitions the model status flags over into standard Approved tracking parameters.
         /// </summary>
-        private void UpdateToApprovedState(ClinicRegistrationRequest application, Guid adminId)
+        private async Task UpdateToApprovedState(ClinicRegistrationRequest application, Guid adminId)
         {
             application.Status = "APPROVED";
             application.ReviewedBy = adminId;
             application.ReviewedAt = DateTime.UtcNow;
             application.ReviewNote = null;
-            _requestRepository.UpdateAsync(application);
+            await _requestRepository.UpdateAsync(application);
         }
 
         /// <summary>

@@ -1,4 +1,4 @@
-﻿using ECS.Application.Common.Response;
+using ECS.Application.Common.Response;
 using ECS.Domain.Entities.Clinics;
 using ECS.Domain.Enums;
 using ECS.Infrastructure.Persistence;
@@ -37,7 +37,7 @@ namespace ECS.Application.Services.SystemAdminServices.RejectClinicApplicationSe
             // Retrieve active persistence entity tracking changes
             var application = await FetchAndValidateApplication(id);
             // Apply mutation details onto the target record
-            UpdateToRejectedState(application, request.ReviewNote, adminId);
+            await UpdateToRejectedState(application, request.ReviewNote, adminId);
             // Persist modified entity state to data storage
             await SaveChanges();
             // Return standardized API envelope response
@@ -76,13 +76,13 @@ namespace ECS.Application.Services.SystemAdminServices.RejectClinicApplicationSe
         /// <summary>
         /// Updates the internal persistence values into a rejected state.
         /// </summary>
-        private void UpdateToRejectedState(ClinicRegistrationRequest application, string reviewNote, Guid adminId)
+        private async Task UpdateToRejectedState(ClinicRegistrationRequest application, string reviewNote, Guid adminId)
         {
             application.Status = "REJECTED";
             application.ReviewNote = reviewNote;
             application.ReviewedBy = adminId;
             application.ReviewedAt = DateTime.UtcNow;
-            _repository.UpdateAsync(application);
+            await _repository.UpdateAsync(application);
         }
 
         /// <summary>

@@ -1,4 +1,4 @@
-﻿using ECS.Application.Common.Response;
+using ECS.Application.Common.Response;
 using ECS.Domain.Entities.Auth;
 using ECS.Domain.Enums;
 using ECS.Infrastructure.Persistence;
@@ -94,15 +94,31 @@ namespace ECS.Application.Services.AuthServices.ViewPersonalProfileServices
                 {
                     response.Clinic = new ClinicInfoNested
                     {
-                        Name = doctorProfile.Clinic.Name,
-                        Address = doctorProfile.Clinic.Address
+                        Name = doctorProfile.Clinic?.Name ?? user.StaffClinics?.FirstOrDefault()?.Clinic?.Name ?? "Chưa phân bổ",
+                        Address = doctorProfile.Clinic?.Address ?? user.StaffClinics?.FirstOrDefault()?.Clinic?.Address ?? "Chưa cập nhật"
                     };
                     response.DoctorProfile = new DoctorProfileNested
                     {
-                        Title = doctorProfile.Title,
+                        Title = doctorProfile.Title ?? "Bác sĩ",
                         ExperienceYears = doctorProfile.ExperienceYears,
-                        Bio = doctorProfile.Bio,
+                        Bio = doctorProfile.Bio ?? "Thông tin giới thiệu bác sĩ chưa được cập nhật.",
                         SpecialtyName = doctorProfile.Specialty?.Name ?? "Mắt tổng quát"
+                    };
+                }
+                else
+                {
+                    var staffClinic = user.StaffClinics?.FirstOrDefault(sc => sc.IsActive);
+                    response.Clinic = new ClinicInfoNested
+                    {
+                        Name = staffClinic?.Clinic?.Name ?? "Chưa phân bổ",
+                        Address = staffClinic?.Clinic?.Address ?? "Chưa cập nhật"
+                    };
+                    response.DoctorProfile = new DoctorProfileNested
+                    {
+                        Title = "Bác sĩ",
+                        ExperienceYears = 0,
+                        Bio = "Thông tin giới thiệu bác sĩ chưa được cập nhật.",
+                        SpecialtyName = "Mắt tổng quát"
                     };
                 }
             }
