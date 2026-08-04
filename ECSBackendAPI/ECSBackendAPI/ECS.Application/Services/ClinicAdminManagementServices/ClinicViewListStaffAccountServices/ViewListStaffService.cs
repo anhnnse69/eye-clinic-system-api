@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using ECS.Application.Common.Response;
 using ECS.Domain.Entities.Clinics;
 using ECS.Domain.Enums;
@@ -120,8 +120,8 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.ViewListStaffAc
                 return Enumerable.Empty<StaffClinic>().AsQueryable();
             }
 
-            // Note: The condition x.IsActive is removed from baseline filter to completely fetch both active and inactive staff records
-            var query = _staffClinicRepository.FindByCondition(x => x.ClinicId == clinicId!.Value, trackChanges: false, x => x.User!);
+            // Filter out CLINIC_ADMIN accounts so only staff (Doctor, Receptionist) are displayed in the clinic staff list
+            var query = _staffClinicRepository.FindByCondition(x => x.ClinicId == clinicId!.Value && x.Role != StaffRole.CLINIC_ADMIN, trackChanges: false, x => x.User!);
 
             // Conditional active state visibility modifier filtering mapping configurations
             if (request.IsActive.HasValue)
