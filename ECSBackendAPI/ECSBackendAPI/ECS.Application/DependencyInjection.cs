@@ -6,6 +6,7 @@ using ECS.Application.Services.AuthServices.ResetPasswordServices;
 using ECS.Application.Services.AuthServices.UpdatePersonalProfileServices;
 using ECS.Application.Services.AuthServices.ViewAccountInfoServices;
 using ECS.Application.Services.AuthServices.ViewPersonalProfileServices;
+using ECS.Application.Services.ClinicAdminManagementServices.ExportClinicReportServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicAppointmentServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicCreateMedicineServices;
 using ECS.Application.Services.ClinicAdminManagementServices.ClinicCreateRoomSevices;
@@ -132,6 +133,7 @@ public static class DependencyInjection
         services.AddScoped<IViewClinicService, ViewClinicService>();
         services.AddScoped<IEditClinicProfileService, EditClinicProfileService>();
         services.AddScoped<IViewClinicDashboardService, ViewClinicDashboardService>();
+        services.AddScoped<IExportClinicReportService, ExportClinicReportService>();
         services.AddScoped<IViewListStaffService, ViewListStaffService>();
         services.AddScoped<IGetClinicsService, GetClinicsService>();
         services.AddScoped<ICreateStaffService, CreateStaffService>();
