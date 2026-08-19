@@ -44,7 +44,7 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.RequestPublishC
 
         /// <summary>
         /// Processes the complete clinic publication request workflow including identity validation,
-        /// clinic ownership verification, publication status checks,
+        /// clinic ownership verification, publication status checks, business conditions validation,
         /// and persistence of publication request modifications.
         /// </summary>
         /// <param name="request">
@@ -63,6 +63,9 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.RequestPublishC
             bool isAlreadyPublished = false;
             bool isAlreadyRequested = false;
 
+            // Tracking flag for profile business validation
+            bool isValidationFailed = false;
+
             // Step 1: Extract identity information parameter metrics from active security claim session context
             var userId = RetrieveUserId(ref isUserValid);
 
@@ -72,7 +75,7 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.RequestPublishC
             // Step 3: Track context validation parameters safely before hitting core processing pipelines
             ValidateClinicContext(staffClinic, isUserValid, ref isClinicExist);
 
-            // Step 4: Retrieve target clinic entity
+            // Step 4: Retrieve target clinic entity with full relational navigation properties
             var clinic = await RetrieveClinic(staffClinic, isClinicExist);
 
             ValidateClinicExistence(clinic, ref isClinicExist);
@@ -83,11 +86,33 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.RequestPublishC
             // Step 6: Check publication status
             ValidatePublicationStatus(clinic, isClinicExist, isAuthorizedClinic, ref isAlreadyPublished, ref isAlreadyRequested);
 
-            // Step 7: Apply modifications to entity
-            UpdateClinicPublicationRequest(clinic, isClinicExist, isAuthorizedClinic, isAlreadyPublished, isAlreadyRequested);
+            // Step 7: Validate the 8 required profile completeness conditions
+            ValidateClinicBusinessConditions(
+                clinic,
+                isClinicExist,
+                isAuthorizedClinic,
+                isAlreadyPublished,
+                isAlreadyRequested,
+                ref isValidationFailed);
 
-            // Step 8: Persist changes and package processing outcome
-            return await CreateResponse(clinic, isUserValid, isClinicExist, isAuthorizedClinic, isAlreadyPublished, isAlreadyRequested);
+            // Step 8: Apply modifications to entity if all checks pass
+            UpdateClinicPublicationRequest(
+                clinic,
+                isClinicExist,
+                isAuthorizedClinic,
+                isAlreadyPublished,
+                isAlreadyRequested,
+                isValidationFailed);
+
+            // Step 9: Persist changes and package processing outcome
+            return await CreateResponse(
+                clinic,
+                isUserValid,
+                isClinicExist,
+                isAuthorizedClinic,
+                isAlreadyPublished,
+                isAlreadyRequested,
+                isValidationFailed);
         }
 
         /// <summary>
@@ -168,7 +193,7 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.RequestPublishC
         }
 
         /// <summary>
-        /// Retrieves the targeted clinic entity from persistence storage using the staff clinic relationship.
+        /// Retrieves the targeted clinic entity from persistence storage including related staff, facility rooms, and services.
         /// </summary>
         /// <param name="staffClinic">
         /// The staff clinic relationship entity.
@@ -177,7 +202,7 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.RequestPublishC
         /// Validation flag indicating whether clinic context verification succeeded.
         /// </param>
         /// <returns>
-        /// The matching clinic entity if found; otherwise null.
+        /// The matching clinic entity including navigation properties if found; otherwise null.
         /// </returns>
         private async Task<Clinic?> RetrieveClinic(StaffClinic? staffClinic, bool isClinicExist)
         {
@@ -187,7 +212,12 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.RequestPublishC
             }
 
             return await _clinicRepository
-                .FindByCondition(x => x.Id == staffClinic.ClinicId)
+                .FindByCondition(
+                    x => x.Id == staffClinic.ClinicId,
+                    trackChanges: true,
+                    x => x.StaffClinics!,
+                    x => x.FacilityRooms!,
+                    x => x.Services!)
                 .FirstOrDefaultAsync();
         }
 
@@ -282,36 +312,99 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.RequestPublishC
         }
 
         /// <summary>
+        /// Validates the 8 essential profile completeness conditions prior to allowing publication requests.
+        /// </summary>
+        private void ValidateClinicBusinessConditions(
+            Clinic? clinic,
+            bool isClinicExist,
+            bool isAuthorizedClinic,
+            bool isAlreadyPublished,
+            bool isAlreadyRequested,
+            ref bool isValidationFailed)
+        {
+            if (!isClinicExist || !isAuthorizedClinic || isAlreadyPublished || isAlreadyRequested || clinic == null)
+            {
+                return;
+            }
+
+            // 1. Check Clinic Logo / Image
+            if (string.IsNullOrWhiteSpace(clinic.LogoUrl))
+            {
+                isValidationFailed = true;
+                return;
+            }
+
+            // 2. Check Address
+            if (string.IsNullOrWhiteSpace(clinic.Address))
+            {
+                isValidationFailed = true;
+                return;
+            }
+
+            // 3. Check Phone Number
+            if (string.IsNullOrWhiteSpace(clinic.Phone))
+            {
+                isValidationFailed = true;
+                return;
+            }
+
+            // 4. Check Email Address
+            if (string.IsNullOrWhiteSpace(clinic.Email))
+            {
+                isValidationFailed = true;
+                return;
+            }
+
+            // 5. Check Working Hours
+            if (clinic.OpenTime == clinic.CloseTime)
+            {
+                isValidationFailed = true;
+                return;
+            }
+
+            // 6. Check Active Staff Requirements (Must have Doctor and Receptionist)
+            var activeStaff = clinic.StaffClinics?.Where(s => s.IsActive).ToList();
+            bool hasDoctor = activeStaff?.Any(s => s.Role == StaffRole.DOCTOR) ?? false;
+            bool hasReceptionist = activeStaff?.Any(s => s.Role == StaffRole.RECEPTIONIST) ?? false;
+
+            if (!hasDoctor || !hasReceptionist)
+            {
+                isValidationFailed = true;
+                return;
+            }
+
+            // 7. Check Facility Rooms (Must have at least 1 active room)
+            if (clinic.FacilityRooms == null || !clinic.FacilityRooms.Any(r => r.IsActive))
+            {
+                isValidationFailed = true;
+                return;
+            }
+
+            // 8. Check Services (Must have at least 1 active service)
+            if (clinic.Services == null || !clinic.Services.Any(s => s.IsActive))
+            {
+                isValidationFailed = true;
+                return;
+            }
+        }
+
+        /// <summary>
         /// Applies publication request modifications by updating clinic status flags.
         /// </summary>
-        /// <param name="clinic">
-        /// The target clinic entity selected for update operations.
-        /// </param>
-        /// <param name="isClinicExist">
-        /// Indicates whether clinic validation checks succeeded.
-        /// </param>
-        /// <param name="isAuthorizedClinic">
-        /// Indicates whether ownership validation checks succeeded.
-        /// </param>
-        /// <param name="isAlreadyPublished">
-        /// Indicates whether clinic is already published.
-        /// </param>
-        /// <param name="isAlreadyRequested">
-        /// Indicates whether clinic already has a pending publication request.
-        /// </param>
         private static void UpdateClinicPublicationRequest(
             Clinic? clinic,
             bool isClinicExist,
             bool isAuthorizedClinic,
             bool isAlreadyPublished,
-            bool isAlreadyRequested)
+            bool isAlreadyRequested,
+            bool isValidationFailed)
         {
             if (!isClinicExist || !isAuthorizedClinic || clinic == null)
             {
                 return;
             }
 
-            if (isAlreadyPublished || isAlreadyRequested)
+            if (isAlreadyPublished || isAlreadyRequested || isValidationFailed)
             {
                 return;
             }
@@ -324,41 +417,22 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.RequestPublishC
         /// Coordinates validation outcome evaluation, persists entity modifications,
         /// and packages standardized API responses.
         /// </summary>
-        /// <param name="clinic">
-        /// The clinic entity containing pending update state modifications.
-        /// </param>
-        /// <param name="isUserValid">
-        /// Indicates whether user identity validation succeeded.
-        /// </param>
-        /// <param name="isClinicExist">
-        /// Indicates whether clinic context validation succeeded.
-        /// </param>
-        /// <param name="isAuthorizedClinic">
-        /// Indicates whether clinic ownership validation succeeded.
-        /// </param>
-        /// <param name="isAlreadyPublished">
-        /// Indicates whether clinic is already published.
-        /// </param>
-        /// <param name="isAlreadyRequested">
-        /// Indicates whether clinic already has a pending publication request.
-        /// </param>
-        /// <returns>
-        /// A standardized API response describing processing results.
-        /// </returns>
         private async Task<ApiResponse<bool>> CreateResponse(
             Clinic? clinic,
             bool isUserValid,
             bool isClinicExist,
             bool isAuthorizedClinic,
             bool isAlreadyPublished,
-            bool isAlreadyRequested)
+            bool isAlreadyRequested,
+            bool isValidationFailed)
         {
             var errorResponse = CreateErrorResponse(
                 isUserValid,
                 isClinicExist,
                 isAuthorizedClinic,
                 isAlreadyPublished,
-                isAlreadyRequested);
+                isAlreadyRequested,
+                isValidationFailed);
 
             if (errorResponse != null)
             {
@@ -377,30 +451,13 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.RequestPublishC
         /// Evaluates validation state variables and generates standardized error responses
         /// when business rule requirements are not satisfied.
         /// </summary>
-        /// <param name="isUserValid">
-        /// Indicates whether authentication information is valid.
-        /// </param>
-        /// <param name="isClinicExist">
-        /// Indicates whether a clinic association exists for the authenticated user.
-        /// </param>
-        /// <param name="isAuthorizedClinic">
-        /// Indicates whether the clinic belongs to the authenticated staff.
-        /// </param>
-        /// <param name="isAlreadyPublished">
-        /// Indicates whether the clinic is already published.
-        /// </param>
-        /// <param name="isAlreadyRequested">
-        /// Indicates whether a publication request is already pending.
-        /// </param>
-        /// <returns>
-        /// A failed API response when validation rules are violated; otherwise null.
-        /// </returns>
         private ApiResponse<bool>? CreateErrorResponse(
             bool isUserValid,
             bool isClinicExist,
             bool isAuthorizedClinic,
             bool isAlreadyPublished,
-            bool isAlreadyRequested)
+            bool isAlreadyRequested,
+            bool isValidationFailed)
         {
             if (!isUserValid)
             {
@@ -430,6 +487,13 @@ namespace ECS.Application.Services.ClinicAdminManagementServices.RequestPublishC
             {
                 return ApiResponse<bool>.Fail(
                     GeneralCode.APP_MESSAGE_4000.ToString());
+            }
+
+            // Sử dụng mã lỗi APP_MESSAGE_4019 đại diện cho thông tin hồ sơ chưa đủ điều kiện (Validation error)
+            if (isValidationFailed)
+            {
+                return ApiResponse<bool>.Fail(
+                    GeneralCode.APP_MESSAGE_4019.ToString());
             }
 
             return null;
