@@ -82,6 +82,8 @@ using ECS.Application.Services.PatientProfileManagementServices.GetPatientProfil
 using ECS.Application.Services.PatientProfileManagementServices.UpdatePatientProfileServices;
 using ECS.Application.Services.PatientProfileManagementServices.ViewMyFeedbackHistoryServices;
 using ECS.Application.Services.PatientProfileManagementServices.ViewPatientProfileDetailServices;
+using ECS.Application.Services.PatientProfileManagementServices.SeparateProfileServices;
+using ECS.Application.Services.PatientProfileManagementServices.CheckSelfProfileServices;
 using ECS.Application.Services.ReceptionistAppointmentManagementServices.ConfirmRejectAppointmentsServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistCancelAppointmentsServices;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistCheckInServices;
@@ -168,6 +170,9 @@ public static class DependencyInjection
         services.AddScoped<IGetAvailableSlotsService, GetAvailableSlotsService>();
         services.AddScoped<IDeactivateService, DeactivateService>();
         services.AddScoped<IUpdatePatientProfileService, UpdatePatientProfileService>();
+        services.AddScoped<ISeparatePatientProfileService, SeparatePatientProfileService>();
+        services.AddScoped<ICheckSelfProfileService, CheckSelfProfileService>();
+        services.AddScoped<IValidator<SeparateProfileRequest>, SeparateProfileRequestValidator>();
         services.AddScoped<IGetClinicRoomsService, GetClinicRoomsService>();
         services.AddScoped<IReceptionistGetPatientsListService, ReceptionistGetPatientsListService>();
         services.AddScoped<ICreatePatientDemographicsService, CreatePatientDemographicsService>();

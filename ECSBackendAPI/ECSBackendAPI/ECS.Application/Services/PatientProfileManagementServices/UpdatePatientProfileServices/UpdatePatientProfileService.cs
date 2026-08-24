@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using ECS.Application.Common.Response;
 using ECS.Domain.Entities.Patient;
 using ECS.Domain.Enums;
@@ -130,7 +130,17 @@ namespace ECS.Application.Services.PatientProfileManagementServices.UpdatePatien
         /// <returns>The resolved relationship allocation node linking user and patient profile contexts.</returns>
         private UserPatient? VerifyOwnershipRelation(PatientProfile? profile, Guid userId, bool userState, bool profileState, ref bool isUserAuthorized)
         {
-            if (!userState || !profileState || profile == null || profile.UserPatients == null) return null;
+            if (!userState || !profileState || profile == null) return null;
+
+            // Check for direct ownership (self profiles after account separation)
+            if (profile.UserId == userId)
+            {
+                isUserAuthorized = true;
+                return null; // No UserPatient link for direct ownership
+            }
+
+            // Check for UserPatient link (dependent profiles)
+            if (profile.UserPatients == null) return null;
 
             var connectionLink = profile.UserPatients.FirstOrDefault(up => up.UserId == userId);
             if (connectionLink == null)
@@ -181,7 +191,15 @@ namespace ECS.Application.Services.PatientProfileManagementServices.UpdatePatien
         /// <returns>The modified patient profile graph reflecting updated domain state definitions.</returns>
         private PatientProfile? ApplyDataMutations(PatientProfile? target, UserPatient? link, UpdatePatientProfileRequest source, Guid activeUserId, bool userState, bool profileState, bool authState, bool identityState)
         {
-            if (!userState || !profileState || !authState || !identityState || target == null || link == null)
+            if (!userState || !profileState || !authState || !identityState || target == null)
+            {
+                return null;
+            }
+
+            // For direct ownership (self profiles after separation), link can be null
+            // For dependent profiles, link must exist
+            bool isDirectOwnership = target.UserId == activeUserId;
+            if (!isDirectOwnership && link == null)
             {
                 return null;
             }
@@ -202,8 +220,11 @@ namespace ECS.Application.Services.PatientProfileManagementServices.UpdatePatien
             target.MedicalHistory = string.IsNullOrWhiteSpace(source.MedicalHistory) ? null : source.MedicalHistory.Trim();
             target.UpdatedAt = DateTime.UtcNow;
 
-            // Mutate connection metrics fields
-            link.Relationship = source.Relationship.Trim();
+            // Mutate connection metrics fields only if link exists (dependent profiles)
+            if (link != null)
+            {
+                link.Relationship = source.Relationship.Trim();
+            }
 
             return target;
         }
@@ -212,7 +233,7 @@ namespace ECS.Application.Services.PatientProfileManagementServices.UpdatePatien
         /// Handles isolated persistence commands responsible for committing updated profile graphs transactionally.
         /// </summary>
         /// <param name="profileGraph">The modified patient profile hierarchy awaiting storage synchronization.</param>
-        /// <param name="relationLink">The relationship allocation node requiring persistence updates.</param>
+        /// <param name="relationLink">The relationship allocation node requiring persistence updates (can be null for direct ownership).</param>
         /// <param name="userState">Precondition validation flag evaluating authenticated execution integrity.</param>
         /// <param name="profileState">Precondition validation flag evaluating profile existence verification.</param>
         /// <param name="authState">Precondition validation flag evaluating ownership authorization validity.</param>
@@ -220,7 +241,7 @@ namespace ECS.Application.Services.PatientProfileManagementServices.UpdatePatien
         /// <returns>A tuple pairing committed relationship nodes alongside execution outcome confirmation states.</returns>
         private async Task<(UserPatient? UserPatientNode, bool IsSuccess)> PersistUpdatedProfileGraph(PatientProfile? profileGraph, UserPatient? relationLink, bool userState, bool profileState, bool authState, bool identityState)
         {
-            if (profileGraph == null || relationLink == null || !userState || !profileState || !authState || !identityState)
+            if (profileGraph == null || !userState || !profileState || !authState || !identityState)
             {
                 return (null, false);
             }
@@ -229,7 +250,13 @@ namespace ECS.Application.Services.PatientProfileManagementServices.UpdatePatien
             try
             {
                 await _patientProfileRepository.UpdateAsync(profileGraph);
-                _dbContext.Entry(relationLink).State = EntityState.Modified;
+
+                // Only update relationLink if it exists (dependent profiles)
+                if (relationLink != null)
+                {
+                    _dbContext.Entry(relationLink).State = EntityState.Modified;
+                }
+
                 await _patientProfileRepository.SaveChangesAsync();
                 await transactionalScope.CommitAsync();
 
@@ -246,7 +273,7 @@ namespace ECS.Application.Services.PatientProfileManagementServices.UpdatePatien
         /// Transforms processing contexts into standardized response payload structures reflecting runtime outcomes.
         /// </summary>
         /// <param name="coreProfile">The updated persistent profile graph extracted from transactional boundaries.</param>
-        /// <param name="operationalNode">The relationship allocation node linked to the modified profile.</param>
+        /// <param name="operationalNode">The relationship allocation node linked to the modified profile (can be null for direct ownership).</param>
         /// <param name="userState">Indicates whether authentication extraction succeeded successfully.</param>
         /// <param name="profileState">Indicates whether target profile existence validation passed.</param>
         /// <param name="authState">Indicates whether ownership authorization requirements were satisfied.</param>
@@ -270,7 +297,7 @@ namespace ECS.Application.Services.PatientProfileManagementServices.UpdatePatien
 
             return ApiResponse<UpdatePatientProfileResponse>.Success(
                 GeneralCode.APP_MESSAGE_2006.ToString(),
-                MapToResponse(coreProfile!, operationalNode!));
+                MapToResponse(coreProfile!, operationalNode));
         }
 
         /// <summary>
@@ -311,15 +338,15 @@ namespace ECS.Application.Services.PatientProfileManagementServices.UpdatePatien
         /// Performs projection mappings from domain entities into response transfer payload schemas.
         /// </summary>
         /// <param name="profileSource">The updated patient profile entity retrieved from operational layers.</param>
-        /// <param name="allocationLink">The relationship allocation mapping associated with profile ownership.</param>
+        /// <param name="allocationLink">The relationship allocation mapping associated with profile ownership (can be null for direct ownership).</param>
         /// <returns>A structured response payload containing updated profile confirmation details.</returns>
-        private UpdatePatientProfileResponse MapToResponse(PatientProfile profileSource, UserPatient allocationLink)
+        private UpdatePatientProfileResponse MapToResponse(PatientProfile profileSource, UserPatient? allocationLink)
         {
             return new UpdatePatientProfileResponse
             {
                 PatientProfileId = profileSource.Id,
                 FullName = profileSource.FullName,
-                Relationship = allocationLink.Relationship ?? "N/A",
+                Relationship = allocationLink?.Relationship ?? "Self",
                 UpdatedAt = profileSource.UpdatedAt.ToString("dd/MM/yyyy HH:mm")
             };
         }
