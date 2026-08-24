@@ -1,3 +1,4 @@
+using ECS.Application.Services.AiTriageServices;
 using ECS.Application.Services.AuthServices.ChangePasswordServices;
 using ECS.Application.Services.AuthServices.ForgotPasswordServices;
 using ECS.Application.Services.AuthServices.LoginServices;
@@ -59,7 +60,9 @@ using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordDetailServ
 using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServices;
 using ECS.Application.Services.MedicalRecordsServices.PreliminaryDiagnosisServices;
 using ECS.Application.Services.MedicalRecordsServices.UpdateMedicalRecordServices;
+using ECS.Application.Services.RecordApprovalServices;
 using ECS.Application.Services.ParaclinicalServices.AiSuggestionServices;
+using ECS.Application.Services.ParaclinicalServices.AiSymptomSuggestionServices;
 using ECS.Application.Services.ParaclinicalServices.CreateLabRequestServices;
 using ECS.Application.Services.ParaclinicalServices.GetLabResultsServices;
 using ECS.Application.Services.ParaclinicalServices.UpdateLabResultServices;
@@ -184,6 +187,7 @@ public static class DependencyInjection
         services.AddScoped<ICreateMedicalRecordService, CreateMedicalRecordService>();
         services.AddScoped<IPreliminaryDiagnosisService, PreliminaryDiagnosisService>();
         services.AddScoped<IUpdateMedicalRecordService, UpdateMedicalRecordService>();
+        services.AddScoped<IRecordApprovalService, RecordApprovalService>();
         services.AddScoped<IGetClinicServicesForBookingService, GetClinicServicesForBookingService>();
         services.AddScoped<IGetClinicDoctorsForBookingService, GetClinicDoctorsForBookingService>();
         services.AddScoped<ICreateAppointmentService, CreateAppointmentService>();
@@ -234,6 +238,11 @@ public static class DependencyInjection
         services.AddScoped<IGetLabResultsService, GetLabResultsService>();
         services.AddScoped<IUpdateLabResultService, UpdateLabResultService>();
         services.AddScoped<IAiSuggestService, AiSuggestService>();
+        services.AddScoped<IAiSymptomSuggestService, AiSymptomSuggestService>();
+        
+        // AI Triage v3.0 — Symptom-based prediction
+        services.AddScoped<IAiTriageService, AiTriageService>();
+        
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 

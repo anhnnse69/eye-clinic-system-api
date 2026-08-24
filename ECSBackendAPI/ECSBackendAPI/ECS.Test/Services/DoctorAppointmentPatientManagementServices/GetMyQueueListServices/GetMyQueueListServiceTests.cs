@@ -197,6 +197,64 @@ namespace ECS.Test.Services.DoctorAppointmentPatientManagementServices.GetMyQueu
             item3.StatusText.Should().Be("Đã khám xong");
         }
 
+        /// <summary>
+        /// TC added for the 6-step EMR workflow: a queue item with IN_PROGRESS
+        /// status (i.e. the doctor has saved the medical record — Step 3 of the
+        /// EMR workflow — but has NOT yet done the medical record summary +
+        /// prescription) must be reported as "DangKham" / Examination in
+        /// progress (NOT as "Completed") and counted in <c>InProgressCount</c>,
+        /// never in <c>CompletedCount</c>.
+        /// </summary>
+        [Fact]
+        public async Task Process_QueueItemInProgress_ShowsDangKhamNotDakhamXong()
+        {
+            //Arrange
+            var testDate = new DateOnly(2025, 5, 10);
+            var targetDateTime = testDate.ToDateTime(TimeOnly.MinValue);
+
+            var doctorProfile = GetMyQueueListMockData.GetActiveDoctorProfile();
+            _context.Set<DoctorProfile>().Add(doctorProfile);
+
+            var patient = GetMyQueueListMockData.GetPatientProfile();
+            _context.Set<PatientProfile>().Add(patient);
+            var room = GetMyQueueListMockData.GetRoom();
+            _context.Set<FacilityRoom>().Add(room);
+            var service = GetMyQueueListMockData.GetService();
+            _context.Set<Service>().Add(service);
+            var slot = GetMyQueueListMockData.GetTimeSlot();
+            _context.Set<TimeSlot>().Add(slot);
+
+            // apptWithRecord: Step 3 of the EMR workflow is done — the medical record
+            // has been saved. We use includeMedicalRecord: true so the helper
+            // attaches a fresh MedicalRecord to the appointment entity.
+            var apptWithRecord = GetMyQueueListMockData.GetAppointment(doctorProfile.Id, targetDateTime, patient, service, slot, true, false);
+            var queue = GetMyQueueListMockData.GetQueueItem(apptWithRecord, room, 1, QueueStatus.IN_PROGRESS);
+
+            _context.Set<Appointment>().Add(apptWithRecord);
+            _context.Set<Queue>().Add(queue);
+            await _context.SaveChangesAsync();
+
+            SetupHttpContext(userIdClaim: GetMyQueueListMockData.DefaultDoctorUserId.ToString());
+
+            //Act
+            var result = await _service.Process(testDate);
+
+            //Assert
+            result.CodeMessage.Should().Be(GeneralCode.APP_MESSAGE_2001.ToString());
+            result.Data!.WaitingCount.Should().Be(0);
+            result.Data.InProgressCount.Should().Be(1);
+            result.Data.CompletedCount.Should().Be(0);
+
+            var item = result.Data.Items.First();
+            item.Status.Should().Be(QueueStatus.IN_PROGRESS);
+            item.StatusText.Should().Be("Đang khám");
+            // Critical guard: we must never display "Completed" to the UI until
+            // Step 5 (summary) + Step 6 (prescription) are both filled in.
+            item.StatusText.Should().NotBe("Đã khám xong");
+            item.HasMedicalRecord.Should().BeTrue();
+            item.CompletedAt.Should().BeNull("IN_PROGRESS means the doctor is still waiting on Step 5+6 — no CompletedAt stamp yet");
+        }
+
         [Fact]
         public async Task Process_ValidDoctorWithMinimalQueueItemsAndUnknownStatus_ReturnsSuccess2001WithDefaultValues()
         {

@@ -4,7 +4,7 @@ namespace ECS.Domain.Enums
     public enum StaffRole { DOCTOR, RECEPTIONIST, CLINIC_ADMIN }
     public enum Gender { MALE, FEMALE, OTHER }
     public enum AppointmentStatus { PENDING, DEPOSIT_PAID, CONFIRMED, BOOKED, ARRIVED, IN_PROGRESS, COMPLETED, CANCELLED, NOSHOW }
-    public enum QueueStatus { WAITING, CALLING, COMPLETED }
+    public enum QueueStatus { WAITING, CALLING, IN_PROGRESS, COMPLETED }
     public enum ShiftType { MORNING, AFTERNOON, EVENING }
     public enum SlotStatus { AVAILABLE, BOOKED, BLOCKED }
     public enum EyeSide { RIGHT, LEFT, BOTH }

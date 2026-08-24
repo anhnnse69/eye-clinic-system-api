@@ -164,12 +164,16 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Ge
         /// <param name="completed">Reference to the completed count accumulator.</param>
         private static void CountByStatus(QueueStatus status, ref int waiting, ref int inProgress, ref int completed)
         {
+            // CALLING = the doctor just called the patient to the exam-room door;
+            // IN_PROGRESS = the medical record has been saved but summary +
+            // prescription (Step 5+6) are still pending. Both count as
+            // "Examination in progress" in the dashboard.
             var isWaiting = status == QueueStatus.WAITING;
-            var isCalling = status == QueueStatus.CALLING;
+            var isInProgress = status == QueueStatus.CALLING || status == QueueStatus.IN_PROGRESS;
             var isCompleted = status == QueueStatus.COMPLETED;
 
             waiting += isWaiting ? 1 : 0;
-            inProgress += isCalling ? 1 : 0;
+            inProgress += isInProgress ? 1 : 0;
             completed += isCompleted ? 1 : 0;
         }
 
@@ -256,6 +260,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Ge
             {
                 QueueStatus.WAITING => "Đang chờ",
                 QueueStatus.CALLING => "Đang khám",
+                QueueStatus.IN_PROGRESS => "Đang khám",
                 QueueStatus.COMPLETED => "Đã khám xong",
                 _ => status.ToString()
             };

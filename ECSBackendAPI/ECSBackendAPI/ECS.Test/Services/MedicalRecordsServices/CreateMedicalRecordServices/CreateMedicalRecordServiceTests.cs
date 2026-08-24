@@ -536,9 +536,17 @@ namespace ECS.Test.Services.MedicalRecordsServices.CreateMedicalRecordServices
             updated!.Status.Should().Be(AppointmentStatus.IN_PROGRESS);
         }
 
-        /// <summary>TC-14: Matching queue entry is marked COMPLETED after success.</summary>
+        /// <summary>
+        /// TC-14 (Updated for the 6-step EMR workflow):
+        /// Saving a medical record (Step 1–3 of the EMR workflow) only flips
+        /// the matching queue entry from WAITING → IN_PROGRESS. It must NOT be
+        /// marked COMPLETED — COMPLETED is the responsibility of
+        /// CompleteQueueService, which fires only after Step 5 (Medical record
+        /// summary: final diagnosis + ICD-10) + Step 6 (Prescription / Glasses
+        /// Rx) are filled in.
+        /// </summary>
         [Fact]
-        public async Task Process_HappyPath_CompletesMatchingQueueEntry()
+        public async Task Process_HappyPath_MovesMatchingQueueEntryToInProgress_NotCompleted()
         {
             //Arrange
             var doctor = CreateMedicalRecordMockData.GetDoctorProfile();
@@ -561,8 +569,74 @@ namespace ECS.Test.Services.MedicalRecordsServices.CreateMedicalRecordServices
             //Assert
             result.CodeMessage.Should().Be(GeneralCode.APP_MESSAGE_2005.ToString());
             var updatedQueue = await _context.Queues.FindAsync(queue.Id);
+            updatedQueue!.Status.Should().Be(QueueStatus.IN_PROGRESS);
+            // The examination is still in progress: no CompletedAt stamp yet.
+            updatedQueue.CompletedAt.Should().BeNull();
+        }
+
+        /// <summary>
+        /// TC-14b: A queue entry that is already IN_PROGRESS must stay
+        /// IN_PROGRESS (idempotent) when the medical record is saved.
+        /// </summary>
+        [Fact]
+        public async Task Process_HappyPath_QueueAlreadyInProgress_KeepsInProgress()
+        {
+            //Arrange
+            var doctor = CreateMedicalRecordMockData.GetDoctorProfile();
+            var appointment = CreateMedicalRecordMockData.GetAppointment(doctor: doctor);
+            SetupHappyPathRepos(appointment: appointment, doctor: doctor);
+            _context.Appointments.Add(appointment);
+            var queue = new Queue
+            {
+                Id = Guid.NewGuid(),
+                AppointmentId = appointment.Id,
+                Status = QueueStatus.IN_PROGRESS
+            };
+            _context.Queues.Add(queue);
+            await _context.SaveChangesAsync();
+            var request = CreateMedicalRecordMockData.GetValidRequest();
+
+            //Act
+            var result = await _sut.Process(request);
+
+            //Assert
+            result.CodeMessage.Should().Be(GeneralCode.APP_MESSAGE_2005.ToString());
+            var updatedQueue = await _context.Queues.FindAsync(queue.Id);
+            updatedQueue!.Status.Should().Be(QueueStatus.IN_PROGRESS);
+        }
+
+        /// <summary>
+        /// TC-14c: A queue entry that is already COMPLETED must stay COMPLETED —
+        /// saving another medical record (e.g. via Update) must not regress it.
+        /// </summary>
+        [Fact]
+        public async Task Process_HappyPath_QueueAlreadyCompleted_StaysCompleted()
+        {
+            //Arrange
+            var doctor = CreateMedicalRecordMockData.GetDoctorProfile();
+            var appointment = CreateMedicalRecordMockData.GetAppointment(doctor: doctor);
+            SetupHappyPathRepos(appointment: appointment, doctor: doctor);
+            _context.Appointments.Add(appointment);
+            var completedAt = DateTime.UtcNow.AddMinutes(-1);
+            var queue = new Queue
+            {
+                Id = Guid.NewGuid(),
+                AppointmentId = appointment.Id,
+                Status = QueueStatus.COMPLETED,
+                CompletedAt = completedAt
+            };
+            _context.Queues.Add(queue);
+            await _context.SaveChangesAsync();
+            var request = CreateMedicalRecordMockData.GetValidRequest();
+
+            //Act
+            var result = await _sut.Process(request);
+
+            //Assert
+            result.CodeMessage.Should().Be(GeneralCode.APP_MESSAGE_2005.ToString());
+            var updatedQueue = await _context.Queues.FindAsync(queue.Id);
             updatedQueue!.Status.Should().Be(QueueStatus.COMPLETED);
-            updatedQueue.CompletedAt.Should().NotBeNull();
+            updatedQueue.CompletedAt.Should().Be(completedAt);
         }
 
         // ==================================================================

@@ -221,12 +221,19 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Ge
         /// <param name="completed">Reference to the completed count accumulator.</param>
         private static void CountByStatus(QueueStatus status, ref int waiting, ref int inProgress, ref int completed)
         {
+            // CALLING = the doctor just called the patient to the exam-room door (before
+            // the doctor starts the actual exam click).
+            // IN_PROGRESS = the doctor has begun the exam, has already saved the
+            // medical record (Step 3 of the EMR workflow) but has NOT yet done
+            // the medical record summary + prescription (Step 5+6).
+            // Both are counted as "inProgress" from the dashboard's perspective.
             switch (status)
             {
                 case QueueStatus.WAITING:
                     waiting++;
                     break;
                 case QueueStatus.CALLING:
+                case QueueStatus.IN_PROGRESS:
                     inProgress++;
                     break;
                 case QueueStatus.COMPLETED:
@@ -283,6 +290,11 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Ge
 
         /// <summary>
         /// Gets the localized display text for a queue status.
+        /// Both CALLING (doctor just called the patient to the door) and
+        /// IN_PROGRESS (doctor has begun the exam, has already saved the
+        /// medical record, and is waiting on summary + prescription) display
+        /// as "DangKham" (Examination in progress). The doctor still needs to
+        /// finish Step 5+6 before the queue turns into "Completed".
         /// </summary>
         /// <param name="status">The queue status enum value.</param>
         /// <returns>The Vietnamese display text for the status.</returns>
@@ -292,6 +304,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Ge
             {
                 QueueStatus.WAITING => "Đang chờ",
                 QueueStatus.CALLING => "Đang khám",
+                QueueStatus.IN_PROGRESS => "Đang khám",
                 QueueStatus.COMPLETED => "Đã khám xong",
                 _ => status.ToString()
             };

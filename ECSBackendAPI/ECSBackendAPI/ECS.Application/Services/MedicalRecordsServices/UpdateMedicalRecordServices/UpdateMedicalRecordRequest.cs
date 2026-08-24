@@ -21,6 +21,16 @@ namespace ECS.Application.Services.MedicalRecordsServices.UpdateMedicalRecordSer
         public string? Notes { get; set; }
 
         /// <summary>
+        /// Professional reason and justification for updating the medical record (submitted to Clinic Admin).
+        /// </summary>
+        public string? EditReason { get; set; }
+
+        /// <summary>
+        /// License or formal permission document reference for editing the medical record (submitted to Clinic Admin).
+        /// </summary>
+        public string? EditPermissionDocument { get; set; }
+
+        /// <summary>
         /// The full medical record form payload.
         /// Server does NOT inspect this object — it serializes to JSON and updates MongoDB as-is.
         /// Validate the schema on the FE side using zod before sending.

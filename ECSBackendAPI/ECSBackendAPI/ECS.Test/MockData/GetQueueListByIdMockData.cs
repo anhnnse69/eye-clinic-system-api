@@ -111,7 +111,9 @@ namespace ECS.Test.MockData
                 RoomId = room?.Id,
                 Room = room,
                 Status = status,
-                CalledAt = status == QueueStatus.CALLING ? DateTime.UtcNow : null,
+                CalledAt = status == QueueStatus.CALLING || status == QueueStatus.IN_PROGRESS
+                    ? DateTime.UtcNow
+                    : null,
                 CompletedAt = status == QueueStatus.COMPLETED ? DateTime.UtcNow : null
             };
         }

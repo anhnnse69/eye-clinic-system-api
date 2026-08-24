@@ -8,12 +8,15 @@ using ECS.Domain.Entities.Patient;
 using ECS.Domain.Entities.Scheduling;
 using ECS.Domain.Enums;
 using ECS.Infrastructure.Persistence;
+using ECS.Infrastructure.Persistence.MongoDb;
 using ECS.Infrastructure.Repositories.Interfaces;
 using FluentAssertions;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using MockQueryable.Moq;
+using MongoDB.Bson;
+using MongoDB.Driver;
 using Moq;
 
 namespace ECS.Test.Services.DoctorAppointmentPatientManagementServices.CompleteQueueServices
@@ -36,6 +39,7 @@ namespace ECS.Test.Services.DoctorAppointmentPatientManagementServices.CompleteQ
         private readonly Mock<IRepositoryQueryBase<Queue, Guid, AppDbContext>> _queueRepoMock = new();
         private readonly Mock<IRepositoryQueryBase<Appointment, Guid, AppDbContext>> _appointmentRepoMock = new();
         private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock = new();
+        private readonly Mock<IMongoDbContext> _mongoMock = new();
         private readonly IValidator<CompleteQueueRequest> _validator = new CompleteQueueRequestValidator();
         private readonly AppDbContext _context;
         private readonly TextWriter _originalConsoleOut;
@@ -57,7 +61,8 @@ namespace ECS.Test.Services.DoctorAppointmentPatientManagementServices.CompleteQ
                 _appointmentRepoMock.Object,
                 _validator,
                 _context,
-                _httpContextAccessorMock.Object);
+                _httpContextAccessorMock.Object,
+                _mongoMock.Object);
 
             // Suppress the [CompleteQueue] Console.WriteLine debug log during tests.
             _originalConsoleOut = Console.Out;
@@ -178,6 +183,107 @@ namespace ECS.Test.Services.DoctorAppointmentPatientManagementServices.CompleteQ
             => SetupHttpContextClaim(userId.ToString());
 
         // ─────────────────────────────────────────────────────────────────
+        // MongoDB helpers
+        // ─────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Stubs the IMongoDbContext so that <c>VerifyEmrWorkflowCompleteAsync</c>
+        /// either succeeds (FormData parsed correctly) or fails (Mongo returns null).
+        /// Tests that do not exercise the EMR workflow validation should call
+        /// <see cref="SetupMongoMissingId"/> so the helper short-circuits in
+        /// "no MongoDocumentId" branch.
+        /// </summary>
+        private void SetupMongoDocument(string mongoId, BsonDocument formData)
+        {
+            var doc = new MedicalRecordDocument
+            {
+                Id = mongoId,
+                RecordId = "00000000-0000-0000-0000-000000000000",
+                AppointmentId = AppointmentId.ToString(),
+                FormData = formData,
+                SchemaVersion = "1.0",
+                Version = 1,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+            };
+
+            var collMock = new Mock<IMongoCollection<MedicalRecordDocument>>();
+            var cursor = new Mock<IAsyncCursor<MedicalRecordDocument>>();
+            cursor.Setup(c => c.Current).Returns(new List<MedicalRecordDocument> { doc });
+            cursor.Setup(c => c.MoveNext(It.IsAny<System.Threading.CancellationToken>())).Returns(true);
+            cursor.Setup(c => c.MoveNextAsync(It.IsAny<System.Threading.CancellationToken>())).ReturnsAsync(true);
+
+            collMock
+                .Setup(c => c.FindAsync(
+                    It.IsAny<FilterDefinition<MedicalRecordDocument>>(),
+                    It.IsAny<FindOptions<MedicalRecordDocument, MedicalRecordDocument>>(),
+                    It.IsAny<System.Threading.CancellationToken>()))
+                .ReturnsAsync(cursor.Object);
+
+            _mongoMock.Setup(m => m.MedicalRecords).Returns(collMock.Object);
+        }
+
+        /// <summary>
+        /// Configures the Mongo mock so the lookup returns null — this exercises
+        /// the "document not found" path inside VerifyEmrWorkflowCompleteAsync.
+        /// </summary>
+        private void SetupMongoDocumentMissing(string mongoId)
+        {
+            var collMock = new Mock<IMongoCollection<MedicalRecordDocument>>();
+            var cursor = new Mock<IAsyncCursor<MedicalRecordDocument>>();
+            cursor.Setup(c => c.Current).Returns(new List<MedicalRecordDocument>());
+            cursor.Setup(c => c.MoveNext(It.IsAny<System.Threading.CancellationToken>())).Returns(false);
+            cursor.Setup(c => c.MoveNextAsync(It.IsAny<System.Threading.CancellationToken>())).ReturnsAsync(false);
+
+            collMock
+                .Setup(c => c.FindAsync(
+                    It.IsAny<FilterDefinition<MedicalRecordDocument>>(),
+                    It.IsAny<FindOptions<MedicalRecordDocument, MedicalRecordDocument>>(),
+                    It.IsAny<System.Threading.CancellationToken>()))
+                .ReturnsAsync(cursor.Object);
+
+            _mongoMock.Setup(m => m.MedicalRecords).Returns(collMock.Object);
+        }
+
+        /// <summary>
+        /// Configures the Mongo mock so the FindAsync call throws — used to
+        /// exercise the catch-all branch of VerifyEmrWorkflowCompleteAsync.
+        /// </summary>
+        private void SetupMongoThrows()
+        {
+            var collMock = new Mock<IMongoCollection<MedicalRecordDocument>>();
+            collMock
+                .Setup(c => c.FindAsync(
+                    It.IsAny<FilterDefinition<MedicalRecordDocument>>(),
+                    It.IsAny<FindOptions<MedicalRecordDocument, MedicalRecordDocument>>(),
+                    It.IsAny<System.Threading.CancellationToken>()))
+                .ThrowsAsync(new Exception("mongo down"));
+
+            _mongoMock.Setup(m => m.MedicalRecords).Returns(collMock.Object);
+        }
+
+        /// <summary>
+        /// Convenience: build a BsonDocument FormData that satisfies both
+        /// the summary check and the prescription check.
+        /// </summary>
+        private static BsonDocument MakeCompleteFormData()
+        {
+            return new BsonDocument
+            {
+                { "chanDoanVaRaVien", new BsonDocument
+                    {
+                        { "chanDoanChinh", "Viêm kết mạc cấp hai mắt" }
+                    }
+                },
+                { "prescription", new BsonDocument
+                    {
+                        { "drugs", new BsonArray { new BsonDocument { { "drugName", "Tobradex" } } } }
+                    }
+                }
+            };
+        }
+
+        // ─────────────────────────────────────────────────────────────────
         // Data factories
         // ─────────────────────────────────────────────────────────────────
 
@@ -210,7 +316,8 @@ namespace ECS.Test.Services.DoctorAppointmentPatientManagementServices.CompleteQ
             Guid id,
             PatientProfile patient,
             AppointmentStatus status = AppointmentStatus.IN_PROGRESS,
-            PreliminaryDiagnosis? preliminaryDiagnosis = null) => new()
+            PreliminaryDiagnosis? preliminaryDiagnosis = null,
+            MedicalRecord? medicalRecord = null) => new()
         {
             Id = id,
             PatientId = patient.Id,
@@ -220,7 +327,8 @@ namespace ECS.Test.Services.DoctorAppointmentPatientManagementServices.CompleteQ
             Status = status,
             BookingSource = "ONLINE",
             Patient = patient,
-            PreliminaryDiagnosis = preliminaryDiagnosis
+            PreliminaryDiagnosis = preliminaryDiagnosis,
+            MedicalRecord = medicalRecord
         };
 
         private static PreliminaryDiagnosis MakePreliminaryDiagnosis(Guid appointmentId, Guid patientId) => new()
@@ -231,6 +339,24 @@ namespace ECS.Test.Services.DoctorAppointmentPatientManagementServices.CompleteQ
             DoctorId = DoctorId,
             UrgencyLevel = TriageUrgencyLevel.Medium,
             CreatedAt = DateTime.UtcNow
+        };
+
+        /// <summary>
+        /// Builds a MedicalRecord with a configurable MongoDocumentId so the EMR
+        /// workflow validation can be exercised.
+        /// </summary>
+        private static MedicalRecord MakeMedicalRecord(
+            Guid? id = null,
+            string? mongoDocumentId = null) => new()
+        {
+            Id = id ?? Guid.NewGuid(),
+            AppointmentId = AppointmentId,
+            PatientId = PatientId,
+            DoctorId = DoctorId,
+            RecordType = RecordType.MS21_TRAUMA,
+            MongoDocumentId = mongoDocumentId,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
         };
 
         /// <summary>
@@ -504,7 +630,8 @@ namespace ECS.Test.Services.DoctorAppointmentPatientManagementServices.CompleteQ
                 _appointmentRepoMock.Object,
                 _validator,
                 throwingContext,
-                _httpContextAccessorMock.Object);
+                _httpContextAccessorMock.Object,
+                _mongoMock.Object);
 
             var state = CreateState();
             SetStateProperty(state, "Queue", queue);
@@ -1295,6 +1422,404 @@ namespace ECS.Test.Services.DoctorAppointmentPatientManagementServices.CompleteQ
             //Assert
             ((bool)GetStateProperty(state, "IsExecutionSuccess")!).Should().BeTrue();
             _context.Queues.Should().BeEmpty();
+        }
+
+        // ==================================================================
+        // ============ 4-step EMR workflow tests (2026-08-17) ==============
+        // ==================================================================
+
+        private static readonly Guid RecordId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        private static readonly string MongoId = "mongo1234567890abcdef123456";
+
+        /// <summary>
+        /// TC-CQ-EMR-01: VerifyEmrWorkflowCompleteAsync early-return when
+        /// state.HasError = true (preserves the existing guard).
+        /// </summary>
+        [Fact]
+        public async Task VerifyEmrWorkflowCompleteAsync_HasErrorEarlyReturn()
+        {
+            //Arrange 1
+            var state = CreateState();
+            SetStateProperty(state, "HasError", true);
+            SetStateProperty(state, "Appointment", MakeAppointment(AppointmentId, MakePatient()));
+
+            //Arrange 2
+            // No Mongo setup needed — call should short-circuit.
+
+            //Act
+            await InvokePrivateAsync(_sut, "VerifyEmrWorkflowCompleteAsync", state);
+
+            //Assert
+            ((bool)GetStateProperty(state, "IsEmrWorkflowValid")!).Should().BeTrue();
+        }
+
+        /// <summary>
+        /// TC-CQ-EMR-02: When the appointment has a MedicalRecord but no MongoDocumentId
+        /// the workflow is rejected with APP_MESSAGE_4028.
+        /// </summary>
+        [Fact]
+        public async Task VerifyEmrWorkflowCompleteAsync_NoMongoId_RejectsWith4028()
+        {
+            //Arrange 1
+            var appointment = MakeAppointment(
+                AppointmentId,
+                MakePatient(),
+                preliminaryDiagnosis: null,
+                medicalRecord: MakeMedicalRecord(id: RecordId, mongoDocumentId: null));
+            var state = CreateState();
+            SetStateProperty(state, "Appointment", appointment);
+
+            //Act
+            await InvokePrivateAsync(_sut, "VerifyEmrWorkflowCompleteAsync", state);
+
+            //Assert
+            ((bool)GetStateProperty(state, "IsEmrWorkflowValid")!).Should().BeFalse();
+            ((bool)GetStateProperty(state, "HasError")!).Should().BeTrue();
+            ((string)GetStateProperty(state, "ErrorCode")!).Should().Be(GeneralCode.APP_MESSAGE_4028.ToString());
+        }
+
+        /// <summary>
+        /// TC-CQ-EMR-03: When the appointment has no MedicalRecord at all the check
+        /// short-circuits to true (preliminary-diagnosis-only flow is preserved).
+        /// </summary>
+        [Fact]
+        public async Task VerifyEmrWorkflowCompleteAsync_NoMedicalRecord_ShortCircuitTrue()
+        {
+            //Arrange 1
+            var appointment = MakeAppointment(
+                AppointmentId,
+                MakePatient(),
+                preliminaryDiagnosis: MakePreliminaryDiagnosis(AppointmentId, PatientId),
+                medicalRecord: null);
+            var state = CreateState();
+            SetStateProperty(state, "Appointment", appointment);
+
+            //Act
+            await InvokePrivateAsync(_sut, "VerifyEmrWorkflowCompleteAsync", state);
+
+            //Assert
+            ((bool)GetStateProperty(state, "IsEmrWorkflowValid")!).Should().BeTrue();
+            ((bool)GetStateProperty(state, "HasError")!).Should().BeFalse();
+        }
+
+        /// <summary>
+        /// TC-CQ-EMR-04: When MongoDB returns null the workflow is rejected with 4028.
+        /// </summary>
+        [Fact]
+        public async Task VerifyEmrWorkflowCompleteAsync_MongoDocumentMissing_RejectsWith4028()
+        {
+            //Arrange 1
+            var appointment = MakeAppointment(
+                AppointmentId,
+                MakePatient(),
+                preliminaryDiagnosis: null,
+                medicalRecord: MakeMedicalRecord(id: RecordId, mongoDocumentId: MongoId));
+            var state = CreateState();
+            SetStateProperty(state, "Appointment", appointment);
+
+            //Arrange 2
+            SetupMongoDocumentMissing(MongoId);
+
+            //Act
+            await InvokePrivateAsync(_sut, "VerifyEmrWorkflowCompleteAsync", state);
+
+            //Assert
+            ((bool)GetStateProperty(state, "IsEmrWorkflowValid")!).Should().BeFalse();
+            ((string)GetStateProperty(state, "ErrorCode")!).Should().Be(GeneralCode.APP_MESSAGE_4028.ToString());
+        }
+
+        /// <summary>
+        /// TC-CQ-EMR-05: When MongoDB throws (e.g., transient outage) the workflow is
+        /// rejected with APP_MESSAGE_5001 so the doctor is forced to retry rather than
+        /// accidentally completing a partially-validated record.
+        /// </summary>
+        [Fact]
+        public async Task VerifyEmrWorkflowCompleteAsync_MongoThrows_RejectsWith5001()
+        {
+            //Arrange 1
+            var appointment = MakeAppointment(
+                AppointmentId,
+                MakePatient(),
+                preliminaryDiagnosis: null,
+                medicalRecord: MakeMedicalRecord(id: RecordId, mongoDocumentId: MongoId));
+            var state = CreateState();
+            SetStateProperty(state, "Appointment", appointment);
+
+            //Arrange 2
+            SetupMongoThrows();
+
+            //Act
+            await InvokePrivateAsync(_sut, "VerifyEmrWorkflowCompleteAsync", state);
+
+            //Assert
+            ((bool)GetStateProperty(state, "IsEmrWorkflowValid")!).Should().BeFalse();
+            ((string)GetStateProperty(state, "ErrorCode")!).Should().Be(GeneralCode.APP_MESSAGE_5001.ToString());
+        }
+
+        /// <summary>
+        /// TC-CQ-EMR-06: FormData missing both summary and prescription → reject.
+        /// </summary>
+        [Fact]
+        public async Task VerifyEmrWorkflowCompleteAsync_EmptyFormData_RejectsWith4028()
+        {
+            //Arrange 1
+            var appointment = MakeAppointment(
+                AppointmentId,
+                MakePatient(),
+                preliminaryDiagnosis: null,
+                medicalRecord: MakeMedicalRecord(id: RecordId, mongoDocumentId: MongoId));
+            var state = CreateState();
+            SetStateProperty(state, "Appointment", appointment);
+
+            //Arrange 2
+            SetupMongoDocument(MongoId, new BsonDocument());
+
+            //Act
+            await InvokePrivateAsync(_sut, "VerifyEmrWorkflowCompleteAsync", state);
+
+            //Assert
+            ((bool)GetStateProperty(state, "IsEmrWorkflowValid")!).Should().BeFalse();
+            ((string)GetStateProperty(state, "ErrorCode")!).Should().Be(GeneralCode.APP_MESSAGE_4028.ToString());
+        }
+
+        /// <summary>
+        /// TC-CQ-EMR-07: FormData has summary but no prescription → reject.
+        /// </summary>
+        [Fact]
+        public async Task VerifyEmrWorkflowCompleteAsync_SummaryOkButPrescriptionMissing_RejectsWith4028()
+        {
+            //Arrange 1
+            var appointment = MakeAppointment(
+                AppointmentId,
+                MakePatient(),
+                preliminaryDiagnosis: null,
+                medicalRecord: MakeMedicalRecord(id: RecordId, mongoDocumentId: MongoId));
+            var state = CreateState();
+            SetStateProperty(state, "Appointment", appointment);
+
+            //Arrange 2
+            var formData = new BsonDocument
+            {
+                { "chanDoanVaRaVien", new BsonDocument { { "chanDoanChinh", "Viêm kết mạc" } } }
+            };
+            SetupMongoDocument(MongoId, formData);
+
+            //Act
+            await InvokePrivateAsync(_sut, "VerifyEmrWorkflowCompleteAsync", state);
+
+            //Assert
+            ((bool)GetStateProperty(state, "IsEmrWorkflowValid")!).Should().BeFalse();
+            ((string)GetStateProperty(state, "ErrorCode")!).Should().Be(GeneralCode.APP_MESSAGE_4028.ToString());
+        }
+
+        /// <summary>
+        /// TC-CQ-EMR-08: FormData has prescription but no summary → reject.
+        /// </summary>
+        [Fact]
+        public async Task VerifyEmrWorkflowCompleteAsync_PrescriptionOkButSummaryMissing_RejectsWith4028()
+        {
+            //Arrange 1
+            var appointment = MakeAppointment(
+                AppointmentId,
+                MakePatient(),
+                preliminaryDiagnosis: null,
+                medicalRecord: MakeMedicalRecord(id: RecordId, mongoDocumentId: MongoId));
+            var state = CreateState();
+            SetStateProperty(state, "Appointment", appointment);
+
+            //Arrange 2
+            var formData = new BsonDocument
+            {
+                { "prescription", new BsonDocument { { "drugs", new BsonArray { new BsonDocument { { "drugName", "Tobrex" } } } } } }
+            };
+            SetupMongoDocument(MongoId, formData);
+
+            //Act
+            await InvokePrivateAsync(_sut, "VerifyEmrWorkflowCompleteAsync", state);
+
+            //Assert
+            ((bool)GetStateProperty(state, "IsEmrWorkflowValid")!).Should().BeFalse();
+            ((string)GetStateProperty(state, "ErrorCode")!).Should().Be(GeneralCode.APP_MESSAGE_4028.ToString());
+        }
+
+        /// <summary>
+        /// TC-CQ-EMR-09: Happy path — summary present, prescription present → success.
+        /// </summary>
+        [Fact]
+        public async Task VerifyEmrWorkflowCompleteAsync_CompleteFormData_Accepts()
+        {
+            //Arrange 1
+            var appointment = MakeAppointment(
+                AppointmentId,
+                MakePatient(),
+                preliminaryDiagnosis: null,
+                medicalRecord: MakeMedicalRecord(id: RecordId, mongoDocumentId: MongoId));
+            var state = CreateState();
+            SetStateProperty(state, "Appointment", appointment);
+
+            //Arrange 2
+            SetupMongoDocument(MongoId, MakeCompleteFormData());
+
+            //Act
+            await InvokePrivateAsync(_sut, "VerifyEmrWorkflowCompleteAsync", state);
+
+            //Assert
+            ((bool)GetStateProperty(state, "IsEmrWorkflowValid")!).Should().BeTrue();
+            ((bool)GetStateProperty(state, "HasError")!).Should().BeFalse();
+        }
+
+        /// <summary>
+        /// TC-CQ-EMR-10: Glasses prescription (refraction values) is acceptable as the
+        /// "Prescription" step — important optometry flow.
+        /// </summary>
+        [Fact]
+        public async Task VerifyEmrWorkflowCompleteAsync_GlassesPrescriptionOnly_Accepts()
+        {
+            //Arrange 1
+            var appointment = MakeAppointment(
+                AppointmentId,
+                MakePatient(),
+                preliminaryDiagnosis: null,
+                medicalRecord: MakeMedicalRecord(id: RecordId, mongoDocumentId: MongoId));
+            var state = CreateState();
+            SetStateProperty(state, "Appointment", appointment);
+
+            //Arrange 2
+            var formData = new BsonDocument
+            {
+                { "chanDoanVaRaVien", new BsonDocument { { "chanDoanChinh", "Cận thị đơn thuần" } } },
+                { "glassesPrescription", new BsonDocument
+                    {
+                        { "sphOd", "-1.25" },
+                        { "cylOd", "-0.50" },
+                        { "axisOd", "180" },
+                        { "sphOs", "-1.00" },
+                        { "cylOs", "-0.25" },
+                        { "axisOs", "175" }
+                    }
+                }
+            };
+            SetupMongoDocument(MongoId, formData);
+
+            //Act
+            await InvokePrivateAsync(_sut, "VerifyEmrWorkflowCompleteAsync", state);
+
+            //Assert
+            ((bool)GetStateProperty(state, "IsEmrWorkflowValid")!).Should().BeTrue();
+            ((bool)GetStateProperty(state, "HasError")!).Should().BeFalse();
+        }
+
+        /// <summary>
+        /// TC-CQ-EMR-11: Process end-to-end — appointment has full MedicalRecord with
+        /// complete form data → queue completes successfully (2007).
+        /// </summary>
+        [Fact]
+        public async Task Process_WithCompleteEmrWorkflow_ReturnsSuccess()
+        {
+            //Arrange 1
+            var request = new CompleteQueueRequest { QueueId = QueueId.ToString() };
+            var queue = MakeQueue(QueueId, AppointmentId, queueNumber: 5, status: QueueStatus.CALLING);
+            var patient = MakePatient("Nguyen Van Happy");
+            var medRec = MakeMedicalRecord(id: RecordId, mongoDocumentId: MongoId);
+            var appointment = MakeAppointment(
+                AppointmentId,
+                patient,
+                status: AppointmentStatus.IN_PROGRESS,
+                preliminaryDiagnosis: null,
+                medicalRecord: medRec);
+
+            //Arrange 2
+            SetupHttpContextUserId(DoctorUserId);
+            SetupQueueRepo(new[] { queue });
+            SetupAppointmentRepo(new[] { appointment });
+            SetupMongoDocument(MongoId, MakeCompleteFormData());
+            await PreAttachAsync(queue, appointment);
+
+            //Act
+            var result = await _sut.Process(request);
+
+            //Assert
+            result.CodeMessage.Should().Be(GeneralCode.APP_MESSAGE_2007.ToString());
+            result.Data!.IsSuccess.Should().BeTrue();
+        }
+
+        /// <summary>
+        /// TC-CQ-EMR-12: Process end-to-end — appointment has MedicalRecord but form
+        /// data is missing the prescription → queue completion is rejected with 4028.
+        /// </summary>
+        [Fact]
+        public async Task Process_WithIncompleteEmrWorkflow_ReturnsFailure4028()
+        {
+            //Arrange 1
+            var request = new CompleteQueueRequest { QueueId = QueueId.ToString() };
+            var queue = MakeQueue(QueueId, AppointmentId, queueNumber: 5, status: QueueStatus.CALLING);
+            var patient = MakePatient();
+            var medRec = MakeMedicalRecord(id: RecordId, mongoDocumentId: MongoId);
+            var appointment = MakeAppointment(
+                AppointmentId,
+                patient,
+                status: AppointmentStatus.IN_PROGRESS,
+                preliminaryDiagnosis: null,
+                medicalRecord: medRec);
+
+            //Arrange 2 — form data has summary but no prescription
+            var formData = new BsonDocument
+            {
+                { "chanDoanVaRaVien", new BsonDocument { { "chanDoanChinh", "Viêm kết mạc" } } }
+            };
+            SetupHttpContextUserId(DoctorUserId);
+            SetupQueueRepo(new[] { queue });
+            SetupAppointmentRepo(new[] { appointment });
+            SetupMongoDocument(MongoId, formData);
+            await PreAttachAsync(queue, appointment);
+
+            //Act
+            var result = await _sut.Process(request);
+
+            //Assert
+            result.CodeMessage.Should().Be(GeneralCode.APP_MESSAGE_4028.ToString());
+            result.Data.Should().BeNull();
+        }
+
+        /// <summary>
+        /// TC-CQ-EMR-13: VerifyEmrWorkflowCompleteAsync direct call — legacy
+        /// benhAn.chanDoanMaICD.raVienBenhChinhTonThuong is also recognised as the
+        /// "summary" signal.
+        /// </summary>
+        [Fact]
+        public async Task VerifyEmrWorkflowCompleteAsync_LegacyChanDoanMaIcd_Accepts()
+        {
+            //Arrange 1
+            var appointment = MakeAppointment(
+                AppointmentId,
+                MakePatient(),
+                preliminaryDiagnosis: null,
+                medicalRecord: MakeMedicalRecord(id: RecordId, mongoDocumentId: MongoId));
+            var state = CreateState();
+            SetStateProperty(state, "Appointment", appointment);
+
+            //Arrange 2
+            var formData = new BsonDocument
+            {
+                { "benhAn", new BsonDocument
+                    {
+                        { "chanDoanMaICD", new BsonDocument
+                            {
+                                { "raVienBenhChinhTonThuong", "Trầy xước giác mạc OD" },
+                                { "raVienBenhChinhMaICD", "S05.0" }
+                            }
+                        }
+                    }
+                },
+                { "prescription", new BsonDocument { { "drugs", new BsonArray { new BsonDocument { { "drugName", "Tobradex" } } } } } }
+            };
+            SetupMongoDocument(MongoId, formData);
+
+            //Act
+            await InvokePrivateAsync(_sut, "VerifyEmrWorkflowCompleteAsync", state);
+
+            //Assert
+            ((bool)GetStateProperty(state, "IsEmrWorkflowValid")!).Should().BeTrue();
         }
     }
 }

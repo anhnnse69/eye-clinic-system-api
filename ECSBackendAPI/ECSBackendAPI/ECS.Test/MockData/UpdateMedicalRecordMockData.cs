@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using ECS.Application.Services.MedicalRecordsServices.UpdateMedicalRecordServices;
 using ECS.Domain.Entities.Auth;
 using ECS.Domain.Entities.Clinics;
@@ -133,11 +133,15 @@ namespace ECS.Test.MockData
 
         public static UpdateMedicalRecordRequest GetValidRequest(
             string? notes = "Ghi chú cập nhật từ bác sĩ",
-            string formDataJson = ValidFormDataJson)
+            string formDataJson = ValidFormDataJson,
+            string editReason = "Bổ sung diễn biến lâm sàng và đính chính chẩn đoán ban đầu theo kết quả xét nghiệm mới.",
+            string editPermissionDocument = "GP-2026-0818/QĐ-CA")
         {
             return new UpdateMedicalRecordRequest
             {
                 Notes = notes,
+                EditReason = editReason,
+                EditPermissionDocument = editPermissionDocument,
                 FormData = BuildFormData(formDataJson)
             };
         }

@@ -41,5 +41,10 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServi
         /// Search by patient name or ID (optional)
         /// </summary>
         public string? SearchTerm { get; set; }
+
+        /// <summary>
+        /// Filter by patient profile ID (optional)
+        /// </summary>
+        public Guid? PatientId { get; set; }
     }
 }

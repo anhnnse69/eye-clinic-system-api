@@ -20,6 +20,7 @@ public interface IMongoDbContext
     IMongoCollection<MedicalRecordDocument> MedicalRecords { get; }
     IMongoCollection<LabResultDocument> LabResults { get; }
     IMongoCollection<AiSuggestionDocument> AiSuggestions { get; }
+    IMongoCollection<RecordApprovalDocument> RecordApprovals { get; }
 }
 
 public class MongoDbContext : IMongoDbContext
@@ -30,6 +31,7 @@ public class MongoDbContext : IMongoDbContext
     public IMongoCollection<MedicalRecordDocument> MedicalRecords { get; }
     public IMongoCollection<LabResultDocument> LabResults { get; }
     public IMongoCollection<AiSuggestionDocument> AiSuggestions { get; }
+    public IMongoCollection<RecordApprovalDocument> RecordApprovals { get; }
 
     public MongoDbContext(IOptions<MongoDbOptions> options)
     {
@@ -62,6 +64,7 @@ public class MongoDbContext : IMongoDbContext
         MedicalRecords = Database.GetCollection<MedicalRecordDocument>(opt.MedicalRecordsCollection);
         LabResults = Database.GetCollection<LabResultDocument>(opt.LabResultsCollection);
         AiSuggestions = Database.GetCollection<AiSuggestionDocument>(opt.AiSuggestionsCollection);
+        RecordApprovals = Database.GetCollection<RecordApprovalDocument>(opt.RecordApprovalsCollection);
     }
 
     private static string GetFallbackConnectionString(string connStr)
@@ -202,4 +205,25 @@ public class AiSuggestionDocument
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? CompletedAt { get; set; }
     public int? ProcessingTimeMs { get; set; }
+}
+
+/// <summary>
+/// Persists medical record edit/approval requests submitted by doctors
+/// and reviewed by Clinic Admins.
+/// </summary>
+public class RecordApprovalDocument
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    public string RecordId { get; set; } = string.Empty;       // SQL MedicalRecord.Id
+    public string PatientName { get; set; } = string.Empty;
+    public string DoctorId { get; set; } = string.Empty;
+    public string DoctorName { get; set; } = string.Empty;
+    public string Reason { get; set; } = string.Empty;
+    public string PermissionDoc { get; set; } = string.Empty;   // GP-2026-0818/QĐ-CA
+    public string? AttachedFileName { get; set; }
+    public string Status { get; set; } = "PENDING";             // PENDING | APPROVED | REJECTED
+    public DateTime RequestedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? ReviewedAt { get; set; }
+    public string? ReviewedBy { get; set; }
+    public string? ReviewNote { get; set; }
 }
