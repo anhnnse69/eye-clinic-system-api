@@ -10,7 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // ── Services ─────────────────────────────────────────────────
 builder.Services
-    .AddCustomCors()
+    .AddCustomCors(builder.Configuration)
     .AddApiControllers()
     .AddApiDocumentation()
     .AddApplication()
