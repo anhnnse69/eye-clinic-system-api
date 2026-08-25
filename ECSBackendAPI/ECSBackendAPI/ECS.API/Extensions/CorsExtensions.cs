@@ -1,4 +1,4 @@
-﻿namespace ECS.API.Extensions
+namespace ECS.API.Extensions
 {
     /// <summary>
     /// Provides extension methods for configuring Cross-Origin Resource Sharing (CORS).
