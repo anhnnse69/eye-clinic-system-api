@@ -72,11 +72,16 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordDetail
                     canViewOnly = !canEdit;
                     editRestrictionReason = !isCreatedToday ? "Hồ sơ bệnh án chỉ được phép chỉnh sửa trong ngày tạo. Đã qua ngày nên không thể chỉnh sửa." : null;
                 }
-                else if (state.UserRole == nameof(UserRole.DOCTOR) && state.Record.DoctorId == state.ProfileId)
+                else if (state.UserRole == nameof(UserRole.DOCTOR))
                 {
-                    canEdit = !state.Record.IsLocked && isCreatedToday;
-                    canViewOnly = state.Record.IsLocked || !isCreatedToday;
-                    if (state.Record.IsLocked)
+                    bool isOwnRecord = state.Record.DoctorId == state.ProfileId;
+                    canEdit = isOwnRecord && !state.Record.IsLocked && isCreatedToday;
+                    canViewOnly = !canEdit;
+                    if (!isOwnRecord)
+                    {
+                        editRestrictionReason = "Hồ sơ bệnh án từ cơ sở / bác sĩ khác. Chỉ được phép xem tổng kết và kê đơn.";
+                    }
+                    else if (state.Record.IsLocked)
                     {
                         editRestrictionReason = "Hồ sơ đã bị khóa";
                     }
@@ -217,14 +222,7 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordDetail
                     state.ErrorCode = GeneralCode.APP_MESSAGE_4014.ToString();
                 }
             }
-            else if (state.UserRole == nameof(UserRole.DOCTOR))
-            {
-                if (state.Record.DoctorId != state.ProfileId)
-                {
-                    state.HasError = true;
-                    state.ErrorCode = GeneralCode.APP_MESSAGE_4014.ToString();
-                }
-            }
+            // DOCTOR can view any record of a patient on the system (cross-clinic summary & prescription)
         }
 
         // ────────────────────────────────────────────────────────────

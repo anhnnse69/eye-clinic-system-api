@@ -222,6 +222,36 @@ namespace ECS.Test.Services.DoctorAppointmentPatientManagementServices.ViewListP
         }
 
         [Fact]
+        public async Task Process_MultipleAppointmentsSamePatient_DeduplicatesPatientList()
+        {
+            //Arrange 1
+            var doctor = ViewListPatientMockData.GetDoctorProfile();
+            var patient = ViewListPatientMockData.GetPatientProfile(fullName: "Hoang Thi Be Ba");
+            
+            // Patient has 5 appointments with doctor
+            var appt1 = ViewListPatientMockData.GetAppointment(doctorId: doctor.Id, patient: patient, appointmentDate: DateTime.Today.AddDays(-1));
+            var appt2 = ViewListPatientMockData.GetAppointment(doctorId: doctor.Id, patient: patient, appointmentDate: DateTime.Today.AddDays(-2));
+            var appt3 = ViewListPatientMockData.GetAppointment(doctorId: doctor.Id, patient: patient, appointmentDate: DateTime.Today.AddDays(-3));
+
+            var request = new ViewListPatientRequest { PageNumber = 1, PageSize = 10 };
+
+            //Arrange 2
+            SetupDoctorProfileRepo(doctor);
+            SetupAppointmentRepo(new[] { appt1, appt2, appt3 });
+
+            //Act
+            var result = await _service.Process(doctor.UserId, request);
+
+            //Assert
+            result.CodeMessage.Should().Be(GeneralCode.APP_MESSAGE_2000.ToString());
+            result.Data.Should().NotBeNull();
+            result.Data!.TotalRecords.Should().Be(1);
+            result.Data.Patients.Should().HaveCount(1);
+            result.Data.Patients[0].PatientId.Should().Be(patient.Id);
+            result.Data.Patients[0].AppointmentDate.Should().Be(appt1.AppointmentDate);
+        }
+
+        [Fact]
         public void CalculateTotalPages_PageSizeIsZero_ReturnsZero()
         {
             //Arrange 1

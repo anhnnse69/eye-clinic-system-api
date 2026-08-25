@@ -1,4 +1,4 @@
-﻿using ECS.Application.Common.Response;
+using ECS.Application.Common.Response;
 using ECS.Domain.Entities.Clinics;
 using ECS.Domain.Entities.MedicalRecords;
 using ECS.Domain.Entities.Patient;
@@ -41,10 +41,10 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
             Guid patientId)
         {
             var doctor = await ResolveActiveDoctorProfileAsync(userId);
-            await EnsureDoctorPatientRelationshipAsync(doctor.Id, patientId);
+            await EnsurePatientExistsAsync(patientId);
             var patient = await FetchPatientProfileAsync(patientId);
-            var appointments = await FetchAppointmentHistoryAsync(doctor.Id, patientId);
-            var response = BuildResponse(patient, appointments);
+            var appointments = await FetchAppointmentHistoryAsync(patientId);
+            var response = BuildResponse(patient, appointments, doctor.ClinicId);
             return CreateSuccessResponse(response);
         }
 
@@ -62,14 +62,12 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
             return doctor;
         }
 
-        private async Task EnsureDoctorPatientRelationshipAsync(Guid doctorId, Guid patientId)
+        private async Task EnsurePatientExistsAsync(Guid patientId)
         {
-            var hasRelation = await _appointmentRepo
-                .FindByCondition(a =>
-                    a.DoctorId == doctorId &&
-                    a.PatientId == patientId)
+            var exists = await _patientRepo
+                .FindByCondition(p => p.Id == patientId)
                 .AnyAsync();
-            if (!hasRelation)
+            if (!exists)
                 throw new KeyNotFoundException(
                     GeneralCode.APP_MESSAGE_4004.ToString());
         }
@@ -87,17 +85,16 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
         }
 
         /// <summary>
-        /// Fetches appointments (with service + medical record) for the given doctor-patient pair.
-        /// The medical record's detailed fields are NOT loaded — they live on Cloudinary
-        /// as a JSON payload accessible via <see cref="MedicalRecord.RecordDataUrl"/>.
+        /// Fetches all appointments across all clinics for the given patient.
         /// </summary>
-        private async Task<List<Appointment>> FetchAppointmentHistoryAsync(Guid doctorId, Guid patientId)
+        private async Task<List<Appointment>> FetchAppointmentHistoryAsync(Guid patientId)
         {
             return await _appointmentRepo
-                .FindByCondition(a =>
-                    a.DoctorId == doctorId &&
-                    a.PatientId == patientId)
+                .FindByCondition(a => a.PatientId == patientId)
                 .Include(a => a.Service)
+                .Include(a => a.Doctor).ThenInclude(d => d.Clinic)
+                .Include(a => a.Doctor).ThenInclude(d => d.User)
+                .Include(a => a.Doctor).ThenInclude(d => d.Specialty)
                 .Include(a => a.MedicalRecord)
                 .OrderByDescending(a => a.AppointmentDate)
                 .ToListAsync();
@@ -105,7 +102,8 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
 
         private static ViewPatientDetailResponse BuildResponse(
             PatientProfile patient,
-            List<Appointment> appointments)
+            List<Appointment> appointments,
+            Guid requestingDoctorClinicId)
         {
             return new ViewPatientDetailResponse
             {
@@ -121,19 +119,44 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
                 Allergies = patient.Allergies,
                 MedicalHistory = patient.MedicalHistory,
                 AvatarUrl = patient.User?.AvatarUrl,
-                Appointments = appointments.Select(MapAppointmentItem).ToList(),
+                Appointments = appointments.Select(a => MapAppointmentItem(a, requestingDoctorClinicId)).ToList(),
             };
         }
 
-        private static AppointmentHistoryItem MapAppointmentItem(Appointment appointment)
+        private static AppointmentHistoryItem MapAppointmentItem(
+            Appointment appointment,
+            Guid requestingDoctorClinicId)
         {
+            var doctor = appointment.Doctor;
+            var clinic = doctor?.Clinic;
+            var doctorUser = doctor?.User;
+            var specialty = doctor?.Specialty;
+            var doctorClinicId = doctor?.ClinicId;
+            var isOtherClinic = doctorClinicId.HasValue && doctorClinicId.Value != requestingDoctorClinicId;
+
+            string? doctorTitle = !string.IsNullOrWhiteSpace(doctor?.Title) ? doctor.Title.Trim() : "BS.";
+            string? doctorFullName = doctorUser?.FullName;
+            string doctorName = !string.IsNullOrWhiteSpace(doctorFullName)
+                ? $"{doctorTitle} {doctorFullName}"
+                : "N/A";
+
             return new AppointmentHistoryItem
             {
                 AppointmentId = appointment.Id,
                 AppointmentDate = appointment.AppointmentDate,
                 Status = appointment.Status.ToString(),
                 Symptoms = appointment.Symptoms,
+                NoteReason = appointment.NoteReason,
+                ChiefComplaint = appointment.MedicalRecord?.ChiefComplaint,
                 ServiceName = appointment.Service?.ServiceName,
+                ClinicId = doctorClinicId,
+                ClinicName = clinic?.Name,
+                ClinicAddress = clinic?.Address,
+                DoctorId = appointment.DoctorId,
+                DoctorName = doctorName,
+                SpecialtyName = specialty?.Name,
+                BookingSource = appointment.BookingSource,
+                IsOtherClinic = isOtherClinic,
                 MedicalRecord = MapMedicalRecord(appointment.MedicalRecord),
             };
         }

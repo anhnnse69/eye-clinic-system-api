@@ -114,46 +114,10 @@ namespace ECS.Test.Services.DoctorAppointmentPatientManagementServices.ViewPatie
         }
 
         /// <summary>
-        /// TC-VPD-02: Doctor exists but no appointment links them to the patient
-        /// → EnsureDoctorPatientRelationshipAsync throws
+        /// TC-VPD-02: Doctor exists but patient profile is missing
+        /// → EnsurePatientExistsAsync throws
         /// <see cref="KeyNotFoundException"/> with <c>APP_MESSAGE_4004</c>.
-        /// Patient repo must NOT be consulted.
-        /// Covers: <c>EnsureDoctorPatientRelationshipAsync</c> <c>!hasRelation</c> branch.
-        /// </summary>
-        [Fact]
-        public async Task Process_NoDoctorPatientRelationship_ThrowsRelationNotFound()
-        {
-            //Arrange 1
-            var doctor = ViewPatientDetailMockData.GetDoctorProfile();
-            var userId = doctor.UserId;
-            var patientId = ViewPatientDetailMockData.DefaultPatientId;
-
-            //Arrange 2
-            SetupDoctorRepo(new[] { doctor });
-            SetupAppointmentRepo(Array.Empty<Appointment>());
-
-            //Act
-            var act = () => _sut.Process(userId, patientId);
-
-            //Assert
-            await act.Should().ThrowAsync<KeyNotFoundException>()
-                .WithMessage(GeneralCode.APP_MESSAGE_4004.ToString());
-            _doctorRepoMock.Verify(
-                r => r.FindByCondition(It.IsAny<Expression<Func<DoctorProfile, bool>>>(), It.IsAny<bool>()),
-                Times.Once);
-            _appointmentRepoMock.Verify(
-                r => r.FindByCondition(It.IsAny<Expression<Func<Appointment, bool>>>(), It.IsAny<bool>()),
-                Times.Once);
-            _patientRepoMock.Verify(
-                r => r.FindByCondition(It.IsAny<Expression<Func<PatientProfile, bool>>>(), It.IsAny<bool>()),
-                Times.Never);
-        }
-
-        /// <summary>
-        /// TC-VPD-03: Doctor + relation exist but patient profile is missing
-        /// → FetchPatientProfileAsync throws <see cref="KeyNotFoundException"/>
-        /// with <c>APP_MESSAGE_4004</c>.
-        /// Covers: <c>FetchPatientProfileAsync</c> null branch.
+        /// Covers: <c>EnsurePatientExistsAsync</c> <c>!exists</c> branch.
         /// </summary>
         [Fact]
         public async Task Process_PatientProfileNotFound_ThrowsPatientNotFound()
@@ -161,11 +125,9 @@ namespace ECS.Test.Services.DoctorAppointmentPatientManagementServices.ViewPatie
             //Arrange 1
             var doctor = ViewPatientDetailMockData.GetDoctorProfile();
             var patientId = ViewPatientDetailMockData.DefaultPatientId;
-            var appointment = ViewPatientDetailMockData.GetAppointment(doctorId: doctor.Id, patientId: patientId);
 
             //Arrange 2
             SetupDoctorRepo(new[] { doctor });
-            SetupAppointmentRepo(new[] { appointment });
             SetupPatientRepo(Array.Empty<PatientProfile>());
 
             //Act
@@ -174,6 +136,9 @@ namespace ECS.Test.Services.DoctorAppointmentPatientManagementServices.ViewPatie
             //Assert
             await act.Should().ThrowAsync<KeyNotFoundException>()
                 .WithMessage(GeneralCode.APP_MESSAGE_4004.ToString());
+            _doctorRepoMock.Verify(
+                r => r.FindByCondition(It.IsAny<Expression<Func<DoctorProfile, bool>>>(), It.IsAny<bool>()),
+                Times.Once);
             _patientRepoMock.Verify(
                 r => r.FindByCondition(It.IsAny<Expression<Func<PatientProfile, bool>>>(), It.IsAny<bool>()),
                 Times.Once);
