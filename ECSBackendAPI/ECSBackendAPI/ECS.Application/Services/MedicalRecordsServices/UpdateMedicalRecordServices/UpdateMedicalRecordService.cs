@@ -65,8 +65,8 @@ namespace ECS.Application.Services.MedicalRecordsServices.UpdateMedicalRecordSer
             // 4. Verify doctor ownership
             await VerifyDoctorOwnershipAsync(state);
 
-            // 5. Check record is not locked
-            CheckRecordLockStatus(state);
+            // 5. Check record is not locked (allows approved edits for past-day records)
+            CheckRecordLockStatus(request, state);
 
             // 6. Update dual-storage (MongoDB + SQL)
             await UpdateMedicalRecordAsync(request, state);
@@ -163,7 +163,7 @@ namespace ECS.Application.Services.MedicalRecordsServices.UpdateMedicalRecordSer
             }
         }
 
-        private void CheckRecordLockStatus(ExecutionState state)
+        private void CheckRecordLockStatus(UpdateMedicalRecordRequest request, ExecutionState state)
         {
             if (state.HasError || state.MedicalRecord == null) return;
 
@@ -174,9 +174,12 @@ namespace ECS.Application.Services.MedicalRecordsServices.UpdateMedicalRecordSer
                 return;
             }
 
+            // Allow updating past-day records if Clinic Admin has granted edit authorization
+            bool hasAdminApprovalPermission = !string.IsNullOrWhiteSpace(request.EditPermissionDocument) || !string.IsNullOrWhiteSpace(request.EditReason);
+
             var today = DateTime.UtcNow.Date;
             bool isCreatedToday = state.MedicalRecord.CreatedAt.Date == today || (state.MedicalRecord.Appointment != null && state.MedicalRecord.Appointment.AppointmentDate.Date == today);
-            if (!isCreatedToday)
+            if (!isCreatedToday && !hasAdminApprovalPermission)
             {
                 state.HasError = true;
                 state.ErrorCode = GeneralCode.APP_MESSAGE_4028.ToString();
@@ -209,12 +212,45 @@ namespace ECS.Application.Services.MedicalRecordsServices.UpdateMedicalRecordSer
                 return;
             }
 
-            var newChecksum = MongoDbContext.ComputeSha256(jsonContent);
-            var newSizeBytes = System.Text.Encoding.UTF8.GetByteCount(jsonContent);
+            // ─── Preserve existing tongKet & prescription fields ───────────────────
+            var mongoFilter = MongoDB.Driver.Builders<MedicalRecordDocument>.Filter.Eq(x => x.Id, record.MongoDocumentId);
+            var existingMongoDoc = await _mongo.MedicalRecords.Find(mongoFilter).FirstOrDefaultAsync();
+
+            if (existingMongoDoc?.FormData != null)
+            {
+                var existingBson = existingMongoDoc.FormData;
+                string[] preservedFields = new[] { "tongKet", "keDon", "donThuoc", "donKinh", "prescription", "summaryDiagnosis" };
+                foreach (var field in preservedFields)
+                {
+                    if (existingBson.Contains(field) && !formDataBson.Contains(field))
+                    {
+                        formDataBson[field] = existingBson[field];
+                    }
+                }
+
+                // Preserve benhAn.summary if present in existing document
+                if (existingBson.Contains("benhAn") && existingBson["benhAn"].IsBsonDocument && formDataBson.Contains("benhAn") && formDataBson["benhAn"].IsBsonDocument)
+                {
+                    var existingBenhAn = existingBson["benhAn"].AsBsonDocument;
+                    var newBenhAn = formDataBson["benhAn"].AsBsonDocument;
+
+                    if (existingBenhAn.Contains("summary") && !newBenhAn.Contains("summary"))
+                    {
+                        newBenhAn["summary"] = existingBenhAn["summary"];
+                    }
+                    if (existingBenhAn.Contains("tongKet") && !newBenhAn.Contains("tongKet"))
+                    {
+                        newBenhAn["tongKet"] = existingBenhAn["tongKet"];
+                    }
+                }
+            }
+
+            var jsonContentMerged = formDataBson.ToJson();
+            var newChecksum = MongoDbContext.ComputeSha256(jsonContentMerged);
+            var newSizeBytes = System.Text.Encoding.UTF8.GetByteCount(jsonContentMerged);
             var now = DateTime.UtcNow;
 
             // ─── Update MongoDB document ───────────────────────────
-            var mongoFilter = MongoDB.Driver.Builders<MedicalRecordDocument>.Filter.Eq(x => x.Id, record.MongoDocumentId);
             var mongoUpdate = MongoDB.Driver.Builders<MedicalRecordDocument>.Update
                 .Set(x => x.FormData, formDataBson)
                 .Set(x => x.Sha256Checksum, newChecksum)
@@ -242,7 +278,11 @@ namespace ECS.Application.Services.MedicalRecordsServices.UpdateMedicalRecordSer
             }
 
             // ─── Update SQL metadata ───────────────────────────────
-            record.Notes = request.Notes ?? record.Notes;
+            if (!string.IsNullOrWhiteSpace(request.Notes))
+            {
+                record.Notes = request.Notes;
+            }
+
             record.ChiefComplaint = ExtractChiefComplaint(request.FormData);
             record.Summary = ExtractSummary(request.FormData);
             record.UpdatedAt = now;

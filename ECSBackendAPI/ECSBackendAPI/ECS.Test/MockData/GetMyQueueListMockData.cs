@@ -86,8 +86,17 @@ namespace ECS.Test.MockData
             Room = room,
             QueueNumber = queueNumber,
             Status = status,
-            CalledAt = status == QueueStatus.CALLING || status == QueueStatus.COMPLETED ? DateTime.UtcNow.AddMinutes(-20) : null,
-            CompletedAt = status == QueueStatus.COMPLETED ? DateTime.UtcNow.AddMinutes(-5) : null
+            CalledAt = status == QueueStatus.CALLING
+                || status == QueueStatus.IN_PROGRESS
+                || status == QueueStatus.COMPLETED
+                    ? DateTime.UtcNow.AddMinutes(-20)
+                    : null,
+            // IN_PROGRESS = the doctor has saved the medical record (Step 3 of the EMR
+            // workflow) but has NOT yet done summary + prescription, so no
+            // CompletedAt is set. Only COMPLETED gets the CompletedAt stamp.
+            CompletedAt = status == QueueStatus.COMPLETED
+                ? DateTime.UtcNow.AddMinutes(-5)
+                : null
         };
     }
 }

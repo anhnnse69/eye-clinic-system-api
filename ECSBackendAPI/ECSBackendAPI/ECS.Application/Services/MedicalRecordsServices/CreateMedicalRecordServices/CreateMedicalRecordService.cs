@@ -18,10 +18,11 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
 {
     /// <summary>
     /// Service implementation for creating medical records.
-    /// **Refactored (2026-07-15)**: full form payload (Bệnh Án + Khám bệnh +
-    /// paraclinical sub-sections) is stored as a single document in MongoDB
-    /// (collection <c>medical_records</c>). SQL Server still keeps the relational
-    /// metadata + <c>MongoDocumentId</c> pointer for permissioning / queries.
+    /// **Refactored (2026-07-15)**: the full form payload (Medical Record +
+    /// Clinical Examination + Paraclinical sub-sections) is stored as a single
+    /// document in MongoDB (collection <c>medical_records</c>). SQL Server
+    /// still keeps the relational metadata + <c>MongoDocumentId</c> pointer
+    /// for permissioning / queries.
     /// </summary>
     public class CreateMedicalRecordService : ICreateMedicalRecordService
     {
@@ -291,21 +292,39 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
             _context.MedicalRecords.Add(medicalRecord);
 
             // ─── Stage Appointment + Queue status changes in the same DbContext ────
-            // Creating a medical record means the consultation has been finalized.
-            // Move the appointment to COMPLETED so the patient sees "Đã khám xong"
-            // instead of being stuck in "Đang khám" (IN_PROGRESS). We stage the
-            // change here so it shares the single SaveChangesAsync below —
-            // either all three writes (MedicalRecord + Appointment + Queue) commit
-            // together, or none of them do.
-            state.Appointment.Status = AppointmentStatus.COMPLETED;
-            state.Appointment.UpdatedAt = DateTime.UtcNow;
-            _context.Appointments.Update(state.Appointment);
+            // Creating a medical record only means the clinical-examination phase
+            // (Step 1–4 of the 6-step EMR workflow) has been saved. The queue/
+            // appointment must NOT be marked COMPLETED here — that only happens
+            // when CompleteQueueService succeeds, which itself enforces Step 5
+            // (Medical record summary) + Step 6 (Prescription / Glasses Rx).
+            // Instead we move the appointment/queue to IN_PROGRESS so the UI
+            // can show that consultation is in progress.
+            if (state.Appointment.Status == AppointmentStatus.PENDING
+                || state.Appointment.Status == AppointmentStatus.CONFIRMED
+                || state.Appointment.Status == AppointmentStatus.BOOKED
+                || state.Appointment.Status == AppointmentStatus.ARRIVED)
+            {
+                state.Appointment.Status = AppointmentStatus.IN_PROGRESS;
+                state.Appointment.UpdatedAt = DateTime.UtcNow;
+                // Re-fetch through _context so the row is tracked by the EF Core
+                // change tracker; otherwise EF Core 10's in-memory provider (and
+                // SQL Server with optimistic concurrency) reports
+                // DbUpdateConcurrencyException because the update is targeting
+                // a row it doesn't see tracked.
+                var trackedAppointment = await _context.Appointments.FirstOrDefaultAsync(
+                    a => a.Id == state.Appointment.Id);
+                if (trackedAppointment != null)
+                {
+                    trackedAppointment.Status = AppointmentStatus.IN_PROGRESS;
+                    trackedAppointment.UpdatedAt = DateTime.UtcNow;
+                    _context.Appointments.Update(trackedAppointment);
+                }
+            }
 
             var queue = await _context.Queues.FirstOrDefaultAsync(q => q.AppointmentId == state.AppointmentId);
-            if (queue != null)
+            if (queue != null && queue.Status != QueueStatus.IN_PROGRESS && queue.Status != QueueStatus.COMPLETED)
             {
-                queue.Status = QueueStatus.COMPLETED;
-                queue.CompletedAt = DateTime.UtcNow;
+                queue.Status = QueueStatus.IN_PROGRESS;
                 _context.Queues.Update(queue);
             }
 
@@ -315,7 +334,7 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
                 state.CreatedMedicalRecord = medicalRecord;
                 state.RecordTypeLabel = GetRecordTypeLabel(recordType);
                 _logger.LogInformation(
-                    "SQL SaveChanges successful (single transaction). MedicalRecordId: {MedicalRecordId}, AppointmentId: {AppointmentId} -> COMPLETED",
+                    "SQL SaveChanges successful (single transaction). MedicalRecordId: {MedicalId}, AppointmentId: {AppointmentId} -> IN_PROGRESS (Bước 1–3 done, Bước 5+6 still pending until CompleteQueueService).",
                     medicalRecord.Id, state.AppointmentId);
             }
             catch (Exception ex)
@@ -344,6 +363,11 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
         // commits within the same SQL transaction as the MedicalRecord insert.
         // This method is kept for backwards compatibility and is a no-op when
         // the staged change already happened.
+        //
+        // IMPORTANT: Save-medical-record must NOT mark the appointment/queue as
+        // COMPLETED. The 6-step EMR workflow only completes after Step 5
+        // (Medical record summary) + Step 6 (Prescription / Glasses Rx) are
+        // filled in, which is enforced by CompleteQueueService.
         // ────────────────────────────────────────────────────────────
         private async Task UpdateStatusesAsync(ExecutionState state)
         {
@@ -351,27 +375,45 @@ namespace ECS.Application.Services.MedicalRecordsServices.CreateMedicalRecordSer
             if (state.Appointment.Status == AppointmentStatus.COMPLETED)
             {
                 _logger.LogDebug(
-                    "UpdateStatusesAsync skipped: AppointmentId {AppointmentId} already marked COMPLETED by the main transaction.",
+                    "UpdateStatusesAsync skipped: AppointmentId {AppointmentId} already marked COMPLETED.",
+                    state.AppointmentId);
+                return;
+            }
+            if (state.Appointment.Status == AppointmentStatus.IN_PROGRESS)
+            {
+                _logger.LogDebug(
+                    "UpdateStatusesAsync skipped: AppointmentId {AppointmentId} already marked IN_PROGRESS by the main transaction.",
                     state.AppointmentId);
                 return;
             }
 
             try
             {
-                state.Appointment.Status = AppointmentStatus.COMPLETED;
+                // Only promote PENDING/CONFIRMED/BOOKED/ARRIVED -> IN_PROGRESS.
+                // Do NOT flip anything to COMPLETED here.
+                state.Appointment.Status = AppointmentStatus.IN_PROGRESS;
                 state.Appointment.UpdatedAt = DateTime.UtcNow;
-                _context.Appointments.Update(state.Appointment);
+                // Re-fetch through _context so the row is tracked by the EF Core
+                // change tracker. Avoids DbUpdateConcurrencyException from
+                // attaching an untracked instance.
+                var trackedAppointment = await _context.Appointments.FirstOrDefaultAsync(
+                    a => a.Id == state.Appointment.Id);
+                if (trackedAppointment != null)
+                {
+                    trackedAppointment.Status = AppointmentStatus.IN_PROGRESS;
+                    trackedAppointment.UpdatedAt = DateTime.UtcNow;
+                    _context.Appointments.Update(trackedAppointment);
+                }
 
                 var queue = await _context.Queues.FirstOrDefaultAsync(q => q.AppointmentId == state.AppointmentId);
-                if (queue != null)
+                if (queue != null && queue.Status != QueueStatus.IN_PROGRESS && queue.Status != QueueStatus.COMPLETED)
                 {
-                    queue.Status = QueueStatus.COMPLETED;
-                    queue.CompletedAt = DateTime.UtcNow;
+                    queue.Status = QueueStatus.IN_PROGRESS;
                     _context.Queues.Update(queue);
                 }
                 await _context.SaveChangesAsync();
                 _logger.LogInformation(
-                    "UpdateStatusesAsync fallback commit successful. AppointmentId: {AppointmentId} -> COMPLETED",
+                    "UpdateStatusesAsync fallback commit successful. AppointmentId: {AppointmentId} -> IN_PROGRESS",
                     state.AppointmentId);
             }
             catch (Exception ex)

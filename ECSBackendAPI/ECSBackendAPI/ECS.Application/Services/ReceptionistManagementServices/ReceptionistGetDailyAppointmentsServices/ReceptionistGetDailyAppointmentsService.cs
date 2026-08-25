@@ -1,4 +1,4 @@
-﻿using ECS.Application.Common.Response;
+using ECS.Application.Common.Response;
 using ECS.Application.Services.ReceptionistManagementServices.ReceptionistGetPatientsListServices;
 using ECS.Domain.Entities.Clinics;
 using ECS.Domain.Entities.Scheduling;
@@ -40,6 +40,12 @@ namespace ECS.Application.Services.ReceptionistManagementServices.ReceptionistGe
         {
             // Step 1: Resolve the secure boundary partition array assigned to the receptionist context (Filtering domain spaces)
             var localizedClinicBoundaryIds = ResolveReceptionistClinics(request.CurrentUserId);
+            if (localizedClinicBoundaryIds == null || !localizedClinicBoundaryIds.Any())
+            {
+                var emptyMeta = BuildPaginationMeta(request, 0);
+                var emptyStats = new LiveTrackingStatsDto();
+                return AssembleFinalApiResponse(new List<ReceptionistGetDailyAppointmentsResponse>(), emptyMeta, emptyStats);
+            }
             // Step 2: Build dynamic filtration expression trees for EF Core compilation targeting Appointment aggregate graphs
             var coreFilterPredicate = BuildCoreFilterCriteria(request, localizedClinicBoundaryIds);
             // Step 3: Extract comprehensive un-partitioned data queries to compute real-time live telemetry dashboard metrics
@@ -63,10 +69,20 @@ namespace ECS.Application.Services.ReceptionistManagementServices.ReceptionistGe
         /// <returns>A primitive collection tracking matched structural clinic identifiers.</returns>
         private List<Guid> ResolveReceptionistClinics(Guid staffUserId)
         {
-            return _staffQueryRepo.FindByCondition(
+            var clinics = _staffQueryRepo.FindByCondition(
                 sc => sc.UserId == staffUserId && sc.IsActive && sc.Role == StaffRole.RECEPTIONIST,
                 trackChanges: false
             ).Select(sc => sc.ClinicId).ToList();
+
+            if (!clinics.Any())
+            {
+                clinics = _staffQueryRepo.FindByCondition(
+                    sc => sc.UserId == staffUserId && sc.IsActive,
+                    trackChanges: false
+                ).Select(sc => sc.ClinicId).ToList();
+            }
+
+            return clinics;
         }
 
         /// <summary>
@@ -179,30 +195,30 @@ namespace ECS.Application.Services.ReceptionistManagementServices.ReceptionistGe
                 Status = ap.Status.ToString().ToUpper(),
                 DepositAmount = ap.DepositAmount,
                 DepositPaid = ap.DepositPaid,
-                BookingSource = ap.BookingSource.ToUpper(),
+                BookingSource = ap.BookingSource?.ToUpper() ?? "ONLINE",
                 Patient = new PatientProfileRowDto
                 {
-                    Id = ap.Patient.Id.ToString(),
-                    FullName = ap.Patient.FullName,
-                    Gender = ap.Patient.Gender.ToString().ToUpper(),
-                    Dob = ap.Patient.Dob.ToString("yyyy-MM-dd"),
-                    PhoneNumber = ap.Patient.PhoneNumber,
-                    BhytNumber = ap.Patient.BhytNumber
+                    Id = ap.Patient?.Id.ToString() ?? ap.PatientId.ToString(),
+                    FullName = ap.Patient?.FullName ?? "",
+                    Gender = ap.Patient?.Gender.ToString().ToUpper() ?? "OTHER",
+                    Dob = ap.Patient?.Dob.ToString("yyyy-MM-dd") ?? "",
+                    PhoneNumber = ap.Patient?.PhoneNumber,
+                    BhytNumber = ap.Patient?.BhytNumber
                 },
                 Doctor = new DoctorProfileRowDto
                 {
-                    Id = ap.Doctor.Id.ToString(),
-                    FullName = ap.Doctor.User.FullName,
+                    Id = ap.Doctor?.Id.ToString() ?? ap.DoctorId.ToString(),
+                    FullName = ap.Doctor?.User?.FullName ?? "",
                     ClinicRoomName = ap.Slot?.Schedule?.Room?.RoomName ?? "Phòng khám chung"
                 },
-                Slot = new TimeSlotRowDto
+                Slot = ap.Slot != null ? new TimeSlotRowDto
                 {
                     Id = ap.Slot.Id.ToString(),
                     ScheduleId = ap.Slot.ScheduleId.ToString(),
                     StartTime = ap.Slot.StartTime.ToString("yyyy-MM-ddTHH:mm:ss"),
                     EndTime = ap.Slot.EndTime.ToString("yyyy-MM-ddTHH:mm:ss"),
-                    ShiftType = ap.Slot.Schedule.ShiftType.ToString().ToUpper()
-                },
+                    ShiftType = ap.Slot.Schedule?.ShiftType.ToString().ToUpper() ?? "MORNING"
+                } : new TimeSlotRowDto(),
                 Queue = ap.Queue != null ? new QueueInlineRowDto
                 {
                     Id = ap.Queue.Id.ToString(),

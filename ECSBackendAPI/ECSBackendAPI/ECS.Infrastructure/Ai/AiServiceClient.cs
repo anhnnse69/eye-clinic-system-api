@@ -15,6 +15,7 @@ public interface IAiServiceClient
 {
     Task<AiPredictTask> SubmitPredictionAsync(byte[] imageBytes, string mimeType, CancellationToken ct = default);
     Task<AiPredictTask> GetTaskAsync(string taskId, CancellationToken ct = default);
+    Task<AiSymptomPredictResponse> PredictSymptomsAsync(AiSymptomPredictRequest request, CancellationToken ct = default);
 }
 
 public class AiServiceClient : IAiServiceClient
@@ -76,6 +77,25 @@ public class AiServiceClient : IAiServiceClient
         var envelope = JsonSerializer.Deserialize<AiApiResponse<AiPredictTask>>(raw, JsonOpts)
             ?? throw new AiServiceException("AI poll returned an empty body.");
         return envelope.Data ?? throw new AiServiceException("AI poll response missing data payload.");
+    }
+
+    public async Task<AiSymptomPredictResponse> PredictSymptomsAsync(AiSymptomPredictRequest request, CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, _options.ApiPrefix.TrimStart('/') + "/predict-symptoms");
+        req.Content = JsonContent.Create(request, options: JsonOpts);
+        req.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+        using var resp = await _http.SendAsync(req, ct);
+        var raw = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            _logger.LogError("AI predict-symptoms failed: {Status} {Body}", resp.StatusCode, raw);
+            throw new AiServiceException($"AI predict-symptoms failed: {(int)resp.StatusCode} {resp.StatusCode}");
+        }
+
+        var envelope = JsonSerializer.Deserialize<AiApiResponse<AiSymptomPredictResponse>>(raw, JsonOpts)
+            ?? throw new AiServiceException("AI predict-symptoms returned an empty body.");
+        return envelope.Data ?? throw new AiServiceException("AI predict-symptoms response missing data payload.");
     }
 }
 
@@ -139,4 +159,118 @@ public class AiPredictTask
 
     [JsonPropertyName("processing_time_ms")]
     public int? ProcessingTimeMs { get; set; }
+}
+
+public class AiSymptomPredictRequest
+{
+    [JsonPropertyName("symptom")]
+    public string Symptom { get; set; } = string.Empty;
+
+    [JsonPropertyName("duration")]
+    public string Duration { get; set; } = "acute";
+
+    [JsonPropertyName("pain_level")]
+    public string PainLevel { get; set; } = "low";
+
+    [JsonPropertyName("eye_redness")]
+    public string EyeRedness { get; set; } = "no";
+
+    [JsonPropertyName("blurred_vision")]
+    public string BlurredVision { get; set; } = "no";
+
+    [JsonPropertyName("light_sensitivity")]
+    public string LightSensitivity { get; set; } = "no";
+
+    [JsonPropertyName("discharge")]
+    public string Discharge { get; set; } = "no";
+
+    [JsonPropertyName("tearing")]
+    public string Tearing { get; set; } = "no";
+
+    [JsonPropertyName("swelling")]
+    public string Swelling { get; set; } = "no";
+
+    [JsonPropertyName("foreign_body_sensation")]
+    public string ForeignBodySensation { get; set; } = "no";
+
+    [JsonPropertyName("floaters")]
+    public string Floaters { get; set; } = "no";
+
+    [JsonPropertyName("halos")]
+    public string Halos { get; set; } = "no";
+
+    [JsonPropertyName("eye_pressure")]
+    public string EyePressure { get; set; } = "normal";
+
+    [JsonPropertyName("corneal_opacity")]
+    public string CornealOpacity { get; set; } = "no";
+
+    [JsonPropertyName("pupil_response")]
+    public string PupilResponse { get; set; } = "normal";
+
+    [JsonPropertyName("night_blindness")]
+    public string NightBlindness { get; set; } = "no";
+
+    [JsonPropertyName("double_vision")]
+    public string DoubleVision { get; set; } = "no";
+
+    [JsonPropertyName("eye_turning")]
+    public string EyeTurning { get; set; } = "no";
+
+    [JsonPropertyName("white_reflection")]
+    public string WhiteReflection { get; set; } = "no";
+
+    [JsonPropertyName("headache")]
+    public string Headache { get; set; } = "no";
+
+    [JsonPropertyName("nausea")]
+    public string Nausea { get; set; } = "no";
+
+    [JsonPropertyName("age")]
+    public string Age { get; set; } = "adult";
+
+    [JsonPropertyName("diabetes")]
+    public string Diabetes { get; set; } = "no";
+
+    [JsonPropertyName("hypertension")]
+    public string Hypertension { get; set; } = "no";
+
+    [JsonPropertyName("family_history")]
+    public string FamilyHistory { get; set; } = "no";
+}
+
+public class AiSymptomPredictResponse
+{
+    [JsonPropertyName("task_id")]
+    public string TaskId { get; set; } = string.Empty;
+
+    [JsonPropertyName("status")]
+    public string Status { get; set; } = string.Empty;
+
+    [JsonPropertyName("predicted_disease")]
+    public string? PredictedDisease { get; set; }
+
+    [JsonPropertyName("confidence")]
+    public double? Confidence { get; set; }
+
+    [JsonPropertyName("all_probabilities")]
+    public Dictionary<string, double>? AllProbabilities { get; set; }
+
+    [JsonPropertyName("risk_level")]
+    public string? RiskLevel { get; set; }
+
+    [JsonPropertyName("disclaimer")]
+    public string? Disclaimer { get; set; }
+
+    [JsonPropertyName("error_code")]
+    public string? ErrorCode { get; set; }
+
+    [JsonPropertyName("error_message")]
+    public string? ErrorMessage { get; set; }
+
+    [JsonPropertyName("created_at")]
+    public string? CreatedAt { get; set; }
+
+    [JsonPropertyName("completed_at")]
+    public string? CompletedAt { get; set; }
 }

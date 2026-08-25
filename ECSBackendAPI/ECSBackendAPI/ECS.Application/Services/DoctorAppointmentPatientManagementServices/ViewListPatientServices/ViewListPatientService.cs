@@ -1,4 +1,4 @@
-﻿using ECS.Application.Common.Response;
+using ECS.Application.Common.Response;
 using ECS.Domain.Entities.Clinics;
 using ECS.Domain.Entities.Scheduling;
 using ECS.Domain.Enums;
@@ -66,7 +66,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
 
             var (pageNumber, pageSize) = NormalizePaging(request);
 
-            var totalRecords = await CountAppointmentsAsync(
+            var totalRecords = await CountPatientsAsync(
                 doctorProfile.Id,
                 request.Status);
 
@@ -74,7 +74,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
                 totalRecords,
                 pageSize);
 
-            var patients = await FetchAppointmentsAsync(
+            var patients = await FetchPatientsAsync(
                 doctorProfile.Id,
                 request.Status,
                 pageNumber,
@@ -135,10 +135,10 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
         }
 
         /// <summary>
-        /// Counts total appointments for the doctor,
+        /// Counts total unique patients for the doctor,
         /// optionally filtered by status.
         /// </summary>
-        private async Task<int> CountAppointmentsAsync(
+        private async Task<int> CountPatientsAsync(
             Guid doctorId,
             AppointmentStatus? status)
         {
@@ -146,6 +146,8 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
                 .FindByCondition(a =>
                     a.DoctorId == doctorId &&
                     (status == null || a.Status == status))
+                .Select(a => a.PatientId)
+                .Distinct()
                 .CountAsync();
         }
 
@@ -163,37 +165,66 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Vi
         }
 
         /// <summary>
-        /// Retrieves a page of appointments for the doctor.
+        /// Retrieves a page of distinct patients for the doctor,
+        /// showing each patient once with their latest appointment.
         /// </summary>
         private async Task<List<PatientAppointmentItem>>
-            FetchAppointmentsAsync(
+            FetchPatientsAsync(
                 Guid doctorId,
                 AppointmentStatus? status,
                 int pageNumber,
                 int pageSize)
         {
-            return await _appointmentRepository
+            var baseQuery = _appointmentRepository
                 .FindByCondition(a =>
                     a.DoctorId == doctorId &&
-                    (status == null || a.Status == status))
-                .Include(a => a.Patient)
-                .ThenInclude(p => p.User)
-                .OrderByDescending(a => a.AppointmentDate)
+                    (status == null || a.Status == status));
+
+            var pagedPatientIds = await baseQuery
+                .GroupBy(a => a.PatientId)
+                .Select(g => new
+                {
+                    PatientId = g.Key,
+                    LatestDate = g.Max(a => a.AppointmentDate)
+                })
+                .OrderByDescending(x => x.LatestDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(a => new PatientAppointmentItem
-                {
-                    AppointmentId = a.Id,
-                    PatientId = a.Patient.Id,
-                    PatientName = a.Patient.FullName,
-                    PatientAvatarUrl = a.Patient.User != null
-                        ? a.Patient.User.AvatarUrl
-                        : null,
-                    PatientPhone = a.Patient.PhoneNumber,
-                    AppointmentDate = a.AppointmentDate,
-                    Status = a.Status.ToString(),
-                })
+                .Select(x => x.PatientId)
                 .ToListAsync();
+
+            var result = new List<PatientAppointmentItem>();
+
+            foreach (var pId in pagedPatientIds)
+            {
+                var latestApp = await _appointmentRepository
+                    .FindByCondition(a =>
+                        a.DoctorId == doctorId &&
+                        a.PatientId == pId &&
+                        (status == null || a.Status == status))
+                    .Include(a => a.Patient)
+                    .ThenInclude(p => p.User)
+                    .OrderByDescending(a => a.AppointmentDate)
+                    .FirstOrDefaultAsync();
+
+                if (latestApp != null)
+                {
+                    result.Add(new PatientAppointmentItem
+                    {
+                        AppointmentId = latestApp.Id,
+                        PatientId = latestApp.Patient.Id,
+                        PatientName = latestApp.Patient.FullName,
+                        PatientAvatarUrl = latestApp.Patient.User != null
+                            ? latestApp.Patient.User.AvatarUrl
+                            : null,
+                        PatientPhone = latestApp.Patient.PhoneNumber,
+                        AppointmentDate = latestApp.AppointmentDate,
+                        Status = latestApp.Status.ToString(),
+                    });
+                }
+            }
+
+            return result;
         }
 
         /// <summary>

@@ -95,9 +95,11 @@ namespace ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServi
             var endDate = request.EndDate;
             var recordType = request.RecordType;
             var filterDoctorId = request.DoctorId;
+            var filterPatientId = request.PatientId;
 
             return x =>
                 x.DoctorId == doctorProfileId
+                && (filterPatientId == null || x.PatientId == filterPatientId.Value)
                 && (recordType == null || x.RecordType == recordType)
                 && (startDate == null || x.CreatedAt >= startDate.Value)
                 && (endDate == null || x.CreatedAt <= endDate.Value.AddDays(1))

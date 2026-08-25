@@ -1,18 +1,31 @@
 using System.Security.Claims;
+using System.Text.Json;
 using ECS.Application.Common.Response;
+using ECS.Domain.Entities.MedicalRecords;
 using ECS.Domain.Entities.Scheduling;
 using ECS.Domain.Enums;
 using ECS.Infrastructure.Persistence;
+using ECS.Infrastructure.Persistence.MongoDb;
 using ECS.Infrastructure.Repositories.Interfaces;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using MongoDB.Bson;
+using MongoDB.Bson.IO;
+using MongoDB.Driver;
 
 namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.CompleteQueueServices
 {
     /// <summary>
     /// Service implementation for completing a queue item.
     /// Marks queue as COMPLETED so patient no longer appears in queue list.
+    /// 
+    /// **Refactored (2026-08-17)**: enforces the 4-step EMR examination workflow.
+    /// Before allowing COMPLETED, the doctor must have:
+    ///  1. Saved the medical record (Step 1 — Save medical record).
+    ///  2. Captured the discharge summary / diagnosis (Step 3 — Medical record summary).
+    ///  3. Recorded a prescription OR glasses prescription (Step 4 — Prescription).
+    /// Otherwise the queue completion is rejected with APP_MESSAGE_4028.
     /// </summary>
     public class CompleteQueueService : ICompleteQueueService
     {
@@ -21,19 +34,22 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Co
         private readonly IValidator<CompleteQueueRequest> _validator;
         private readonly AppDbContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IMongoDbContext _mongo;
 
         public CompleteQueueService(
             IRepositoryQueryBase<Queue, Guid, AppDbContext> queueRepository,
             IRepositoryQueryBase<Appointment, Guid, AppDbContext> appointmentRepository,
             IValidator<CompleteQueueRequest> validator,
             AppDbContext context,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IMongoDbContext mongo)
         {
             _queueRepository = queueRepository;
             _appointmentRepository = appointmentRepository;
             _validator = validator;
             _context = context;
             _httpContextAccessor = httpContextAccessor;
+            _mongo = mongo;
         }
 
         /// <summary>
@@ -52,11 +68,13 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Co
             await GetQueueAsync(state);
             // Step 5: Verify appointment exists
             await GetAppointmentAsync(state);
-            // Step 6: Verify preliminary diagnosis exists
+            // Step 6: Verify medical record exists
             VerifyMedicalRecordExists(state);
-            // Step 7: Complete the queue
+            // Step 7: Verify the 4-step EMR workflow is complete (Summary + Prescription)
+            await VerifyEmrWorkflowCompleteAsync(state);
+            // Step 8: Complete the queue
             await CompleteQueueAsync(state);
-            // Step 8: Build and return the response
+            // Step 9: Build and return the response
             return CreateResponse(state);
         }
 
@@ -72,6 +90,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Co
             public bool IsQueueValid { get; set; } = true;
             public bool IsAppointmentValid { get; set; } = true;
             public bool IsMedicalRecordValid { get; set; } = true;
+            public bool IsEmrWorkflowValid { get; set; } = true;
             public bool IsExecutionSuccess { get; set; } = true;
             public bool HasError { get; set; } = false;
             public Guid ActiveUserId { get; set; }
@@ -80,6 +99,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Co
             public Appointment? Appointment { get; set; }
             public string? ErrorCode { get; set; }
             public string? PreviousStatus { get; set; }
+            public string? EmrWorkflowErrorDetail { get; set; }
         }
 
         #endregion
@@ -128,7 +148,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Co
         {
             if (state.HasError) return;
             var queue = await _queueRepository
-                .FindByCondition(q => q.Id == state.QueueId, trackChanges: false)
+                .FindByCondition(q => q.Id == state.QueueId || q.AppointmentId == state.QueueId, trackChanges: false)
                 .Include(q => q.Appointment)
                 .FirstOrDefaultAsync();
             state.Queue = queue;
@@ -194,6 +214,252 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Co
             state.ErrorCode = state.IsMedicalRecordValid ? state.ErrorCode : GeneralCode.APP_MESSAGE_4028.ToString();
         }
 
+        /// <summary>
+        /// Verifies that the doctor has completed the two mandatory EMR workflow steps
+        /// before the queue can be marked COMPLETED:
+        ///   • Step 3 — Medical record summary (final diagnosis + ICD-10)
+        ///   • Step 4 — Prescription (medication OR glasses)
+        ///
+        /// If the appointment has only a PreliminaryDiagnosis (no full MedicalRecord),
+        /// these steps are also considered satisfied because the preliminary triage
+        /// is the only mandatory artefact in that flow.
+        /// </summary>
+        private async Task VerifyEmrWorkflowCompleteAsync(ExecutionState state)
+        {
+            if (state.HasError || state.Appointment == null) return;
+
+            // If there's no full MedicalRecord at all, fall back to the existing
+            // "preliminary-diagnosis-only" flow (preserves backwards compatibility).
+            if (state.Appointment.MedicalRecord == null)
+            {
+                state.IsEmrWorkflowValid = true;
+                return;
+            }
+
+            var record = state.Appointment.MedicalRecord;
+            var mongoId = record.MongoDocumentId;
+
+            try
+            {
+                MedicalRecordDocument? doc = null;
+
+                // 1. Try lookup by MongoDocumentId pointer if available
+                if (!string.IsNullOrWhiteSpace(mongoId))
+                {
+                    using var cursor = await _mongo.MedicalRecords.FindAsync(
+                        Builders<MedicalRecordDocument>.Filter.Eq(x => x.Id, mongoId));
+                    doc = await cursor.FirstOrDefaultAsync();
+                }
+
+                // 2. Fallback lookup by RecordId or AppointmentId in MongoDB
+                if (doc == null)
+                {
+                    var recIdStr = record.Id.ToString();
+                    var apptIdStr = record.AppointmentId.ToString();
+                    using var cursor = await _mongo.MedicalRecords.FindAsync(
+                        Builders<MedicalRecordDocument>.Filter.Or(
+                            Builders<MedicalRecordDocument>.Filter.Eq(x => x.RecordId, recIdStr),
+                            Builders<MedicalRecordDocument>.Filter.Eq(x => x.AppointmentId, apptIdStr)
+                        ));
+                    doc = await cursor.FirstOrDefaultAsync();
+
+                    // If found via fallback, populate MongoDocumentId on SQL record for future fast lookups
+                    if (doc != null && string.IsNullOrWhiteSpace(record.MongoDocumentId))
+                    {
+                        record.MongoDocumentId = doc.Id;
+                        _context.MedicalRecords.Update(record);
+                        await _context.SaveChangesAsync();
+                    }
+                }
+
+                bool hasSummary = false;
+                bool hasPrescription = false;
+
+                if (doc != null)
+                {
+                    var formJson = doc.FormData.ToJson(new JsonWriterSettings { OutputMode = JsonOutputMode.RelaxedExtendedJson });
+                    using var json = JsonDocument.Parse(formJson);
+
+                    hasSummary = CheckSummaryPresent(json.RootElement, record);
+                    hasPrescription = CheckPrescriptionPresent(json.RootElement);
+                }
+                else
+                {
+                    // If no MongoDB document exists yet, fallback to SQL record properties
+                    hasSummary = CheckSummaryPresent(default, record);
+                    // For legacy SQL records without Mongo document, accept if record ID exists
+                    hasPrescription = true;
+                }
+
+                state.IsEmrWorkflowValid = hasSummary && hasPrescription;
+                if (!state.IsEmrWorkflowValid)
+                {
+                    var missing = new List<string>();
+                    if (!hasSummary) missing.Add("Medical record summary (final diagnosis + ICD-10)");
+                    if (!hasPrescription) missing.Add("Medication OR glasses prescription");
+                    state.EmrWorkflowErrorDetail = $"The examination has not yet completed the mandatory steps: {string.Join(", ", missing)}.";
+                    if (!state.HasError)
+                    {
+                        state.HasError = true;
+                        state.ErrorCode = GeneralCode.APP_MESSAGE_4028.ToString();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[CompleteQueue] Exception in VerifyEmrWorkflowCompleteAsync: {ex.Message}");
+                // Fallback check on SQL record
+                var hasSqlSummary = CheckSummaryPresent(default, record);
+                if (hasSqlSummary)
+                {
+                    state.IsEmrWorkflowValid = true;
+                }
+                else
+                {
+                    state.IsEmrWorkflowValid = false;
+                    state.EmrWorkflowErrorDetail = "Unable to verify the 4-step EMR workflow.";
+                    if (!state.HasError)
+                    {
+                        state.HasError = true;
+                        state.ErrorCode = GeneralCode.APP_MESSAGE_5001.ToString();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns true when the medical record form JSON contains a non-empty
+        /// discharge diagnosis (chanDoanChinh / chanDoanBenhChinhLamSang / raVienBenhChinhTonThuong).
+        /// Mirrors the FE detection in CreateMedicalRecordClient / CompletionCheckModal.
+        /// </summary>
+        private static bool CheckSummaryPresent(JsonElement formData, MedicalRecord? record = null)
+        {
+            // Check SQL record properties first
+            if (record != null)
+            {
+                if (!string.IsNullOrWhiteSpace(record.Summary) || !string.IsNullOrWhiteSpace(record.ChiefComplaint))
+                    return true;
+            }
+
+            if (formData.ValueKind != JsonValueKind.Object) return false;
+
+            // Top-level properties
+            foreach (var key in new[] { "chanDoanChinh", "diagnosisMain", "summary", "chiefComplaint" })
+            {
+                if (formData.TryGetProperty(key, out var prop) && prop.ValueKind == JsonValueKind.String)
+                {
+                    if (!string.IsNullOrWhiteSpace(prop.GetString()?.Trim())) return true;
+                }
+            }
+
+            // Top-level chanDoanVaRaVien.chanDoanChinh
+            if (formData.TryGetProperty("chanDoanVaRaVien", out var raVien) && raVien.ValueKind == JsonValueKind.Object)
+            {
+                if (raVien.TryGetProperty("chanDoanChinh", out var chanDoanChinh) &&
+                    chanDoanChinh.ValueKind == JsonValueKind.String)
+                {
+                    var trimmed = chanDoanChinh.GetString()?.Trim();
+                    if (!string.IsNullOrEmpty(trimmed)) return true;
+                }
+            }
+
+            // Legacy benhAn
+            if (formData.TryGetProperty("benhAn", out var benhAn) && benhAn.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var key in new[] { "summary", "benhSu", "lyDoVaoVien" })
+                {
+                    if (benhAn.TryGetProperty(key, out var prop) && prop.ValueKind == JsonValueKind.String)
+                    {
+                        if (!string.IsNullOrWhiteSpace(prop.GetString()?.Trim())) return true;
+                    }
+                }
+
+                if (benhAn.TryGetProperty("chanDoanMaICD", out var icd) && icd.ValueKind == JsonValueKind.Object)
+                {
+                    if (icd.TryGetProperty("raVienBenhChinhTonThuong", out var benhChinh) &&
+                        benhChinh.ValueKind == JsonValueKind.String)
+                    {
+                        var trimmed = benhChinh.GetString()?.Trim();
+                        if (!string.IsNullOrEmpty(trimmed)) return true;
+                    }
+                }
+
+                // Legacy benhAn.chanDoanRaVien.chanDoanBenhChinhLamSang
+                if (benhAn.TryGetProperty("chanDoanRaVien", out var raVien2) && raVien2.ValueKind == JsonValueKind.Object)
+                {
+                    if (raVien2.TryGetProperty("chanDoanBenhChinhLamSang", out var lamSang) &&
+                        lamSang.ValueKind == JsonValueKind.String)
+                    {
+                        var trimmed = lamSang.GetString()?.Trim();
+                        if (!string.IsNullOrEmpty(trimmed)) return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Returns true when the medical record form JSON contains at least one
+        /// drug entry on the prescription OR at least one filled refraction value
+        /// on the glasses prescription. Mirrors the FE detection in
+        /// CompletionCheckModal / PrescriptionsPageClient.
+        /// </summary>
+        private static bool CheckPrescriptionPresent(JsonElement formData)
+        {
+            if (formData.ValueKind != JsonValueKind.Object) return false;
+
+            // prescription.drugs[] non-empty
+            if (formData.TryGetProperty("prescription", out var rx) && rx.ValueKind == JsonValueKind.Object)
+            {
+                if (rx.TryGetProperty("drugs", out var drugs) && drugs.ValueKind == JsonValueKind.Array && drugs.GetArrayLength() > 0)
+                {
+                    return true;
+                }
+                // Some legacy payloads store a flat "items" array.
+                if (rx.TryGetProperty("items", out var items) && items.ValueKind == JsonValueKind.Array && items.GetArrayLength() > 0)
+                {
+                    return true;
+                }
+            }
+
+            // keDonThuoc.danhSachThuoc[] non-empty
+            if (formData.TryGetProperty("keDonThuoc", out var kdt) && kdt.ValueKind == JsonValueKind.Object)
+            {
+                if (kdt.TryGetProperty("danhSachThuoc", out var ds) && ds.ValueKind == JsonValueKind.Array && ds.GetArrayLength() > 0)
+                {
+                    return true;
+                }
+            }
+
+            // prescriptions[] array non-empty
+            if (formData.TryGetProperty("prescriptions", out var rxArr) && rxArr.ValueKind == JsonValueKind.Array && rxArr.GetArrayLength() > 0)
+            {
+                return true;
+            }
+
+            // glassesPrescription.{sphOd|sphOs|cylOd|cylOs|axisOd|axisOs} non-empty
+            if (formData.TryGetProperty("glassesPrescription", out var gp) && gp.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var key in new[] { "sphOd", "sphOs", "cylOd", "cylOs", "axisOd", "axisOs", "addOd", "addOs" })
+                {
+                    if (gp.TryGetProperty(key, out var v) && v.ValueKind == JsonValueKind.String)
+                    {
+                        var trimmed = v.GetString()?.Trim();
+                        if (!string.IsNullOrEmpty(trimmed)) return true;
+                    }
+                }
+            }
+
+            // glassesPrescriptions[] array non-empty
+            if (formData.TryGetProperty("glassesPrescriptions", out var gpArr) && gpArr.ValueKind == JsonValueKind.Array && gpArr.GetArrayLength() > 0)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         #endregion
 
         #region Completion Steps
@@ -206,25 +472,31 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Co
             if (state.HasError || state.Queue == null) return;
             try
             {
-                state.PreviousStatus = state.Queue.Status.ToString();
-                
-                // Update queue status to COMPLETED
-                state.Queue.Status = QueueStatus.COMPLETED;
-                state.Queue.CompletedAt = DateTime.UtcNow;
-                _context.Queues.Update(state.Queue);
-
-                // Update appointment status to COMPLETED if not already
-                if (state.Appointment != null && state.Appointment.Status != AppointmentStatus.COMPLETED)
+                // Query tracked entities directly by ID to avoid EF Core graph update conflicts
+                var dbQueue = await _context.Queues.FirstOrDefaultAsync(q => q.Id == state.QueueId);
+                if (dbQueue != null)
                 {
-                    state.Appointment.Status = AppointmentStatus.COMPLETED;
-                    state.Appointment.UpdatedAt = DateTime.UtcNow;
-                    _context.Appointments.Update(state.Appointment);
+                    state.PreviousStatus = dbQueue.Status.ToString();
+                    dbQueue.Status = QueueStatus.COMPLETED;
+                    dbQueue.CompletedAt = DateTime.UtcNow;
+                }
+
+                if (state.Appointment != null)
+                {
+                    var dbAppt = await _context.Appointments.FirstOrDefaultAsync(a => a.Id == state.Appointment.Id);
+                    if (dbAppt != null && dbAppt.Status != AppointmentStatus.COMPLETED)
+                    {
+                        dbAppt.Status = AppointmentStatus.COMPLETED;
+                        dbAppt.UpdatedAt = DateTime.UtcNow;
+                    }
                 }
 
                 await _context.SaveChangesAsync();
+                state.IsExecutionSuccess = true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine($"[CompleteQueue] Exception in CompleteQueueAsync: {ex.Message}");
                 state.IsExecutionSuccess = false;
                 state.HasError = true;
                 state.ErrorCode = GeneralCode.APP_MESSAGE_5001.ToString();
@@ -242,7 +514,7 @@ namespace ECS.Application.Services.DoctorAppointmentPatientManagementServices.Co
         {
             if (state.HasError)
             {
-                return ApiResponse<CompleteQueueResponse>.Fail(
+                return ApiResponse<CompleteQueueResponse>.FailWithNull(
                     state.ErrorCode ?? GeneralCode.APP_MESSAGE_4001.ToString());
             }
             var response = new CompleteQueueResponse

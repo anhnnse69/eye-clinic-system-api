@@ -12,6 +12,7 @@ public class MongoDbOptions
     public string MedicalRecordsCollection { get; set; } = "medical_records";
     public string LabResultsCollection { get; set; } = "lab_results";
     public string AiSuggestionsCollection { get; set; } = "ai_suggestions";
+    public string RecordApprovalsCollection { get; set; } = "record_approvals";
 
     public string? ApplicationName { get; set; } = "ecs-backend";
     public int ServerSelectionTimeoutSeconds { get; set; } = 10;
