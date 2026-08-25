@@ -15,13 +15,22 @@ namespace ECS.API.Extensions
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
         /// <returns>The original <see cref="IServiceCollection"/> for chaining.</returns>
-        public static IServiceCollection AddCustomCors(this IServiceCollection services)
+        public static IServiceCollection AddCustomCors(this IServiceCollection services, IConfiguration configuration)
         {
+            var configuredOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+            var allowedOrigins = configuredOrigins != null && configuredOrigins.Length > 0
+                ? configuredOrigins
+                : new[]
+                {
+                    "http://localhost:3000",
+                    "https://eye-clinic-system-web.vercel.app"
+                };
+
             services.AddCors(options =>
             {
                 options.AddPolicy(AppCorsPolicy, builder =>
                 {
-                    builder.WithOrigins("http://localhost:3000")
+                    builder.WithOrigins(allowedOrigins)
                            .AllowAnyHeader()
                            .AllowAnyMethod()
                            .AllowCredentials();
