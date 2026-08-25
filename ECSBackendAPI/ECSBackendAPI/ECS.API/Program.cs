@@ -36,6 +36,8 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.Services.AddHealthChecks();
+
 // ── BackgroundJobs ────────────────────────────────────────────────
 builder.Services.AddHostedService<DailyAppointmentNoShowScheduler>();
 
@@ -52,6 +54,7 @@ app.UseCustomCors();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapHealthChecks("/health");
 app.MapControllers();
 
 app.Run();
