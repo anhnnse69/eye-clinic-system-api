@@ -7,7 +7,7 @@ public class AiServiceOptions
 {
     public const string SectionName = "AiService";
 
-    public string BaseUrl { get; set; } = "http://localhost:8000";
+    public string BaseUrl { get; set; } = "https://eye-clinic-system-ai.onrender.com";
     public string ApiPrefix { get; set; } = "/api/v1/ai";
     public int PredictTimeoutSeconds { get; set; } = 60;
     public int PollIntervalSeconds { get; set; } = 1;
