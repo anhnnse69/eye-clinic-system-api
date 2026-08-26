@@ -18,22 +18,33 @@ namespace ECS.API.Extensions
         public static IServiceCollection AddCustomCors(this IServiceCollection services, IConfiguration configuration)
         {
             var configuredOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
-            var allowedOrigins = configuredOrigins != null && configuredOrigins.Length > 0
-                ? configuredOrigins
-                : new[]
-                {
-                    "http://localhost:3000",
-                    "https://eye-clinic-system-web.vercel.app"
-                };
 
             services.AddCors(options =>
             {
                 options.AddPolicy(AppCorsPolicy, builder =>
                 {
-                    builder.WithOrigins(allowedOrigins)
-                           .AllowAnyHeader()
-                           .AllowAnyMethod()
-                           .AllowCredentials();
+                    if (configuredOrigins != null && configuredOrigins.Contains("*"))
+                    {
+                        builder.AllowAnyOrigin()
+                               .AllowAnyHeader()
+                               .AllowAnyMethod();
+                    }
+                    else
+                    {
+                        var allowedOrigins = configuredOrigins != null && configuredOrigins.Length > 0
+                            ? configuredOrigins
+                            : new[]
+                            {
+                                "http://localhost:3000",
+                                "https://eye-clinic-system-web.vercel.app"
+                            };
+
+                        builder.WithOrigins(allowedOrigins)
+                               .SetIsOriginAllowed(_ => true)
+                               .AllowAnyHeader()
+                               .AllowAnyMethod()
+                               .AllowCredentials();
+                    }
                 });
             });
 
