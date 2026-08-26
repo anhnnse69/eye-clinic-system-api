@@ -61,7 +61,6 @@ using ECS.Application.Services.MedicalRecordsServices.GetMedicalRecordsServices;
 using ECS.Application.Services.MedicalRecordsServices.PreliminaryDiagnosisServices;
 using ECS.Application.Services.MedicalRecordsServices.UpdateMedicalRecordServices;
 using ECS.Application.Services.RecordApprovalServices;
-using ECS.Application.Services.ParaclinicalServices.AiSuggestionServices;
 using ECS.Application.Services.ParaclinicalServices.AiSymptomSuggestionServices;
 using ECS.Application.Services.ParaclinicalServices.CreateLabRequestServices;
 using ECS.Application.Services.ParaclinicalServices.GetLabResultsServices;
@@ -242,7 +241,6 @@ public static class DependencyInjection
         services.AddScoped<ICreateLabRequestService, CreateLabRequestService>();
         services.AddScoped<IGetLabResultsService, GetLabResultsService>();
         services.AddScoped<IUpdateLabResultService, UpdateLabResultService>();
-        services.AddScoped<IAiSuggestService, AiSuggestService>();
         services.AddScoped<IAiSymptomSuggestService, AiSymptomSuggestService>();
         
         // AI Triage v3.0 — Symptom-based prediction
