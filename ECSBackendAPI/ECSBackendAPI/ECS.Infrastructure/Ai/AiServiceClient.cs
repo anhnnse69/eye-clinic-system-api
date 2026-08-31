@@ -14,12 +14,14 @@ namespace ECS.Infrastructure.Ai;
 public interface IAiServiceClient
 {
     Task<AiSymptomPredictResponse> PredictSymptomsAsync(AiSymptomPredictRequest request, CancellationToken ct = default);
+    Task<AiOctPredictResponse> PredictOctImageAsync(AiOctPredictRequest request, CancellationToken ct = default);
 }
 
 public class AiServiceClient : IAiServiceClient
 {
     private readonly HttpClient _http;
-    private readonly AiServiceOptions _options;
+    private readonly IOptionsMonitor<AiServiceOptions> _optionsMonitor;
+    private readonly IAiTaskQueue _taskQueue;
     private readonly ILogger<AiServiceClient> _logger;
 
     private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web)
@@ -30,19 +32,38 @@ public class AiServiceClient : IAiServiceClient
 
     public AiServiceClient(
         HttpClient http,
-        IOptions<AiServiceOptions> options,
+        IOptionsMonitor<AiServiceOptions> optionsMonitor,
+        IAiTaskQueue taskQueue,
         ILogger<AiServiceClient> logger)
     {
         _http = http;
-        _options = options.Value;
+        _optionsMonitor = optionsMonitor;
+        _taskQueue = taskQueue;
         _logger = logger;
-        _http.BaseAddress = new Uri(_options.BaseUrl.TrimEnd('/') + "/");
-        _http.Timeout = TimeSpan.FromSeconds(_options.PredictTimeoutSeconds);
     }
 
-    public async Task<AiSymptomPredictResponse> PredictSymptomsAsync(AiSymptomPredictRequest request, CancellationToken ct = default)
+    private Uri GetEndpointUri(string relativePath)
     {
-        using var req = new HttpRequestMessage(HttpMethod.Post, _options.ApiPrefix.TrimStart('/') + "/predict-symptoms");
+        var options = _optionsMonitor.CurrentValue;
+        var baseUrl = (options.BaseUrl ?? "http://localhost:8000").TrimEnd('/');
+        var prefix = (options.ApiPrefix ?? "/api/v1/ai").Trim('/');
+        return new Uri($"{baseUrl}/{prefix}/{relativePath.TrimStart('/')}");
+    }
+
+    public Task<AiSymptomPredictResponse> PredictSymptomsAsync(AiSymptomPredictRequest request, CancellationToken ct = default)
+    {
+        return _taskQueue.EnqueueAsync(cancellationToken => DirectPredictSymptomsAsync(request, cancellationToken), ct);
+    }
+
+    public Task<AiOctPredictResponse> PredictOctImageAsync(AiOctPredictRequest request, CancellationToken ct = default)
+    {
+        return _taskQueue.EnqueueAsync(cancellationToken => DirectPredictOctImageAsync(request, cancellationToken), ct);
+    }
+
+    private async Task<AiSymptomPredictResponse> DirectPredictSymptomsAsync(AiSymptomPredictRequest request, CancellationToken ct)
+    {
+        var endpointUri = GetEndpointUri("predict-symptoms");
+        using var req = new HttpRequestMessage(HttpMethod.Post, endpointUri);
         req.Content = JsonContent.Create(request, options: JsonOpts);
         req.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
@@ -57,6 +78,26 @@ public class AiServiceClient : IAiServiceClient
         var envelope = JsonSerializer.Deserialize<AiApiResponse<AiSymptomPredictResponse>>(raw, JsonOpts)
             ?? throw new AiServiceException("AI predict-symptoms returned an empty body.");
         return envelope.Data ?? throw new AiServiceException("AI predict-symptoms response missing data payload.");
+    }
+
+    private async Task<AiOctPredictResponse> DirectPredictOctImageAsync(AiOctPredictRequest request, CancellationToken ct)
+    {
+        var endpointUri = GetEndpointUri("predict-oct");
+        using var req = new HttpRequestMessage(HttpMethod.Post, endpointUri);
+        req.Content = JsonContent.Create(request, options: JsonOpts);
+        req.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+        using var resp = await _http.SendAsync(req, ct);
+        var raw = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+        {
+            _logger.LogError("AI predict-oct failed: {Status} {Body}", resp.StatusCode, raw);
+            throw new AiServiceException($"AI predict-oct failed: {(int)resp.StatusCode} {resp.StatusCode}");
+        }
+
+        var envelope = JsonSerializer.Deserialize<AiApiResponse<AiOctPredictResponse>>(raw, JsonOpts)
+            ?? throw new AiServiceException("AI predict-oct returned an empty body.");
+        return envelope.Data ?? throw new AiServiceException("AI predict-oct response missing data payload.");
     }
 }
 
@@ -180,6 +221,51 @@ public class AiSymptomPredictResponse
 
     [JsonPropertyName("disclaimer")]
     public string? Disclaimer { get; set; }
+
+    [JsonPropertyName("error_code")]
+    public string? ErrorCode { get; set; }
+
+    [JsonPropertyName("error_message")]
+    public string? ErrorMessage { get; set; }
+
+    [JsonPropertyName("created_at")]
+    public string? CreatedAt { get; set; }
+
+    [JsonPropertyName("completed_at")]
+    public string? CompletedAt { get; set; }
+}
+
+public class AiOctPredictRequest
+{
+    [JsonPropertyName("image_base64")]
+    public string ImageBase64 { get; set; } = string.Empty;
+}
+
+public class AiOctPredictResponse
+{
+    [JsonPropertyName("task_id")]
+    public string TaskId { get; set; } = string.Empty;
+
+    [JsonPropertyName("status")]
+    public string Status { get; set; } = string.Empty;
+
+    [JsonPropertyName("predicted_class")]
+    public string PredictedClass { get; set; } = string.Empty;
+
+    [JsonPropertyName("confidence")]
+    public double Confidence { get; set; }
+
+    [JsonPropertyName("probabilities")]
+    public Dictionary<string, double>? Probabilities { get; set; }
+
+    [JsonPropertyName("risk_level")]
+    public string RiskLevel { get; set; } = string.Empty;
+
+    [JsonPropertyName("is_low_confidence")]
+    public bool IsLowConfidence { get; set; }
+
+    [JsonPropertyName("disclaimer")]
+    public string Disclaimer { get; set; } = string.Empty;
 
     [JsonPropertyName("error_code")]
     public string? ErrorCode { get; set; }

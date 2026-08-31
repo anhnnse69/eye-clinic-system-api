@@ -1,4 +1,4 @@
-﻿namespace ECS.Application.Services.SystemAdminServices.ReviewClinicRegisterServices
+namespace ECS.Application.Services.SystemAdminServices.ReviewClinicRegisterServices
 {
     public class GetClinicApplicationDetailResponse
     {
@@ -12,5 +12,6 @@
         public string Status { get; set; } = null!; // PENDING, APPROVED, REJECTED
         public string? ReviewNote { get; set; }
         public string RequestedAt { get; set; } = null!;
+        public string? ProvisionedClinicId { get; set; }
     }
 }

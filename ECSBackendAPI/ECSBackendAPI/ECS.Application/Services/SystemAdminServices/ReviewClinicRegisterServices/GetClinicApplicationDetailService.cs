@@ -1,4 +1,4 @@
-﻿using ECS.Application.Common.Response;
+using ECS.Application.Common.Response;
 using ECS.Domain.Entities.Clinics;
 using ECS.Domain.Enums;
 using ECS.Infrastructure.Persistence;
@@ -68,7 +68,8 @@ namespace ECS.Application.Services.SystemAdminServices.ReviewClinicRegisterServi
                 BusinessLicenseUrl = app.BusinessLicenseUrl,
                 Status = app.Status,
                 ReviewNote = app.ReviewNote,
-                RequestedAt = app.RequestedAt.ToString("dd/MM/yyyy HH:mm")
+                RequestedAt = app.RequestedAt.ToString("dd/MM/yyyy HH:mm"),
+                ProvisionedClinicId = app.ProvisionedClinicId?.ToString()
             };
         }
 

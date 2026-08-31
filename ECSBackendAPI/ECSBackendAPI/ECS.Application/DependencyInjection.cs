@@ -1,3 +1,4 @@
+using ECS.Application.Services.AiOctPredictServices;
 using ECS.Application.Services.AiTriageServices;
 using ECS.Application.Services.AuthServices.ChangePasswordServices;
 using ECS.Application.Services.AuthServices.ForgotPasswordServices;
@@ -243,8 +244,9 @@ public static class DependencyInjection
         services.AddScoped<IUpdateLabResultService, UpdateLabResultService>();
         services.AddScoped<IAiSymptomSuggestService, AiSymptomSuggestService>();
         
-        // AI Triage v3.0 — Symptom-based prediction
+        // AI Triage v3.0 — Symptom-based prediction & OCT Image classification
         services.AddScoped<IAiTriageService, AiTriageService>();
+        services.AddScoped<IAiOctPredictService, AiOctPredictService>();
         
         // ── FluentValidation ──────────────────────────────────
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
