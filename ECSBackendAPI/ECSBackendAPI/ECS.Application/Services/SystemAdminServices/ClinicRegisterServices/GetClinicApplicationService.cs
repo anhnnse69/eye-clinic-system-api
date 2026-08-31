@@ -1,4 +1,4 @@
-﻿using ECS.Application.Common.Response;
+using ECS.Application.Common.Response;
 using ECS.Domain.Entities.Clinics;
 using ECS.Domain.Enums;
 using ECS.Infrastructure.Persistence;
@@ -102,10 +102,12 @@ namespace ECS.Application.Services.SystemAdminServices.ClinicRegisterServices
             {
                 Id_clinic_registration = app.Id.ToString(),
                 ClinicName = app.ClinicName,
+                ContactName = app.ContactName,
                 ContactEmail = app.ContactEmail,
                 ContactPhone = app.ContactPhone,
                 SubmissionDate = app.RequestedAt.ToString("dd/MM/yyyy"),
-                Status = app.Status
+                Status = app.Status,
+                ProvisionedClinicId = app.ProvisionedClinicId?.ToString()
             }).ToList();
         }
 

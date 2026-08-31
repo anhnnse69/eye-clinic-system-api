@@ -12,4 +12,5 @@ public class AiServiceOptions
     public int PredictTimeoutSeconds { get; set; } = 60;
     public int PollIntervalSeconds { get; set; } = 1;
     public int MaxPollAttempts { get; set; } = 60;
+    public int MaxConcurrentTasks { get; set; } = 2;
 }

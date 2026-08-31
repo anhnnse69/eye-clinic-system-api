@@ -1,4 +1,4 @@
-﻿using ECS.Infrastructure.Ai;
+using ECS.Infrastructure.Ai;
 using ECS.Infrastructure.CloudStorage;
 using ECS.Infrastructure.ConfigService.EmailService;
 using ECS.Infrastructure.ConfigService.JwtService;
@@ -46,14 +46,12 @@ public static class DependencyInjection
         services.Configure<MongoDbOptions>(configuration.GetSection(MongoDbOptions.SectionName));
         services.AddSingleton<IMongoDbContext, MongoDbContext>();
 
-        // ── AI Service (FastAPI VGG16 OCT classifier) ──────────────────
+        // ── AI Service (FastAPI VGG16 OCT classifier + Rate-Limiting Queue) ──
         services.Configure<AiServiceOptions>(configuration.GetSection(AiServiceOptions.SectionName));
-        services.AddHttpClient<IAiServiceClient, AiServiceClient>((sp, client) =>
-        {
-            var opt = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<AiServiceOptions>>().Value;
-            client.BaseAddress = new Uri(opt.BaseUrl.TrimEnd('/') + "/");
-            client.Timeout = TimeSpan.FromSeconds(opt.PredictTimeoutSeconds);
-        });
+        services.AddSingleton<IAiTaskQueue, AiTaskQueue>();
+        services.AddSingleton<AiTaskQueue>(sp => (AiTaskQueue)sp.GetRequiredService<IAiTaskQueue>());
+        services.AddHostedService<AiQueueProcessorJob>();
+        services.AddHttpClient<IAiServiceClient, AiServiceClient>();
 
         return services;
     }

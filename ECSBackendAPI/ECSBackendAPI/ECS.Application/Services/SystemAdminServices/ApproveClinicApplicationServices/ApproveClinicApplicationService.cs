@@ -84,13 +84,14 @@ namespace ECS.Application.Services.SystemAdminServices.ApproveClinicApplicationS
         /// </summary>
         private async Task ProvisionNewClinic(ClinicRegistrationRequest application)
         {
+            var newClinicId = Guid.NewGuid();
             var newClinic = new Clinic
             {
-                Id = Guid.NewGuid(),
+                Id = newClinicId,
                 Name = application.ClinicName,
                 Address = application.ClinicAddress,
-                Phone = string.Empty,
-                Email = null,
+                Phone = application.ContactPhone,
+                Email = application.ContactEmail,
                 LogoUrl = null,
                 Description = null,
                 IsActive = true,
@@ -99,6 +100,7 @@ namespace ECS.Application.Services.SystemAdminServices.ApproveClinicApplicationS
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
+            application.ProvisionedClinicId = newClinicId;
             await _clinicRepository.CreateAsync(newClinic);
         }
 
