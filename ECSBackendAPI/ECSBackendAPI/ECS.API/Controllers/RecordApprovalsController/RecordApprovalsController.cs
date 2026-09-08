@@ -37,9 +37,9 @@ namespace ECS.API.Controllers.RecordApprovalsController
         /// Clinic Admin gets list of record approval requests (filtered by status or search keyword).
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> GetRequests([FromQuery] string? status, [FromQuery] string? search, CancellationToken ct)
+        public async Task<IActionResult> GetRequests([FromQuery] string? status, [FromQuery] string? search, [FromQuery] string? clinicId, CancellationToken ct)
         {
-            var result = await _approvalService.GetRequestsAsync(status, search, ct);
+            var result = await _approvalService.GetRequestsAsync(status, search, clinicId, ct);
             return Ok(ApiResponse<List<RecordApprovalResponseDto>>.Success("Lấy danh sách đơn phê duyệt thành công.", result));
         }
 

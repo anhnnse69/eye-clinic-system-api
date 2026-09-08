@@ -218,6 +218,7 @@ public class RecordApprovalDocument
     public string PatientName { get; set; } = string.Empty;
     public string DoctorId { get; set; } = string.Empty;
     public string DoctorName { get; set; } = string.Empty;
+    public string? ClinicId { get; set; }
     public string Reason { get; set; } = string.Empty;
     public string PermissionDoc { get; set; } = string.Empty;   // GP-2026-0818/QĐ-CA
     public string? AttachedFileName { get; set; }
