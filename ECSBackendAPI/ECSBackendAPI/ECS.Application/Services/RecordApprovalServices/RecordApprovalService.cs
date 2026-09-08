@@ -25,6 +25,7 @@ public class RecordApprovalService : IRecordApprovalService
             existing.PatientName = request.PatientName;
             existing.DoctorId = request.DoctorId;
             existing.DoctorName = request.DoctorName;
+            existing.ClinicId = request.ClinicId ?? existing.ClinicId;
             existing.Reason = request.Reason;
             existing.PermissionDoc = request.PermissionDoc;
             existing.AttachedFileName = request.AttachedFileName;
@@ -44,6 +45,7 @@ public class RecordApprovalService : IRecordApprovalService
             PatientName = request.PatientName,
             DoctorId = request.DoctorId,
             DoctorName = request.DoctorName,
+            ClinicId = request.ClinicId,
             Reason = request.Reason,
             PermissionDoc = request.PermissionDoc,
             AttachedFileName = request.AttachedFileName,
@@ -52,15 +54,20 @@ public class RecordApprovalService : IRecordApprovalService
         };
 
         await _mongoDb.RecordApprovals.InsertOneAsync(doc, cancellationToken: ct);
-        _logger.LogInformation("Created new RecordApprovalDocument in MongoDb for RecordId={RecordId}", request.RecordId);
+        _logger.LogInformation("Created new RecordApprovalDocument in MongoDb for RecordId={RecordId}, ClinicId={ClinicId}", request.RecordId, request.ClinicId);
 
         return MapToDto(doc);
     }
 
-    public async Task<List<RecordApprovalResponseDto>> GetRequestsAsync(string? status = null, string? search = null, CancellationToken ct = default)
+    public async Task<List<RecordApprovalResponseDto>> GetRequestsAsync(string? status = null, string? search = null, string? clinicId = null, CancellationToken ct = default)
     {
         var filterBuilder = Builders<RecordApprovalDocument>.Filter;
         var filter = filterBuilder.Empty;
+
+        if (!string.IsNullOrWhiteSpace(clinicId))
+        {
+            filter &= filterBuilder.Eq(x => x.ClinicId, clinicId);
+        }
 
         if (!string.IsNullOrWhiteSpace(status) && status.ToUpperInvariant() != "ALL")
         {
@@ -161,6 +168,7 @@ public class RecordApprovalService : IRecordApprovalService
             PatientName = doc.PatientName,
             DoctorId = doc.DoctorId,
             DoctorName = doc.DoctorName,
+            ClinicId = doc.ClinicId,
             Reason = doc.Reason,
             PermissionDoc = doc.PermissionDoc,
             AttachedFileName = doc.AttachedFileName,
