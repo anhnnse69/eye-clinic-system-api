@@ -1,5 +1,7 @@
+using System.Security.Claims;
 using ECS.Application.Common.Response;
 using ECS.Application.Services.RecordApprovalServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ECS.API.Controllers.RecordApprovalsController
@@ -9,6 +11,7 @@ namespace ECS.API.Controllers.RecordApprovalsController
     /// </summary>
     [ApiController]
     [Route("api/v1/record-approvals")]
+    [Authorize]
     public class RecordApprovalsController : ControllerBase
     {
         private readonly IRecordApprovalService _approvalService;
@@ -63,7 +66,8 @@ namespace ECS.API.Controllers.RecordApprovalsController
         [HttpPost("{recordId}/approve")]
         public async Task<IActionResult> ApproveRequest(string recordId, CancellationToken ct)
         {
-            var result = await _approvalService.ApproveRequestAsync(recordId, "ClinicAdmin", ct);
+            var reviewerId = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "ClinicAdmin";
+            var result = await _approvalService.ApproveRequestAsync(recordId, reviewerId, ct);
             if (result == null)
             {
                 return NotFound(ApiResponse<RecordApprovalResponseDto>.Fail("Không tìm thấy đơn phê duyệt để duyệt."));
@@ -77,7 +81,8 @@ namespace ECS.API.Controllers.RecordApprovalsController
         [HttpPost("{recordId}/reject")]
         public async Task<IActionResult> RejectRequest(string recordId, [FromBody] RejectRecordApprovalPayload? payload, CancellationToken ct)
         {
-            var result = await _approvalService.RejectRequestAsync(recordId, "ClinicAdmin", payload?.Note, ct);
+            var reviewerId = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "ClinicAdmin";
+            var result = await _approvalService.RejectRequestAsync(recordId, reviewerId, payload?.Note, ct);
             if (result == null)
             {
                 return NotFound(ApiResponse<RecordApprovalResponseDto>.Fail("Không tìm thấy đơn phê duyệt để từ chối."));
@@ -111,3 +116,4 @@ namespace ECS.API.Controllers.RecordApprovalsController
         public string? Note { get; set; }
     }
 }
+
