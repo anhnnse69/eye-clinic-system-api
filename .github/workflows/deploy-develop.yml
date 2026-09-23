@@ -32,6 +32,17 @@ jobs:
       - name: Publish API Project
         run: dotnet publish ECSBackendAPI/ECSBackendAPI/ECS.API/ECS.API.csproj --configuration Release --output ${{ runner.temp }}/publish-app --no-build
 
+      - name: Install dotnet-ef tool
+        run: dotnet tool install --global dotnet-ef
+
+      - name: Update Database (Run EF Migrations)
+        run: >
+          dotnet ef database update 
+          --project ECSBackendAPI/ECSBackendAPI/ECS.Infrastructure/ECS.Infrastructure.csproj 
+          --startup-project ECSBackendAPI/ECSBackendAPI/ECS.API/ECS.API.csproj 
+          --context AppDbContext
+          --connection "${{ secrets.SQL_CONNECTION_STRING }}"
+
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
