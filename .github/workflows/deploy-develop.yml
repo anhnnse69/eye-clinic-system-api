@@ -67,3 +67,37 @@ jobs:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: ${{ runner.temp }}/publish-app
+
+      - name: Update Azure App Settings (Environment Variables)
+        uses: azure/appservice-settings@v1
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          app-settings-json: |
+            [
+              {
+                "name": "MongoDb__ConnectionString",
+                "value": "${{ secrets.MONGO_CONNECTION_STRING }}",
+                "slotSetting": false
+              },
+              {
+                "name": "ConnectionStrings__DefaultConnection",
+                "value": "${{ secrets.SQL_CONNECTION_STRING }}",
+                "slotSetting": false
+              },
+              {
+                "name": "AiService__BaseUrl",
+                "value": "https://eye-clinic-system-ai.onrender.com",
+                "slotSetting": false
+              },
+              {
+                "name": "Jwt__SecretKey",
+                "value": "${{ secrets.JWT_SECRET_KEY }}",
+                "slotSetting": false
+              },
+              {
+                "name": "Smtp__Password",
+                "value": "${{ secrets.SMTP_PASSWORD }}",
+                "slotSetting": false
+              }
+            ]
